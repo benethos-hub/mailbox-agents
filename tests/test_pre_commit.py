@@ -99,3 +99,9 @@ def test_an_allowlisted_line_passes(repo: Path) -> None:
 
 def test_nothing_staged_passes(repo: Path) -> None:
     assert _hook(repo).returncode == 0
+
+
+def test_a_secret_given_as_a_file_passes(repo: Path) -> None:
+    _stage(repo, "app.env.example", "SERVICE_TOKEN_FILE=/run/secrets/token\n")
+
+    assert _hook(repo).returncode == 0

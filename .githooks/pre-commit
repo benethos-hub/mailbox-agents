@@ -45,7 +45,8 @@ patterns="$patterns|gh[pousr]_[A-Za-z0-9]{16,}"
 patterns="$patterns|glpat-[A-Za-z0-9_-]{16,}"
 patterns="$patterns|AKIA[0-9A-Z]{16}"
 patterns="$patterns|BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY"
-patterns="$patterns|(TOKEN|SECRET|PASSWORD|API_KEY|_KEY)[A-Z_]*=[A-Za-z0-9+/_.-]{12,}"
+# A value that starts with / is a path, as a *_FILE setting names one.
+patterns="$patterns|(TOKEN|SECRET|PASSWORD|API_KEY|_KEY)[A-Z_]*=[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
 
 hits=$(
     git diff --cached -U0 \
