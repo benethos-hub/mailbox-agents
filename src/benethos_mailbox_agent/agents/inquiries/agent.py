@@ -1,8 +1,10 @@
-"""``inquiries``: is this a project inquiry?
+"""``inquiries``: is this a project inquiry, and what does it say?
 
 The model labels a message in the inbox ``inquiry`` or ``other``, with a
-quote the code finds in the mail. An inquiry gets the keyword. The rules
-beside it know phrases, dates and rates, and the sender domains and
+quote the code finds in the mail, and for an inquiry fills its fields, each
+with a quote of its own. A field whose quote is not found is dropped, and
+what a message does not say stays empty. An inquiry gets the keyword. The
+rules beside it know phrases, dates and rates, and the sender domains and
 phrases of a patterns file. See SPECS.md section 10.3.
 """
 
@@ -23,7 +25,7 @@ from ...contract.prompts import load_prompt
 from ...records import LABEL, Decision, Event, Evidence, MailMessage
 from .baseline import baseline
 from .patterns import Patterns, load_patterns
-from .schema import Label, render
+from .schema import FIELDS, Inquiry, render
 
 __all__ = ["Inquiries"]
 
@@ -36,7 +38,7 @@ class Inquiries(Agent):
     actions = frozenset({Action.ADD_KEYWORD})
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
     default_keyword = "inquiry"
-    prompt_version = "v1"
+    prompt_version = "v2"
 
     def prepare(self) -> None:
         _ = self.patterns
@@ -47,7 +49,10 @@ class Inquiries(Agent):
 
     @cached_property
     def system(self) -> str:
-        return load_prompt(__package__ or "", "system", self.prompt_version)
+        fields = "\n".join(f"- `{name}`: {meaning}" for name, meaning in FIELDS.items())
+        return load_prompt(__package__ or "", "system", self.prompt_version).replace(
+            "{fields}", fields
+        )
 
     def select(self, event: Event) -> Route | None:
         return Route.DECIDE if event.type == "message.created" else None
@@ -60,12 +65,23 @@ class Inquiries(Agent):
 
     async def decide(self, message: MailMessage, context: Context) -> Decision:
         answer = await context.model.ask(
-            system=self.system, content=render(message), schema=Label
+            system=self.system, content=render(message), schema=Inquiry
         )
+        evidence = [Evidence(field=LABEL, value=answer.label, quote=answer.quote)]
+        fields: dict[str, str] = {}
+        if answer.label == "inquiry":
+            for name in FIELDS:
+                found = getattr(answer, name)
+                if found.value and found.value.strip() and found.quote:
+                    fields[name] = found.value.strip()
+                    evidence.append(
+                        Evidence(field=name, value=fields[name], quote=found.quote)
+                    )
         return Decision(
             label=answer.label,
             source="model",
-            evidence=(Evidence(field=LABEL, value=answer.label, quote=answer.quote),),
+            fields=fields,
+            evidence=tuple(evidence),
         )
 
     async def effect(

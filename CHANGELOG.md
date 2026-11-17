@@ -36,7 +36,9 @@ commit that makes the change. Design decisions live in
   when the keyword is taken off, and sets the keyword `awaiting-reply` on
   the sent message after `MAILBOX_AGENT_REPLY_DAYS` working days.
 - The agent `inquiries`: marks project inquiries with the keyword
-  `inquiry`. Its rules read phrases, dates and rates, and the sender
+  `inquiry` and records what an inquiry says, role, start, end, duration,
+  workload, location, remote share, contract form, intermediary, end
+  client, rate, skills and deadline, each with a quote from the mail. Its rules read phrases, dates and rates, and the sender
   domains and phrases of `MAILBOX_AGENT_INQUIRIES_PATTERNS_FILE`.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.

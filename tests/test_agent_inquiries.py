@@ -10,6 +10,7 @@ import pytest
 
 from benethos_mailbox_agent.agents.inquiries.agent import Inquiries
 from benethos_mailbox_agent.agents.inquiries.patterns import DATE, RATE, load_patterns
+from benethos_mailbox_agent.agents.inquiries.schema import FIELDS
 from benethos_mailbox_agent.errors import ConfigError
 from benethos_mailbox_agent.evaluation.gold import load_gold
 from benethos_mailbox_agent.evaluation.report import build
@@ -23,6 +24,15 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = Path(__file__).resolve().parent / "data"
 PATTERNS = ROOT / "config" / "benethos-mailbox-agent" / "inquiries.example.json"
 MESSAGES = {m["id"]: m for m in invented("invented-inquiries.json")}
+
+
+def said(label: str, quote: str, **fields: tuple[str, str]) -> dict[str, Any]:
+    """An answer of the model: the label, and each field as value and quote."""
+    found: dict[str, Any] = {"label": label, "quote": quote}
+    for name in FIELDS:
+        value, passage = fields.get(name, (None, None))
+        found[name] = {"value": value, "quote": passage}
+    return found
 
 
 def agent(stage: str = "full", **values: Any) -> Inquiries:
@@ -135,21 +145,21 @@ def keywords(world: Wired, message_id: str) -> list[str]:
 
 
 async def test_an_inquiry_is_marked(world: Wired) -> None:
-    world.fake_gateway.answer({"label": "inquiry", "quote": "suchen wir ab 01.02.2027"})
+    world.fake_gateway.answer(said("inquiry", "suchen wir ab 01.02.2027"))
 
     assert await run(world, "inq-staffing") == "done"
     assert keywords(world, "inq-staffing") == ["inquiry"]
 
 
 async def test_another_message_is_not(world: Wired) -> None:
-    world.fake_gateway.answer({"label": "other", "quote": "10 neue Jobs für Sie"})
+    world.fake_gateway.answer(said("other", "10 neue Jobs für Sie"))
 
     assert await run(world, "job-digest") == "done"
     assert keywords(world, "job-digest") == []
 
 
 async def test_a_label_without_its_quote_is_not_acted_on(world: Wired) -> None:
-    world.fake_gateway.answer({"label": "inquiry", "quote": "a great project for you"})
+    world.fake_gateway.answer(said("inquiry", "a great project for you"))
 
     assert await run(world, "personal") == "decided"
     assert keywords(world, "personal") == []
@@ -168,7 +178,7 @@ async def test_the_label_has_an_evaluation_of_its_own(world: Wired) -> None:
     }
     for item in items:
         label, quote = quotes[item.message_id]
-        world.fake_gateway.answer({"label": label, "quote": quote})
+        world.fake_gateway.answer(said(label, quote))
     the_agent = agent(inquiries_patterns_file=PATTERNS)
 
     outcomes = await evaluate(
@@ -191,3 +201,101 @@ async def test_the_label_has_an_evaluation_of_its_own(world: Wired) -> None:
     }
     assert rules["labels"]["inquiry"]["recall"] == 1.0
     assert rules["agreed"] == 7
+
+
+# -- the fields --------------------------------------------------------------------
+
+
+async def test_each_field_with_its_quote(world: Wired) -> None:
+    world.fake_gateway.answer(
+        said(
+            "inquiry",
+            "Projektanfrage: Python-Entwicklung, remote",
+            role=("Python-Entwickler", "Unterstützung als Python-Entwickler"),
+            start=("01.02.2027", "ab 01.02.2027"),
+            rate=("bis 95 EUR", "Stundensatz bis 95 EUR"),
+            location=("Berlin", "Einsatzort Berlin"),
+            end=("", "6 Monate"),
+        )
+    )
+
+    assert await run(world, "inq-staffing") == "done"
+
+    ref = MessageRef(account_id=ACCOUNT, message_id="inq-staffing")
+    found = world.store.step(ref, "decision", "v2", "alias")
+    assert found is not None
+    assert found.result["fields"] == {
+        "role": "Python-Entwickler",
+        "start": "01.02.2027",
+        "rate": "bis 95 EUR",
+    }
+    dropped = [e["field"] for e in found.result["evidence"] if not e["found"]]
+    assert dropped == ["location"]
+
+
+async def test_another_message_has_no_fields(world: Wired) -> None:
+    world.fake_gateway.answer(
+        said("other", "10 neue Jobs für Sie", role=("Data Engineer", "Data Engineer"))
+    )
+
+    await run(world, "job-digest")
+
+    ref = MessageRef(account_id=ACCOUNT, message_id="job-digest")
+    found = world.store.step(ref, "decision", "v2", "alias")
+    assert found is not None and found.result["fields"] == {}
+
+
+def test_the_prompt_names_every_field() -> None:
+    system = agent().system
+
+    assert all(f"`{name}`" in system for name in FIELDS)
+    assert "{fields}" not in system
+
+
+async def test_the_fields_have_an_evaluation_of_their_own(world: Wired) -> None:
+    items = [i for i in load_gold(DATA / "gold-inquiries.jsonl") if i.fields]
+    world.fake_gateway.answer(
+        said(
+            "inquiry",
+            "Projektanfrage: Python-Entwicklung, remote",
+            role=("Python-Entwickler", "Unterstützung als Python-Entwickler"),
+            duration=("sechs Monate", "für 6 Monate"),
+            location=("Berlin", "Einsatzort Berlin"),
+            intermediary=("Jana", "Jana"),
+        ),
+        said(
+            "inquiry",
+            "wir suchen ab März 2027 Unterstützung",
+            rate=("90 €/h", "Das Budget liegt bei 90 €/h"),
+        ),
+        said("inquiry", "we are looking for a Senior Python Engineer"),
+    )
+    the_agent = agent()
+
+    outcomes = await evaluate(
+        the_agent,
+        items,
+        reader=world.mailbox,
+        gateway=world.gateway,
+        store=world.store,
+        now=world.clock,
+    )
+    fields = build(the_agent, "alias", outcomes, world.clock())["model"]["fields"]
+
+    assert fields["role"] == {
+        "right": 1,
+        "wrong": 0,
+        "missing": 2,
+        "invented": 0,
+        "empty": 0,
+    }
+    assert fields["duration"]["wrong"] == 1
+    assert fields["location"]["missing"] == 2
+    assert fields["intermediary"] == {
+        "right": 0,
+        "wrong": 0,
+        "missing": 0,
+        "invented": 1,
+        "empty": 2,
+    }
+    assert fields["rate"]["right"] == 1

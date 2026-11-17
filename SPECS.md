@@ -569,7 +569,13 @@ remote share, contract form, intermediary, end client, rate, required
 skills, desired skills, deadline to apply.
 
 Every field comes with a quote from the message (section 11). What a
-message does not say stays empty.
+message does not say stays empty. The fields come in the same call as the
+label (built 2026-11-17, prompt `system.v2.md`, version `v2`), each as a
+value and a quote, in the schema as `role`, `start`, `end`, `duration`,
+`workload`, `location`, `remote_share`, `contract_form`, `intermediary`,
+`end_client`, `rate`, `required_skills`, `desired_skills` and `deadline`.
+A message labelled `other` keeps none. The evaluation counts each field
+right, wrong, missing, invented or rightly empty.
 
 Recognising an inquiry seen before, and anything that writes a reply, come
 later (section 16).
