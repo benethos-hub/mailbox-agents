@@ -49,7 +49,7 @@ See SPECS.md section 4 for the full table.
 
 ```
 src/benethos_mailbox_agent/
-  cli.py          # the console script and its commands
+  cli/            # the console script, its commands, the wiring of a session
   __main__.py     # enables `python -m benethos_mailbox_agent`
   errors.py       # the error hierarchy, and redact
   settings/       # settings resolution, secrets from files

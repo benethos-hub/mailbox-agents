@@ -105,8 +105,8 @@ tick (clock)     this mine?       2. model, one call,       keyword
 
 ```
 src/benethos_mailbox_agent/
-  cli.py          # the console script: worker, run, backfill, report, eval,
-                  # status, paths
+  cli/            # the console script: worker, run, backfill, report, eval,
+                  # status, paths, health, and the wiring of one session
   __main__.py     # enables `python -m benethos_mailbox_agent`
   errors.py       # the error hierarchy, and redact
   settings/       # settings resolution, secrets from files
@@ -356,7 +356,21 @@ Rollout stage, per agent, in `MAILBOX_AGENT_STAGE`:
 A new agent starts in `shadow`, and so does one whose prompt or model
 changed until the evaluation was run again.
 
-### 8.1 Report
+### 8.1 Commands
+
+| Command | What it does |
+|---|---|
+| `worker --agent <name>` | runs one agent pass after pass until SIGTERM or SIGINT |
+| `run --agent <name>` | one pass, then the counts per state |
+| `backfill --agent <name> [--days N]` | takes the messages of the last days up anew and runs them |
+| `status` | for each agent whether it is ready, which setting it misses, its counts and its last pass |
+| `paths` | the settings file, the data folder and each state file |
+
+`--env-file` names the settings file for every command. An error to
+correct ends with exit code 2, an upstream that is away with 1. `status`
+and `paths` start no agent and change nothing.
+
+### 8.2 Report
 
 `benethos-mailbox-agent report --agent <name>` shows what an agent decided
 and did, or in `shadow` would have done: per message the subject and sender,
@@ -646,4 +660,4 @@ Answered, all on 2026-11-17:
 - **Metrics.** The `prometheus-client` package.
 - **Settings.** pydantic-settings.
 - **Sync or async.** asyncio.
-- **A report command.** Yes, section 8.1.
+- **A report command.** Yes, section 8.2.

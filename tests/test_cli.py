@@ -2,12 +2,40 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Iterator
 from importlib.metadata import version
+from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agent import __version__
-from benethos_mailbox_agent.cli import PROG, main
+from benethos_mailbox_agent import __version__, errors
+from benethos_mailbox_agent.cli import PROG, main, session
+from benethos_mailbox_agent.runtime.loop import Worker
+from benethos_mailbox_agent.settings import PREFIX
+from fakes import FakeGateway, FakeService, wire_message
+
+
+@pytest.fixture
+def service(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[FakeService]:
+    """A working directory of its own, settings for the fakes, the fakes
+    as the transports of the command line."""
+    import os
+
+    for name in list(os.environ):
+        if name.startswith(PREFIX):
+            monkeypatch.delenv(name)
+    monkeypatch.chdir(tmp_path)
+    found = FakeService()
+    monkeypatch.setitem(session.TRANSPORTS, "service", found.transport())
+    monkeypatch.setitem(session.TRANSPORTS, "gateway", FakeGateway().transport())
+    yield found
+    errors.forget_secrets()
+
+
+def configure(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_URL", "https://mailbox.example.test")
+    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN", "service-token")
 
 
 def test_version_is_the_distributions() -> None:
@@ -27,3 +55,109 @@ def test_version_flag_prints_name_and_version(
 def test_no_command_prints_the_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert main([]) == 0
     assert capsys.readouterr().out.startswith(f"usage: {PROG}")
+
+
+def test_status_names_what_is_missing(
+    service: FakeService, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert "counting 1: misses MAILBOX_AGENT_SERVICE_URL" in out
+
+
+def test_run_and_status_with_a_state_file(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+
+    assert main(["run", "--agent", "counting"]) == 0
+    service.add(wire_message("m1"))
+    service.add(wire_message("m2"))
+    assert main(["run", "--agent", "counting"]) == 0
+    assert "done=2" in capsys.readouterr().out
+
+    assert main(["status"]) == 0
+    out = capsys.readouterr().out
+    assert "counting 1: ready" in out
+    assert "done=2" in out
+    assert "last pass: 20" in out
+
+
+def test_backfill_takes_recent_messages_up(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    service.add(wire_message("m1"), change=None)
+
+    assert main(["backfill", "--agent", "counting", "--days", "3"]) == 0
+
+    assert "1 taken up" in capsys.readouterr().out
+    assert service.requests[0].url.params["after"]
+
+
+def test_a_negative_backfill_is_refused(
+    service: FakeService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configure(monkeypatch)
+
+    assert main(["backfill", "--agent", "counting", "--days", "-1"]) == 2
+
+
+def test_worker_runs_until_stopped(
+    service: FakeService, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    configure(monkeypatch)
+
+    async def one_pass(self: Worker, stop: asyncio.Event) -> None:
+        await self.run_pass()
+
+    monkeypatch.setattr(Worker, "run", one_pass)
+
+    assert main(["worker", "--agent", "counting"]) == 0
+    assert (tmp_path / "data" / "counting.db").is_file()
+
+
+def test_paths(
+    service: FakeService, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    assert main(["paths"]) == 0
+
+    out = capsys.readouterr().out
+    assert "settings:" in out and "(missing)" in out
+    assert "counting:" in out and "none yet" in out
+
+
+@pytest.mark.parametrize(
+    ("argv", "code", "said"),
+    [
+        (["run", "--agent", "nobody"], 2, "no agent 'nobody'"),
+        (["run", "--agent", "counting"], 2, "misses settings"),
+        (["--env-file", "missing.env", "status"], 2, "does not exist"),
+    ],
+)
+def test_a_configuration_to_correct_is_a_2(
+    service: FakeService,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+    code: int,
+    said: str,
+) -> None:
+    assert main(argv) == code
+    assert said in capsys.readouterr().err
+
+
+def test_a_service_that_is_away_is_a_1(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    service.down = True
+
+    assert main(["run", "--agent", "counting"]) == 1
+    assert "mailbox service" in capsys.readouterr().err

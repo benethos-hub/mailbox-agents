@@ -13,5 +13,7 @@ commit that makes the change. Design decisions live in
 
 ### Added
 
-- The package skeleton with the console script `benethos-mailbox-agent`,
-  which so far answers `--version` only.
+- The console script `benethos-mailbox-agent` with the commands `worker`,
+  `run`, `backfill`, `status` and `paths`, and `--env-file`.
+- The agent `counting`, which counts what arrives and is sent and changes
+  nothing, for checking a deployment end to end.

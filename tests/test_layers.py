@@ -44,7 +44,19 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
         {"errors", "logbook", "settings", "records", "contract", "store", "llm"}
     ),
     "agents": frozenset({"errors", "records", "settings", "contract"}),
-    "cli": frozenset(),
+    # The top: it wires the upstreams, the state file and the runtime.
+    "cli": frozenset(
+        {
+            "errors",
+            "logbook",
+            "settings",
+            "contract",
+            "store",
+            "sources",
+            "llm",
+            "runtime",
+        }
+    ),
     "__main__": frozenset({"cli"}),
 }
 

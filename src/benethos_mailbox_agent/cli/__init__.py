@@ -1,0 +1,85 @@
+"""The console script ``benethos-mailbox-agent``.
+
+Each command is a function in :mod:`.commands`. The command line reads the
+settings once, sets up the log and turns an error of this package into a
+sentence on stderr and an exit code: 2 for a configuration to correct, 1
+for an upstream that is away. See SPECS.md section 4.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from collections.abc import Sequence
+from pathlib import Path
+
+from .. import __version__, logbook
+from ..errors import ConfigError, ContractError, MailboxAgentError
+from ..settings import load_settings
+from . import commands
+
+__all__ = ["PROG", "build_parser", "main"]
+
+PROG = "benethos-mailbox-agent"
+
+
+def _agent(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--agent", required=True, help="the agent, such as invoices")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """The argument parser, apart from ``main`` so a test can read it."""
+    parser = argparse.ArgumentParser(
+        prog=PROG,
+        description="Agents that read and sort a mailbox.",
+    )
+    parser.add_argument("--version", action="version", version=f"{PROG} {__version__}")
+    parser.add_argument(
+        "--env-file",
+        type=Path,
+        default=None,
+        help="the settings file, config/benethos-mailbox-agent/.env when it exists",
+    )
+    sub = parser.add_subparsers(dest="command", metavar="command")
+
+    found = sub.add_parser("worker", help="run one agent until stopped")
+    _agent(found)
+    found.set_defaults(handler=commands.worker)
+
+    found = sub.add_parser("run", help="one pass of one agent, then stop")
+    _agent(found)
+    found.set_defaults(handler=commands.run)
+
+    found = sub.add_parser(
+        "backfill", help="take the messages of recent days up anew, then run them"
+    )
+    _agent(found)
+    found.add_argument("--days", type=int, default=None, help="BACKFILL_DAYS if unset")
+    found.set_defaults(handler=commands.backfill)
+
+    found = sub.add_parser("status", help="whether each agent is ready, and its counts")
+    found.set_defaults(handler=commands.status)
+
+    found = sub.add_parser("paths", help="where the settings and the state files are")
+    found.set_defaults(handler=commands.paths)
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run the command line and answer with the exit code."""
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.command is None:
+        parser.print_help()
+        return 0
+    try:
+        settings = load_settings(args.env_file)
+        logbook.configure(settings.log_level)
+        code: int = args.handler(args, settings)
+    except (ConfigError, ContractError) as exc:
+        print(f"{PROG}: {exc.message}", file=sys.stderr)
+        return 2
+    except MailboxAgentError as exc:
+        print(f"{PROG}: {exc.message}", file=sys.stderr)
+        return 1
+    return code
