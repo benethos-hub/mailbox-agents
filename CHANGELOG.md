@@ -15,5 +15,7 @@ commit that makes the change. Design decisions live in
 
 - The console script `benethos-mailbox-agent` with the commands `worker`,
   `run`, `backfill`, `status` and `paths`, and `--env-file`.
+- The command `report`: what an agent decided and did, or in `shadow` would
+  have done, with subject and sender fetched at the moment of the report.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.

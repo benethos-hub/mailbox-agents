@@ -50,6 +50,7 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
             "errors",
             "logbook",
             "settings",
+            "records",
             "contract",
             "store",
             "sources",

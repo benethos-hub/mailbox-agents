@@ -363,6 +363,7 @@ changed until the evaluation was run again.
 | `worker --agent <name>` | runs one agent pass after pass until SIGTERM or SIGINT |
 | `run --agent <name>` | one pass, then the counts per state |
 | `backfill --agent <name> [--days N]` | takes the messages of the last days up anew and runs them |
+| `report --agent <name> [--limit N] [--state S] [--offline]` | section 8.2 |
 | `status` | for each agent whether it is ready, which setting it misses, its counts and its last pass |
 | `paths` | the settings file, the data folder and each state file |
 
@@ -378,6 +379,15 @@ the decision, the evidence and the action (decided 2026-11-17). The state
 file holds ids only, so subject and sender are fetched from the mailbox
 service at the moment of the report and are never stored. Without it the
 stage `shadow` could not be reviewed.
+
+The report lists the newest messages first, 50 unless `--limit` says
+otherwise, and with `--state` those in one state. Per message it prints
+sender and subject, the decision with its source, model, fields and
+details, each quote and whether it was found, the label of the baseline,
+and each action with its stage and whether it was carried out or would
+have been. It opens the state file read-only, so it runs beside the agent.
+`--offline` reads the state file alone, without subject and sender. What
+it prints goes to stdout for the person who asked and never to the log.
 
 ## 9. State
 

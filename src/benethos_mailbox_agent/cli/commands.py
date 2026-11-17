@@ -12,12 +12,13 @@ from contextlib import suppress
 from .. import logbook
 from ..contract import discover, load
 from ..errors import ConfigError
-from ..runtime.readiness import readiness
+from ..runtime.readiness import MAILBOX_SETTINGS, readiness
 from ..settings import DEFAULT_ENV_FILE, Settings
-from ..store import Store, path_for
+from ..store import STATES, Store, path_for
+from .report import report as make_report
 from .session import session
 
-__all__ = ["backfill", "paths", "run", "status", "worker"]
+__all__ = ["backfill", "paths", "report", "run", "status", "worker"]
 
 
 def _counts(store: Store) -> str:
@@ -113,4 +114,28 @@ def paths(args: argparse.Namespace, settings: Settings) -> int:
         print(
             f"  {name}: {path.resolve()} ({'found' if path.is_file() else 'none yet'})"
         )
+    return 0
+
+
+# -- report -------------------------------------------------------------------------
+
+
+def report(args: argparse.Namespace, settings: Settings) -> int:
+    name = load(args.agent).name
+    if args.state is not None and args.state not in STATES:
+        raise ConfigError(f"--state is one of {', '.join(STATES)}")
+    if args.limit < 1:
+        raise ConfigError("--limit must be at least 1")
+    missing = settings.missing(MAILBOX_SETTINGS)
+    if missing and not args.offline:
+        raise ConfigError(
+            f"the report fetches subject and sender and misses {', '.join(missing)}"
+            ", or ask for it --offline"
+        )
+    lines = asyncio.run(
+        make_report(
+            name, settings, limit=args.limit, state=args.state, offline=args.offline
+        )
+    )
+    print("\n".join(lines) if lines else f"{name}: nothing recorded yet")
     return 0

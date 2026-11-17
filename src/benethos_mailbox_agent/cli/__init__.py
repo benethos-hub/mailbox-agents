@@ -57,6 +57,19 @@ def build_parser() -> argparse.ArgumentParser:
     found.add_argument("--days", type=int, default=None, help="BACKFILL_DAYS if unset")
     found.set_defaults(handler=commands.backfill)
 
+    found = sub.add_parser(
+        "report", help="what an agent decided and did, with subject and sender"
+    )
+    _agent(found)
+    found.add_argument("--limit", type=int, default=50, help="the newest messages")
+    found.add_argument("--state", default=None, help="only messages in this state")
+    found.add_argument(
+        "--offline",
+        action="store_true",
+        help="from the state file alone, without subject and sender",
+    )
+    found.set_defaults(handler=commands.report)
+
     found = sub.add_parser("status", help="whether each agent is ready, and its counts")
     found.set_defaults(handler=commands.status)
 
