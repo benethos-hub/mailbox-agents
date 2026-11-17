@@ -3,8 +3,10 @@
 One call is one chat completion of two messages, the agent's system prompt
 and the content of a mail, with the answer forced into a JSON schema by
 ``response_format`` and validated again with pydantic. No tools are sent,
-no conversation is kept, no model SDK is used. What the gateway reports as
-its model is returned with the answer, with the tokens and the duration.
+no conversation is kept, no model SDK is used. No sampling setting is
+sent either: some models refuse one, so the gateway sets it per model.
+What the gateway reports as its model is returned with the answer, with
+the tokens and the duration.
 See SPECS.md section 6.
 """
 
@@ -116,7 +118,6 @@ class Gateway:
                     "schema": strict_schema(schema),
                 },
             },
-            "temperature": 0,
         }
 
     async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]:

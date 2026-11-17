@@ -63,6 +63,7 @@ async def test_one_call_with_a_schema(fake: FakeGateway, gateway: Gateway) -> No
     assert [m["role"] for m in body["messages"]] == ["system", "user"]
     assert body["response_format"]["json_schema"]["name"] == "Answer"
     assert "tools" not in body
+    assert "temperature" not in body
     request = fake.requests[0]
     assert request.url.path == "/v1/chat/completions"
     assert request.headers["authorization"] == "Bearer gateway-key"
