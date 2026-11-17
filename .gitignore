@@ -1,0 +1,56 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Tooling caches and coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+# config/: only the templates are versioned
+config/**
+!config/**/
+!config/**/.env.example
+# containers/*/secrets/: tokens and keys of a deployment, given as files
+containers/**/secrets/
+
+# data/: the state file of each agent and the gold set, which points at
+# real mail. Only the folders are versioned (.gitkeep). See SPECS.md
+# sections 9 and 12.
+data/**
+!data/**/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+
+# Live checks: the test account and the addresses of the services stay local
+live/.env
+
+# .gitkeep holds an empty folder and is kept wherever it is. Only works
+# below folders ignored file by file (as above), not below an ignored folder.
+!.gitkeep

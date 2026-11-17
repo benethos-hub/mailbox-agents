@@ -1,0 +1,109 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "benethos-mailbox-agent"
+version = "0.1.0"
+description = "Agents that read and sort a mailbox: one narrow question each, one reversible action, measured against labelled mail."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Benedikt Oswald" }]
+keywords = [
+    "agent",
+    "email",
+    "mailbox",
+    "llm",
+    "classification",
+    "extraction",
+    "evaluation",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Communications :: Email",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# None yet. A dependency is named here in the commit that first imports it,
+# inside a patch window at the version tested. SPECS.md sections 5 and 6
+# say which are decided: httpx, pydantic and benethos-mailbox-client.
+dependencies = []
+
+[project.scripts]
+# One name only, identical to the distribution name, so every identifier
+# matches and `uvx benethos-mailbox-agent` works.
+benethos-mailbox-agent = "benethos_mailbox_agent.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.19",
+    "mypy>=2.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/benethos_mailbox_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# A file, socket or database left open fails the run. One found by the
+# garbage collector comes as an unraisable exception.
+filterwarnings = [
+    "error::ResourceWarning",
+    "error::pytest.PytestUnraisableExceptionWarning",
+]
+
+[tool.coverage.run]
+source = ["benethos_mailbox_agent"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "W",    # pycodestyle warnings
+    "N",    # pep8-naming
+    "C90",  # mccabe: the complexity of a function
+    "PLR0912",  # too many branches
+    "PLR0915",  # too many statements
+    "S101",  # assert: gone under python -O, so never a check of the code
+]
+
+[tool.ruff.lint.per-file-ignores]
+# A test and a live check say what they expect with assert.
+"tests/**" = ["S101"]
+"live/**" = ["S101"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-branches = 12
+max-statements = 50
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
