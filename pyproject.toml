@@ -56,6 +56,9 @@ packages = ["src/benethos_mailbox_agent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The coverage floor of SPECS.md section 15 is part of every run. A run of
+# one file alone takes --no-cov.
+addopts = "--cov --cov-fail-under=80"
 # A file, socket or database left open fails the run. One found by the
 # garbage collector comes as an unraisable exception.
 filterwarnings = [
