@@ -31,5 +31,9 @@ commit that makes the change. Design decisions live in
   a sender rule of the JSON list in `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`,
   or from the model's choice among the listed suppliers when no rule
   matches.
+- The agent `awaiting_reply`: opens an item for each sent message the
+  model finds asking for an answer, closes it on a reply in its thread or
+  when the keyword is taken off, and sets the keyword `awaiting-reply` on
+  the sent message after `MAILBOX_AGENT_REPLY_DAYS` working days.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.

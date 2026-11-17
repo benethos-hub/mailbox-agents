@@ -517,19 +517,32 @@ read and is not part of the first version.
 | Baseline | a question mark or a request phrase in the last paragraph written |
 | Model | whether the message expects a reply, yes or no |
 | Actions | `add_keyword`, `remove_keyword`, both on the sent message |
-| Deadline | `MAILBOX_AGENT_REPLY_DAYS` working days, 3 by default |
+| Deadline | `MAILBOX_AGENT_REPLY_DAYS` working days, Monday to Friday, 3 by default (decided 2026-11-17, public holidays kept as a later option) |
 
 A sent message that expects a reply becomes an open item. It closes when:
 
 - a later message from another sender appears in its thread, automatic
-  answers not counted **(that the service exposes what marks an automatic
-  answer is to verify)**,
+  answers not counted. The service exposes no header, so an automatic
+  answer is told by a sender such as `noreply` or `mailer-daemon` and a
+  subject such as "Automatische Antwort" or "Out of Office" (decided
+  2026-11-17),
 - a person takes the keyword off, which the agent learns from the feed where
-  the provider reports flag changes,
+  the provider reports flag changes (`message.updated`, routed to
+  `observe`). Its own keyword set or taken off closes nothing,
 - the sender writes again in the same thread. That restarts the deadline and
-  does not count as a reply.
+  does not count as a reply: when the new message expects a reply itself,
+  the earlier item closes as `followed_up` and the new one opens, otherwise
+  the earlier item starts again from the new message.
 
-An item past its deadline gets the keyword. The message stays where it is.
+An item past its deadline gets the keyword on the tick. The message stays
+where it is. The deadline counts from the date of the sent message, and a
+date on a weekend counts from the Monday after.
+
+The model is given the recipients, the subject and the text the sender
+wrote, without what it quotes, the last 4000 characters of it. The prompt is
+`prompts/system.v1.md`, version `v1`. A received message asks no model:
+what it closes is a rule. The agent works on messages in sent mail, and on
+messages in the inbox that belong to a thread.
 
 Known misses, to be counted in the evaluation rather than argued away: an
 answer that comes as a new mail outside the thread, an answer by telephone,
