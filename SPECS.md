@@ -552,8 +552,11 @@ A **gold set** is mail a person labelled by hand: for a classifying agent
 the right label, for an extracting agent the right value of each field. The
 agent runs over it and the scoring counts where it agrees.
 
-- **Format:** one JSON object per line: account id, message id, expected
-  label, expected fields. The mail itself is fetched by id at run time.
+- **Format:** one JSON object per line: `account_id`, `message_id`, the
+  expected `label`, the expected `fields` with `null` for a field the
+  message does not fill, and an optional `note`. A line starting with `#`
+  is a comment. A message named twice is refused. The mail itself is
+  fetched by id at run time.
 - **Where it lives:** under `data/`, never versioned, because it points at
   real mail. The repository holds the format, the scoring and a small set of
   invented messages the tests use.

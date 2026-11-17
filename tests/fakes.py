@@ -11,12 +11,16 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
 
 import httpx
 
 ACCOUNT = "acc1"
+
+# Invented messages, shared by the tests of the agents and the evaluation.
+INVENTED = Path(__file__).resolve().parent / "data" / "invented.json"
 
 FOLDERS = [
     {"id": "inbox", "name": "INBOX", "role": "inbox"},
@@ -71,6 +75,12 @@ def wire_message(
             for i, a in enumerate(attachments or [])
         ],
     }
+
+
+def invented() -> list[dict[str, Any]]:
+    """The messages of tests/data/invented.json in the service's wire format."""
+    found = json.loads(INVENTED.read_text(encoding="utf-8"))
+    return [wire_message(item.pop("id"), **item) for item in found]
 
 
 def _error(status: int, code: str, message: str = "refused") -> httpx.Response:
