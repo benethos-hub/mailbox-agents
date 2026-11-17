@@ -484,16 +484,27 @@ may be given as a file with the suffix `_FILE`.
 |---|---|
 | `SERVICE_URL`, `SERVICE_TOKEN` | the mailbox service and this agent's token |
 | `GATEWAY_URL`, `GATEWAY_KEY` | the model gateway and this agent's key |
+| `GATEWAY_TIMEOUT_SECONDS` | how long one model call may take, `120` when unset |
 | `MODEL` | the alias the gateway resolves |
-| `ACCOUNTS` | the accounts to work on, all the user may read when unset |
+| `ACCOUNTS` | the accounts to work on, comma separated, all the user may read when unset |
 | `STAGE` | `shadow`, `keyword` or `full`, `shadow` when unset |
+| `KEYWORD` | the keyword the agent sets, the agent's own default when unset |
 | `POLL_SECONDS`, `TICK_SECONDS` | how often the feed is read and the clock asked |
+| `MAX_ATTEMPTS` | refused answers before a message is `failed`, `5` when unset |
+| `BACKOFF_CEILING_SECONDS` | the longest wait between two attempts, `3600` when unset |
+| `BACKFILL_DAYS` | the window `backfill` runs over after an expired feed state, `7` when unset |
 | `DATA_DIR` | where the state file lives |
 | `PROMPT_RETENTION_DAYS` | section 9, `0` when unset |
-| `METRICS_PORT` | section 14 |
+| `METRICS_PORT` | section 14, `0` serves no endpoint |
+| `LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING` or `ERROR`, `INFO` when unset |
 
-Settings of one agent, such as `INVOICES_FOLDER`, `INVOICES_SUPPLIERS_FILE`
-and `REPLY_DAYS`, are named in its section.
+`SERVICE_TOKEN_FILE` and `GATEWAY_KEY_FILE` name the file a secret is read
+from. A secret given directly wins over its file.
+
+Settings of one agent, such as `INVOICES_FOLDER`, `INVOICES_SUPPLIERS_FILE`,
+`REPLY_DAYS` and `INQUIRIES_PATTERNS_FILE`, are named in its section. The
+`.env` file is `config/benethos-mailbox-agent/.env` below the working
+directory unless the command line names another.
 
 ## 14. Operation
 

@@ -33,10 +33,12 @@ classifiers = [
     "Topic :: Communications :: Email",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-# None yet. A dependency is named here in the commit that first imports it,
-# inside a patch window at the version tested. SPECS.md sections 5 and 6
-# say which are decided: httpx, pydantic and benethos-mailbox-client.
-dependencies = []
+# A dependency is named here in the commit that first imports it, inside a
+# patch window at the version tested.
+dependencies = [
+    "pydantic~=2.14.3",
+    "pydantic-settings~=2.16.3",
+]
 
 [project.scripts]
 # One name only, identical to the distribution name, so every identifier
