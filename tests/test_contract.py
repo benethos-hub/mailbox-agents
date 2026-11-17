@@ -170,6 +170,8 @@ def package(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
             AGENT_SOURCE.format(cls=name.title(), name=name), encoding="utf-8"
         )
     (root / "_private").mkdir()
+    (root / "half").mkdir()
+    (root / "half" / "__init__.py").write_text("", encoding="utf-8")
     monkeypatch.syspath_prepend(str(tmp_path))
     importlib.invalidate_caches()
     return package_name

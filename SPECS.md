@@ -255,7 +255,7 @@ request stays visible, storable and mockable.
 ## 7. The agent contract
 
 Every agent package defines exactly one concrete `Agent` subclass in its
-`agent.py`. The class attributes are validated on instantiation.
+`agent.py`. A package under `agents/` without `agent.py` is not an agent. The class attributes are validated on instantiation.
 
 | Attribute | Meaning |
 |---|---|
@@ -457,6 +457,26 @@ file named in `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`. It is not versioned,
 an example of it is. An entry names a supplier, the sender addresses or
 domains it writes from, and its folder under the parent. Every folder must
 exist. The agent creates none.
+
+The list is JSON (decided 2026-11-17), read by the file's suffix so another
+format is one reader more. `suppliers.example.json` shows it:
+
+```json
+{"suppliers": [
+  {"name": "CloudHost", "folder": "CloudHost",
+   "senders": ["billing@cloudhost.example", "cloudhost.example"]},
+  {"name": "Telco", "folder": "Telco",
+   "senders": ["rechnung@telco.example", "mailbox*@telco.example"]}
+]}
+```
+
+A sender is an address, a pattern with `*` for a part that changes, or a
+domain, which covers its subdomains too. Case is ignored. The most specific
+rule wins: an address before a pattern before a domain. Two suppliers whose
+rules of the same kind both match leave the sender unmatched. Names and
+folders are unique, a sender rule belongs to one supplier, and a folder is
+names between `/`, none empty, `.` or `..`. A wrong list stops the agent at
+its start and `status` names what is wrong.
 
 | The message is | What happens |
 |---|---|

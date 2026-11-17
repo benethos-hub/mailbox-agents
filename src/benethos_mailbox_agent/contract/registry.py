@@ -7,6 +7,7 @@ imports every agent module and nothing more happens.
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import inspect
 import pkgutil
 
@@ -42,7 +43,10 @@ def discover(package: str = AGENTS_PACKAGE) -> dict[str, type[Agent]]:
     for info in pkgutil.iter_modules(root.__path__):
         if not info.ispkg or info.name.startswith("_"):
             continue
-        cls = _agent_class(f"{package}.{info.name}.agent")
+        module = f"{package}.{info.name}.agent"
+        if importlib.util.find_spec(module) is None:
+            continue  # a package without agent.py is not an agent
+        cls = _agent_class(module)
         cls.validate_definition()
         found[cls.name] = cls
     return dict(sorted(found.items()))

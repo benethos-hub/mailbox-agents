@@ -34,6 +34,7 @@ Thumbs.db
 config/**
 !config/**/
 !config/**/.env.example
+!config/**/*.example.json
 # containers/*/secrets/: tokens and keys of a deployment, given as files
 containers/**/secrets/
 
