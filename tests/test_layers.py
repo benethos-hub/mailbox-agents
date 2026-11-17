@@ -33,6 +33,8 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
     "records": frozenset(),
     "contract": frozenset({"errors", "records", "settings"}),
     "store": frozenset({"errors", "records"}),
+    # The mailbox service, behind one module.
+    "sources": frozenset({"errors", "records"}),
     # An agent sees the contract and the records, never the client, the
     # gateway, the state file or the runtime that holds them.
     "agents": frozenset({"errors", "records", "settings", "contract"}),
@@ -45,6 +47,8 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
 CONFINED: dict[str, frozenset[str]] = {
     "logging": frozenset({"logbook/output.py"}),
     "sqlite3": frozenset({"store/store.py"}),
+    "benethos_mailbox_client": frozenset({"sources/mailbox.py"}),
+    "httpx": frozenset({"sources/mailbox.py"}),
 }
 
 

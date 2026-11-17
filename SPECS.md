@@ -178,6 +178,12 @@ Operation names below are the service's `operationId`s.
 | The conversation a message belongs to | `get_thread` |
 | Set or remove a keyword, move to a folder | `update_message`, `batch_messages` |
 | The folders of an account | `list_folders` |
+| The messages received since a day, for `backfill` | `list_all_messages` |
+
+`sources/mailbox.py` offers these and nothing else: no send, no delete, no
+trash, no folder creation. A move sets the message's folders to the one
+target. A message without a text body is read with an empty text
+**(to verify: whether the service always converts an HTML-only message)**.
 
 What the agents rely on:
 
@@ -504,6 +510,7 @@ may be given as a file with the suffix `_FILE`.
 | Setting | Meaning |
 |---|---|
 | `SERVICE_URL`, `SERVICE_TOKEN` | the mailbox service and this agent's token |
+| `SERVICE_ALLOW_HTTP` | allow http to another machine, as between two containers, `false` when unset |
 | `GATEWAY_URL`, `GATEWAY_KEY` | the model gateway and this agent's key |
 | `GATEWAY_TIMEOUT_SECONDS` | how long one model call may take, `120` when unset |
 | `MODEL` | the alias the gateway resolves |

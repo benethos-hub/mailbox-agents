@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     service_url: str | None = None
     service_token: SecretStr | None = None
     service_token_file: Path | None = None
+    # The client refuses http to another machine, since the token would
+    # travel unencrypted. Between two containers on one network that is
+    # the deployment's decision.
+    service_allow_http: bool = False
     gateway_url: str | None = None
     gateway_key: SecretStr | None = None
     gateway_key_file: Path | None = None
