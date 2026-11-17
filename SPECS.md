@@ -751,7 +751,11 @@ authorities.
    Not decided, the overview is phase 7.
 2. **Schema through the gateway.** Section 6, to verify with the first
    local model.
-3. **Keywords per provider.** Section 5, to verify per account.
+3. **Keywords per provider.** Section 5, to verify per account. Measured
+   2026-11-17 for IMAP at Stalwart through the service 0.7.5: a keyword is
+   set and taken off, and a move to another folder keeps the message's id
+   and is taken back by a move to the folder before. Other providers are
+   still to verify.
 4. **Folder-narrowed grants and moves.** Section 5, to verify. It decides
    whether the grant of `invoices` can be narrowed to the inbox and the
    parent folder of section 10.1.
