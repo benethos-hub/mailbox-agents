@@ -134,8 +134,11 @@ live/             # run by hand, outside testpaths: smoke against a test
                   # account, the evaluation against the gold set
 containers/
   images/mailbox-agent/Dockerfile
-  production/     # the published image, one service per agent
-  development/    # built from the checkout
+  production/     # the published image, one service per agent, each
+                  # behind a profile of its name
+  development/    # built from the checkout, against the test account
+  live/           # a mail server and a mailbox service of their own, with
+                  # a test account of invented mail
 config/           # .env.example versioned, .env local
 data/             # state files and the gold set, never versioned
 ```
@@ -605,9 +608,12 @@ directory unless the command line names another.
 
 ## 14. Operation
 
-- **Container:** non-root, read-only root file system, no capabilities, one
-  volume for the state file. One Compose service per agent from the same
-  image, `restart: unless-stopped`.
+- **Container:** non-root (uid 10001), read-only root file system, no
+  capabilities, `no-new-privileges`, one volume for the state file, the
+  token and the key mounted as files and named in `*_FILE` settings, at
+  most five log files of 10 MB. One Compose service per agent from the same
+  image, each behind a profile of its own name, `restart: unless-stopped`,
+  its health check `health --agent <name>`.
 - **Health:** `health --agent <name>` exits 0 while the loop's last sign
   of progress, written to the state file after each message and at the end
   of each pass, is younger than three poll intervals plus one model call

@@ -54,3 +54,10 @@ live/.env
 # .gitkeep holds an empty folder and is kept wherever it is. Only works
 # below folders ignored file by file (as above), not below an ignored folder.
 !.gitkeep
+
+# containers/*/agents/: each agent's settings and lists of a deployment.
+# Only the templates are versioned.
+containers/*/agents/**
+!containers/*/agents/**/
+!containers/*/agents/**/.env.example
+!containers/*/agents/**/*.example.json

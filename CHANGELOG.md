@@ -19,5 +19,8 @@ commit that makes the change. Design decisions live in
   have done, with subject and sender fetched at the moment of the report.
 - The command `health`, and metrics in the Prometheus text format on
   `MAILBOX_AGENT_METRICS_PORT` while `worker` runs.
+- The container image, one for every agent, and compose files for
+  operation, one service per agent behind a profile of its name, and for
+  development against a test account of invented mail.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.
