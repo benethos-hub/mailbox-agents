@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "benethos-mailbox-agent"
 version = "0.1.0"
 description = "Agents that read and sort a mailbox: one narrow question each, one reversible action, measured against labelled mail."
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Benedikt Oswald" }]
