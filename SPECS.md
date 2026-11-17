@@ -727,6 +727,11 @@ directory unless the command line names another.
   and filled with invented mail, and the published image of the mailbox
   service in front of it. `setup.sh` makes it in one run, and
   `live/smoke.py` reads it through the package without writing to it.
+  The model gateway belongs to it (decided 2026-11-17): LiteLLM with Claude
+  through the owner's API key, and local models under llama.cpp, one
+  service on the graphics card and one on the CPU. `live/gold.py` turns
+  the labels of the invented mail into gold files, so `eval` can compare
+  models on them.
 
 ## 16. Roadmap
 

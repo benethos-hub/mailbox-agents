@@ -2,14 +2,22 @@
 # Makes the live setup anew: a test CA and a certificate for the mail
 # server, Stalwart with one account made for the agents, the mailbox
 # service with an administrator, the account connected, a user for the
-# agents with mail.read and mail.write on it, its token, and invented mail.
+# agents with mail.read and mail.write on it, its token, invented mail,
+# and the model gateway in front of Claude and of a local model.
 #
 # Needs Docker with compose, openssl and python3. Run from the repository:
 #   sh containers/live/setup.sh
 #
+# Claude is used when its API key is in containers/live/secrets/anthropic_api_key
+# or in ANTHROPIC_API_KEY. Without one, or with LIVE_LOCAL=gpu or
+# LIVE_LOCAL=cpu, a local model under llama.cpp is started and the agents
+# are set to it: on the graphics card when the host has NVIDIA's CDI spec
+# or LIVE_LOCAL=gpu, else on the CPU. Its model is fetched first.
+#
 # It removes the volumes of an earlier run. What it makes stays in
 # containers/live/secrets/, never versioned: the CA, the passwords, the
-# token, and secrets/agent.env, the settings the agents and smoke.py read.
+# tokens, and secrets/agent.env, the settings the agents and smoke.py read.
+# The Claude API key and the fetched models are kept across runs.
 
 set -eu
 
@@ -19,10 +27,31 @@ compose="docker compose -f $here/compose.yaml"
 
 say() { printf 'setup: %s\n' "$1" >&2; }
 
+anthropic_key="${ANTHROPIC_API_KEY:-}"
+if [ -z "$anthropic_key" ] && [ -f "$secrets/anthropic_api_key" ]; then
+    anthropic_key=$(tr -d ' \r\n' < "$secrets/anthropic_api_key")
+fi
+
+backend="${LIVE_LOCAL:-}"
+if [ -z "$anthropic_key" ] && [ -z "$backend" ]; then
+    if ls /etc/cdi/nvidia*.yaml /var/run/cdi/nvidia*.yaml >/dev/null 2>&1; then
+        backend=gpu
+    else
+        backend=cpu
+    fi
+fi
+case "$backend" in
+    "" | gpu | cpu) ;;
+    *) say "LIVE_LOCAL is gpu or cpu, not $backend"; exit 2 ;;
+esac
+
 say "removing an earlier run"
-$compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+$compose --profile gpu --profile cpu down --volumes --remove-orphans >/dev/null 2>&1 || true
 rm -rf "$secrets"
-mkdir -p "$secrets/tls"
+mkdir -p "$secrets/tls" "$here/models"
+if [ -n "$anthropic_key" ]; then
+    printf '%s\n' "$anthropic_key" > "$secrets/anthropic_api_key"
+fi
 
 say "a test CA and a certificate for mail.agents.test"
 openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=mailbox-agent live test CA" \
@@ -35,11 +64,18 @@ openssl x509 -req -in "$secrets/tls/server.csr" -CA "$secrets/tls/ca.pem" \
     -extfile "$secrets/tls/san.ext" -out "$secrets/tls/server.pem" 2>/dev/null
 chmod 644 "$secrets/tls/ca.pem"
 
-say "passwords"
+say "passwords and keys"
 rand() { openssl rand -hex 16; }
 stalwart_admin=$(rand)
 mailbox_password=$(rand)
 service_password="$(rand)Aa1!"
+gateway_key="sk-live-$(rand)"
+{
+    printf 'LITELLM_MASTER_KEY=%s\n' "$gateway_key"
+    if [ -n "$anthropic_key" ]; then
+        printf 'ANTHROPIC_API_KEY=%s\n' "$anthropic_key"
+    fi
+} > "$secrets/gateway.env"
 
 say "the master key of the mailbox service"
 $compose run --rm --no-deps -T mailbox-service keys generate > "$secrets/master_key"
@@ -51,8 +87,21 @@ one_time=$($compose run --rm --no-deps -T mailbox-service users create-admin 2>/
 say "Stalwart in bootstrap mode"
 STALWART_RECOVERY_ADMIN="admin:$stalwart_admin" $compose up -d stalwart >/dev/null 2>&1
 
-say "the mailbox service"
-$compose up -d mailbox-service >/dev/null 2>&1
+say "the mailbox service and the gateway"
+$compose up -d mailbox-service gateway >/dev/null 2>&1
+
+model=mail-classifier
+if [ -n "$backend" ]; then
+    # The model behind the alias mail-classifier-<gpu|cpu> in litellm.yaml.
+    name=$(sed -n "/model_name: mail-classifier-$backend\$/{n;s#.*model: openai/\([^}]*\)}.*#\1#p}" "$here/litellm.yaml")
+    say "the local model $name on the $backend, fetched once into containers/live/models"
+    sh "$here/fetch-models.sh" "$name"
+    $compose --profile "$backend" up -d "llama-$backend" >/dev/null 2>&1
+    model="mail-classifier-$backend"
+fi
+if [ -z "$anthropic_key" ]; then
+    say "no Claude API key: the agents use the local model"
+fi
 
 say "provisioning"
 STALWART_URL=http://127.0.0.1:38080 \
@@ -61,6 +110,9 @@ MAILBOX_PASSWORD="$mailbox_password" \
 SERVICE_URL=http://127.0.0.1:38081 \
 SERVICE_ONE_TIME_PASSWORD="$one_time" \
 SERVICE_PASSWORD="$service_password" \
+GATEWAY_URL=http://127.0.0.1:38400/v1 \
+GATEWAY_KEY="$gateway_key" \
+GATEWAY_MODEL="$model" \
 SECRETS="$secrets" \
 COMPOSE="$compose" \
     python3 "$here/provision.py"

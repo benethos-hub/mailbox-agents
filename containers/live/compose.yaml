@@ -1,4 +1,5 @@
-# A mail server and a mailbox service of their own, for the live checks.
+# A mail server, a mailbox service and a model gateway of their own, for
+# the live checks.
 # Nothing here reaches a real mailbox: Stalwart holds one account made for
 # the agents, filled with invented mail, and the service is the published
 # image. setup.sh makes it, README.md says how to use it, and
@@ -53,8 +54,81 @@ services:
       - ./secrets/master_key:/run/secrets/master_key:ro
       - ./secrets/tls/ca.pem:/run/secrets/ca.pem:ro
 
+  # The model gateway: LiteLLM, its aliases in litellm.yaml, its master key
+  # and the Claude API key in secrets/gateway.env, made by setup.sh.
+  gateway:
+    image: ghcr.io/berriai/litellm:v1.108.10@sha256:297bf657b0e7af37cee6b9a48ce6882b6d5504c2e77554cdafcb1a0c18ba1fc6
+    restart: unless-stopped
+    command: ["--config", "/etc/litellm/config.yaml", "--port", "4000"]
+    env_file: ./secrets/gateway.env
+    networks:
+      - live
+      - models
+    ports:
+      - "127.0.0.1:38400:4000"
+    volumes:
+      - ./litellm.yaml:/etc/litellm/config.yaml:ro
+    healthcheck:
+      # The image has Python but no curl.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  # Local models under llama.cpp, one router per kind of hardware. Each
+  # serves the models of its presets file, one at a time, and loads a model
+  # on its first request. fetch-models.sh fetches the files into ./models,
+  # which a new setup keeps. Neither service has a port or a way out: the
+  # gateway is the only one to reach them.
+
+  # On the graphics card, with the profile gpu. Needs the NVIDIA Container
+  # Toolkit and its CDI spec on the host (README.md).
+  llama-gpu:
+    profiles: ["gpu"]
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b12464@sha256:ae96e52f8b2106ea82bad786ee2d08bb9b0a8c93403df9c27ae1bf065a118089
+    restart: unless-stopped
+    command: &llama-command
+      - --models-preset
+      - /etc/llama/presets.ini
+      - --models-max
+      - "1"
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+    devices:
+      - nvidia.com/gpu=all
+    networks:
+      - models
+    volumes:
+      - ./models:/models:ro
+      - ./llama/presets-gpu.ini:/etc/llama/presets.ini:ro
+    healthcheck: &llama-health
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  # On the CPU, with the profile cpu: what a server without a card would do.
+  llama-cpu:
+    profiles: ["cpu"]
+    image: ghcr.io/ggml-org/llama.cpp:server-b12464@sha256:5b43086e3ba7ea5794d72904654f6cd41224a9b1c6ac0398f4940ee380d30f23
+    restart: unless-stopped
+    command: *llama-command
+    networks:
+      - models
+    volumes:
+      - ./models:/models:ro
+      - ./llama/presets-cpu.ini:/etc/llama/presets.ini:ro
+    healthcheck: *llama-health
+
 networks:
   live:
+  # Shared by the gateway and the llama services only, with no way out.
+  models:
+    internal: true
 
 volumes:
   stalwart-etc:

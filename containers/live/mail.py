@@ -252,3 +252,59 @@ def messages(me: str) -> Iterator[tuple[str, str, EmailMessage]]:
             message_id="sent-no-request",
         ),
     )
+
+
+# What each invented message is, per agent: the label and the fields, by
+# the local part of its Message-ID. live/gold.py writes the gold files of
+# the test account from it.
+_INVOICE_OTHER = {"supplier": None, "near_miss": None}
+
+GOLD: dict[str, dict[str, tuple[str, dict[str, str | None]]]] = {
+    "inv-cloudhost-1": {
+        "invoices": ("invoice", {"supplier": "CloudHost", "near_miss": None}),
+        "inquiries": ("other", {}),
+    },
+    "inv-telco-1": {
+        "invoices": ("invoice", {"supplier": "Telco", "near_miss": None}),
+        "inquiries": ("other", {}),
+    },
+    "inv-paperworks-1": {
+        "invoices": ("invoice", _INVOICE_OTHER),
+        "inquiries": ("other", {}),
+    },
+    "near-reminder-1": {
+        "invoices": ("other", {"supplier": None, "near_miss": "reminder"}),
+        "inquiries": ("other", {}),
+    },
+    "near-quote-1": {
+        "invoices": ("other", {"supplier": None, "near_miss": "quotation"}),
+        "inquiries": ("other", {}),
+    },
+    "near-order-1": {
+        "invoices": ("other", {"supplier": None, "near_miss": "order_confirmation"}),
+        "inquiries": ("other", {}),
+    },
+    "near-receipt-1": {
+        "invoices": ("other", {"supplier": None, "near_miss": "payment_receipt"}),
+        "inquiries": ("other", {}),
+    },
+    "inquiry-1": {
+        "invoices": ("other", _INVOICE_OTHER),
+        "inquiries": ("inquiry", {}),
+    },
+    "newsletter-1": {
+        "invoices": ("other", _INVOICE_OTHER),
+        "inquiries": ("other", {}),
+    },
+    "reply-partner": {
+        "invoices": ("other", _INVOICE_OTHER),
+        "inquiries": ("other", {}),
+    },
+    "autoreply-office": {
+        "invoices": ("other", _INVOICE_OTHER),
+        "inquiries": ("other", {}),
+    },
+    "sent-asked-answered": {"awaiting_reply": ("expects_reply", {})},
+    "sent-asked-open": {"awaiting_reply": ("expects_reply", {})},
+    "sent-no-request": {"awaiting_reply": ("no_reply", {})},
+}

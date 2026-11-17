@@ -51,6 +51,8 @@ data/**
 
 # Live checks: the test account and the addresses of the services stay local
 live/.env
+# The local models of the live setup, fetched by fetch-models.sh
+containers/live/models/
 
 # .gitkeep holds an empty folder and is kept wherever it is. Only works
 # below folders ignored file by file (as above), not below an ignored folder.

@@ -7,7 +7,8 @@
 3. The mailbox service: the administrator's password set through the UI
    and a token made there, the account connected, a user ``agents`` with
    mail.read and mail.write on it, and that user's token.
-4. ``secrets/agent.env``: the settings the agents and smoke.py read.
+4. ``secrets/agent.env``: the settings the agents and smoke.py read, the
+   model gateway and its alias among them.
 
 Every secret goes to a file under ``secrets/``, none to the terminal.
 """
@@ -358,6 +359,11 @@ def service(password: str) -> None:
                 "MAILBOX_AGENT_DATA_DIR=containers/live/secrets/data",
                 "MAILBOX_AGENT_INVOICES_FOLDER=Invoices",
                 "MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE=containers/live/suppliers.json",
+                f"MAILBOX_AGENT_GATEWAY_URL={os.environ['GATEWAY_URL']}",
+                f"MAILBOX_AGENT_GATEWAY_KEY={os.environ['GATEWAY_KEY']}",
+                f"MAILBOX_AGENT_MODEL={os.environ['GATEWAY_MODEL']}",
+                # A local model on the CPU takes its time.
+                "MAILBOX_AGENT_GATEWAY_TIMEOUT_SECONDS=600",
                 "",
             ]
         ),
@@ -365,10 +371,16 @@ def service(password: str) -> None:
     )
 
 
+def gateway() -> None:
+    say("waiting for the gateway")
+    wait_for(os.environ["GATEWAY_URL"].removesuffix("/v1") + "/health/liveliness", 180)
+
+
 def main() -> None:
     password = stalwart()
     fill(password)
     service(password)
+    gateway()
 
 
 if __name__ == "__main__":

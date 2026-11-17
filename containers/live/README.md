@@ -1,16 +1,18 @@
 # The live setup
 
-A mail server and a mailbox service of their own, for the live checks in
-`live/`. Nothing here reaches a real mailbox: [Stalwart](https://stalw.art)
-holds one account made for the agents, `agents@agents.test`, filled with
-invented mail, and the mailbox service is the published image
-`ghcr.io/benethos-hub/benethos-mailbox-service`. It is a manual aid, never
-part of `uv run pytest`.
+A mail server, a mailbox service and a model gateway of their own, for the
+live checks in `live/`. Nothing here reaches a real mailbox:
+[Stalwart](https://stalw.art) holds one account made for the agents,
+`agents@agents.test`, filled with invented mail, and the mailbox service is
+the published image `ghcr.io/benethos-hub/benethos-mailbox-service`. The
+gateway is [LiteLLM](https://docs.litellm.ai) in front of Claude and of
+local models under [llama.cpp](https://github.com/ggml-org/llama.cpp). It
+is a manual aid, never part of `uv run pytest`.
 
 ## Set it up
 
-Needs Docker with compose, `openssl` and `python3`, on Linux, macOS or in
-WSL. From the repository:
+Needs Docker with compose, `openssl`, `curl` and `python3`, on Linux, macOS
+or in WSL. From the repository:
 
 ```
 sh containers/live/setup.sh
@@ -29,7 +31,20 @@ earlier run, then:
    automatic answer and a project inquiry,
 4. makes the mailbox service's keys and administrator, signs in to its UI
    once for the first token, connects the account, and creates the user
-   `agents` with `mail.read` and `mail.write` on it and that user's token.
+   `agents` with `mail.read` and `mail.write` on it and that user's token,
+5. starts the gateway with a master key of its own, and a local model when
+   the agents are to use one (below).
+
+### Which model the agents use
+
+| Situation | Model | Alias in `agent.env` |
+|---|---|---|
+| a Claude API key is there | Claude | `mail-classifier` |
+| no key, or `LIVE_LOCAL=gpu`, and NVIDIA's CDI spec on the host | local, on the graphics card | `mail-classifier-gpu` |
+| no key and no CDI spec, or `LIVE_LOCAL=cpu` | local, on the CPU | `mail-classifier-cpu` |
+
+The Claude API key goes into `secrets/anthropic_api_key` or the variable
+`ANTHROPIC_API_KEY`. The script keeps the file across runs.
 
 What it makes stays in `secrets/` beside it, never versioned:
 
@@ -38,8 +53,102 @@ What it makes stays in `secrets/` beside it, never versioned:
 | `agent.env` | the settings the agents and `live/smoke.py` read |
 | `service-token` | the token of the user `agents` |
 | `service-admin`, `stalwart-admin` | the administrators' passwords |
+| `gateway.env` | the gateway's master key, and the Claude API key if any |
+| `anthropic_api_key` | the Claude API key, when given |
 | `master_key` | the service's master key, a test key readable by all |
 | `tls/` | the test CA, and the mail server's certificate and key |
+
+## Local models
+
+Two llama.cpp services serve the local models, each as a router that loads
+one model at a time on its first request:
+
+| Service | Profile | Image | Models in |
+|---|---|---|---|
+| `llama-gpu` | `gpu` | `server-cuda` | `llama/presets-gpu.ini` |
+| `llama-cpu` | `cpu` | `server` | `llama/presets-cpu.ini` |
+
+A preset section names a model and its options, the options of
+`llama-server` without their dashes. The gateway reaches each model as
+`gpu/<name>` or `cpu/<name>` (`litellm.yaml`). Neither service has a port
+or a way out of the network `models`, which they share with the gateway
+alone.
+
+The files are fetched by a script into `models/`, which is not versioned
+and survives a new setup:
+
+```
+sh containers/live/fetch-models.sh list        # the models it knows
+sh containers/live/fetch-models.sh qwen3.5-9b  # one of them
+sh containers/live/fetch-models.sh all
+```
+
+The graphics card needs the NVIDIA Container Toolkit on the host and its
+CDI spec, which the service asks for as the device `nvidia.com/gpu=all`.
+On Debian or Ubuntu, or in a WSL distribution of them, a script installs
+both, as root and with the driver in place:
+
+```
+sudo sh containers/live/nvidia-toolkit.sh
+```
+
+It restarts neither Docker nor a container: Docker reads the spec when it
+creates one. The service names the device rather than `gpus: all`, which
+a Docker without the toolkit's runtime setting cannot resolve.
+
+Start a service by hand with its profile:
+
+```
+docker compose -f containers/live/compose.yaml --profile gpu up -d llama-gpu
+```
+
+### Comparing models
+
+`live/gold.py` writes the labels of the invented mail as gold files, and
+`eval` runs an agent against them with any alias of the gateway:
+
+```
+uv run python live/gold.py
+MAILBOX_AGENT_MODEL=gpu/qwen3.5-9b uv run benethos-mailbox-agent \
+    --env-file containers/live/secrets/agent.env \
+    eval --agent invoices --gold containers/live/secrets/gold-invoices.jsonl \
+    --reports containers/live/secrets/reports
+```
+
+Measured on 2026-11-17 with llama.cpp build 12464, an RTX 4070 with
+12 GB and a 12th generation Core i9 with 24 threads. The labels agreed
+with the gold set, out of 11 messages for `invoices` and `inquiries` and
+3 for `awaiting_reply`. The fields are the right values of `invoices`
+against all it should have filled or did fill. The seconds are per
+message:
+
+| Model | Size | invoices | inquiries | awaiting_reply | Fields | Seconds, invoices / inquiries |
+|---|---|---|---|---|---|---|
+| `cpu/qwen3-4b-2507` | 2.5 GB | 10 | 9 | 3 | 5 of 9 | 4.0 / 16.4 |
+| `cpu/qwen3.5-4b` | 2.7 GB | 11 | 11 | 3 | 6 of 9 | 4.5 / 17.9 |
+| `cpu/gemma-4-e4b` | 5.0 GB | 11 | 11 | 3 | 6 of 9 | 4.9 / 25.1 |
+| `cpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 11 | 3 | 6 of 7 | 4.7 / 22.2 |
+| `gpu/ministral-3-8b` | 5.2 GB | 11 | 1 | 3 | 6 of 7 | 0.8 / 4.4 |
+| `gpu/qwen3.5-9b` | 5.7 GB | 11 | 11 | 3 | 6 of 8 | 1.0 / 5.3 |
+| `gpu/gemma-4-12b` | 7.0 GB | 11 | 11 | 3 | 6 of 7 | 1.4 / 7.4 |
+| `gpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 11 | 3 | 6 of 7 | 1.7 / 7.7 |
+
+What decided:
+
+- `ministral-3-8b` words its quotes anew, so the evidence check refuses
+  ten answers of `inquiries` out of eleven.
+- `gemma-4-e4b` named a listed supplier where the gold set has none, the
+  one kind of mistake that moves mail into a wrong folder.
+- On the card, `qwen3.6-35b-a3b` costs well under a second more per
+  message than the smaller models and is the largest of them. It fills
+  the card, `--fit` keeps the rest of its experts in main memory.
+- On the CPU, `qwen3.5-4b` agrees on every label like the 35B model, in an
+  eighth of its memory. The 35B model stays at hand as
+  `cpu/qwen3.6-35b-a3b`, for a server with 32 GB or more.
+
+Eleven invented messages show a model that fails outright, not which of
+the good ones is best. That takes the evaluation on real mail of SPECS.md
+section 12.
 
 ## Ports
 
@@ -51,6 +160,7 @@ On `127.0.0.1` only:
 | 38080 | Stalwart's HTTP: JMAP and its management |
 | 38993 | Stalwart's IMAP over TLS |
 | 38465 | Stalwart's SMTP submission over TLS |
+| 38400 | the model gateway, with the master key in `secrets/gateway.env` |
 
 ## Use it
 
@@ -66,5 +176,5 @@ does so only in this account.
 ## Take it down
 
 ```
-docker compose -f containers/live/compose.yaml down --volumes
+docker compose -f containers/live/compose.yaml --profile gpu --profile cpu down --volumes
 ```
