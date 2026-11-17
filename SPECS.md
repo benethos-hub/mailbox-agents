@@ -396,6 +396,13 @@ the next. Context a decision needs, such as the thread, is fetched fresh.
 
 ## 10. Agents
 
+### 10.0 `counting`
+
+Counts every message created or sent, asks no model and declares no
+action. Each ends `done` with the label `counted`. It checks a deployment
+end to end, feed, state file, steps, report and health, before any agent
+may change a message, and the runtime's tests run on it.
+
 ### 10.1 `invoices`
 
 **Question:** is this incoming message an invoice, and is its sender a

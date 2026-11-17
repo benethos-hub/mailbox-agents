@@ -82,7 +82,7 @@ async def test_the_defaults_of_the_optional_methods() -> None:
         ({"version": ""}, "must not be empty"),
         ({"triggers": Trigger(events=frozenset({"message.read"}))}, "unknown events"),
         ({"triggers": Trigger(events=frozenset())}, "no event and no tick"),
-        ({"actions": frozenset()}, "actions"),
+        ({"actions": {Action.ADD_KEYWORD}}, "actions"),
         ({"actions": frozenset({"delete"})}, "actions"),
         ({"limits": Limits(model_calls_per_message=-1)}, "negative"),
         ({"requires": Requires(settings=("no_such",))}, "unknown settings"),

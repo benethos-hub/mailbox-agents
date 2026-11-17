@@ -222,7 +222,9 @@ def _check_declarations(cls: type[Agent]) -> None:
         raise ContractError(f"{cls.name}: unknown events {sorted(unknown)}")
     if not cls.triggers.events and not cls.triggers.tick:
         raise ContractError(f"{cls.name}: triggers name no event and no tick")
-    if not cls.actions or not all(isinstance(a, Action) for a in cls.actions):
+    if not isinstance(cls.actions, frozenset) or not all(
+        isinstance(a, Action) for a in cls.actions
+    ):
         raise ContractError(f"{cls.name}: actions must name actions of the list")
     if cls.limits.model_calls_per_message < 0 or cls.limits.model_calls_per_day < 0:
         raise ContractError(f"{cls.name}: limits must not be negative")
