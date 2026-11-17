@@ -1,0 +1,132 @@
+"""The model as an agent reaches it: one message's calls, counted and kept.
+
+:class:`Calls` is the :class:`~benethos_mailbox_agent.contract.Model` the
+runtime hands an agent for one message. It refuses a call past the agent's
+limits, records each call as a step ``model`` with the model the gateway
+reported, its tokens and its duration, keeps the content it sent for the
+evidence check, and keeps request and answer only while
+PROMPT_RETENTION_DAYS says so.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import datetime
+from typing import Protocol, TypeVar
+
+from pydantic import BaseModel
+
+from ..contract import Limits
+from ..errors import AnswerRefusedError, LimitReachedError
+from ..llm.gateway import Reply
+from ..records import MessageRef, StepResult
+from ..store import Store
+
+__all__ = ["Asker", "Calls", "start_of_day"]
+
+T = TypeVar("T", bound=BaseModel)
+
+
+class Asker(Protocol):
+    """What :class:`Calls` needs of the gateway: one call with a schema."""
+
+    model: str
+
+    async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]: ...
+
+
+def start_of_day(moment: datetime) -> datetime:
+    return moment.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+class Calls:
+    """The model calls of one attempt at one message."""
+
+    def __init__(
+        self,
+        *,
+        gateway: Asker,
+        store: Store,
+        ref: MessageRef,
+        limits: Limits,
+        prompt_version: str,
+        retention_days: int,
+        now: Callable[[], datetime],
+    ) -> None:
+        self._gateway = gateway
+        self._store = store
+        self._ref = ref
+        self._limits = limits
+        self._prompt_version = prompt_version
+        self._retention_days = retention_days
+        self._now = now
+        self.contents: list[str] = []
+        self.models: list[str] = []
+        self.count = 0
+        self.tokens_in = 0
+        self.tokens_out = 0
+        self.duration_ms = 0
+
+    @property
+    def content(self) -> str:
+        """Everything the model was given for this message, the text the
+        evidence check looks in."""
+        return "\n".join(self.contents)
+
+    async def ask(self, *, system: str, content: str, schema: type[T]) -> T:
+        if self.count >= self._limits.model_calls_per_message:
+            raise LimitReachedError(
+                "the agent asked for more model calls per message than it may",
+                per_day=False,
+            )
+        today = start_of_day(self._now())
+        if self._store.model_calls_since(today) >= self._limits.model_calls_per_day:
+            raise LimitReachedError(
+                "the agent made its model calls for today", per_day=True
+            )
+        self.count += 1
+        self.contents.append(content)
+        try:
+            reply = await self._gateway.ask(
+                system=system, content=content, schema=schema
+            )
+        except AnswerRefusedError as exc:
+            self._record({"refused": exc.reason}, "", 0, 0, 0)
+            raise
+        self.models.append(reply.model)
+        self.tokens_in += reply.tokens_in
+        self.tokens_out += reply.tokens_out
+        self.duration_ms += reply.duration_ms
+        self._record(
+            {"answer": reply.value.model_dump(mode="json")},
+            reply.model,
+            reply.tokens_in,
+            reply.tokens_out,
+            reply.duration_ms,
+        )
+        if self._retention_days > 0:
+            self._store.add_call(self._ref, reply.request, reply.answer, self._now())
+        return reply.value
+
+    def _record(
+        self,
+        result: dict[str, object],
+        model: str,
+        tokens_in: int,
+        tokens_out: int,
+        duration_ms: int,
+    ) -> None:
+        self._store.add_step(
+            self._ref,
+            StepResult(
+                step="model",
+                prompt_version=self._prompt_version,
+                model=model,
+                result=result,
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
+                duration_ms=duration_ms,
+                at=self._now(),
+            ),
+            self._gateway.model,
+        )

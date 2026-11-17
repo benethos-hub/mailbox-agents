@@ -39,6 +39,10 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
     "llm": frozenset({"errors", "records"}),
     # An agent sees the contract and the records, never the client, the
     # gateway, the state file or the runtime that holds them.
+    # The runtime holds every piece below it and hands an agent its context.
+    "runtime": frozenset(
+        {"errors", "logbook", "settings", "records", "contract", "store", "llm"}
+    ),
     "agents": frozenset({"errors", "records", "settings", "contract"}),
     "cli": frozenset(),
     "__main__": frozenset({"cli"}),

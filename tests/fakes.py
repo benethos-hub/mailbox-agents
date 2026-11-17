@@ -88,6 +88,8 @@ class FakeService:
         self.feed: list[dict[str, Any]] = []
         self.expired: set[str] = set()
         self.down = False
+        # Status and code every request is refused with while set.
+        self.refusal: tuple[int, str] | None = None
         self.requests: list[httpx.Request] = []
 
     # -- filling ---------------------------------------------------------------
@@ -132,6 +134,8 @@ class FakeService:
         self.requests.append(request)
         if self.down:
             return _error(503, "unavailable")
+        if self.refusal:
+            return _error(*self.refusal)
         parts = [unquote(p) for p in request.url.path.split("/")[2:]]
         route: Callable[[httpx.Request, list[str]], httpx.Response] | None = {
             ("GET", "changes"): self._changes,

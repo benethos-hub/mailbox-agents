@@ -309,8 +309,17 @@ One loop per process:
 4. On the tick, ask the agent what is due and run the effects.
 5. Store the cursor, then sleep.
 
-Message states: `pending`, `skipped` (not selected or ruled out), `decided`,
-`done`, `failed` (given up after the configured attempts).
+Message states: `pending`, `skipped` (not admitted, or gone from the
+mailbox), `decided` (recorded and not acted on, such as a label whose quote
+was not found), `done` (its effect carried out, in whatever stage),
+`failed` (given up after `MAX_ATTEMPTS`, or more model calls asked for
+than the limit per message allows).
+
+The steps of one message: fetch, `admit`, baseline, decision, effect. The
+baseline is stored once per agent version. The decision, with the model
+calls it made and its evidence checked, is stored once per prompt version
+and model alias. A message that reached its daily limit of model calls
+waits for the next day.
 
 Rules:
 
