@@ -234,8 +234,18 @@ request stays visible, storable and mockable.
 - **No fallback** from one model to another inside the agent. A fallback at
   the gateway from a local to a hosted model must not be configured for a
   key that reads customer mail.
-- **A failed or missing answer** leaves the message `pending`. The next
-  attempt waits twice as long, up to a ceiling.
+- **The schema is sent in its strict form:** every object closed, every
+  property required, a value that may be empty typed with `null`. No tools
+  are sent, and the temperature is `0`.
+- **A gateway that is away** (no connection, a timeout, a 5xx, a 408 or a
+  429) leaves the message `pending`, and the loop waits twice as long
+  before it tries again, up to `BACKOFF_CEILING_SECONDS`. Nothing counts
+  against the message.
+- **An answer outside the schema, or a request the gateway refuses** with
+  another 4xx, counts as an attempt of that message. Its next attempt waits
+  twice as long, and after `MAX_ATTEMPTS` it is `failed`.
+- **A key or an alias the gateway refuses** (401, 403, 404) is a
+  configuration error. The pass stops and nothing is decided.
 
 ## 7. The agent contract
 

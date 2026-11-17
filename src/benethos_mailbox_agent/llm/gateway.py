@@ -1,0 +1,177 @@
+"""The model gateway: the only module that talks to it.
+
+One call is one chat completion of two messages, the agent's system prompt
+and the content of a mail, with the answer forced into a JSON schema by
+``response_format`` and validated again with pydantic. No tools are sent,
+no conversation is kept, no model SDK is used. What the gateway reports as
+its model is returned with the answer, with the tokens and the duration.
+See SPECS.md section 6.
+"""
+
+from __future__ import annotations
+
+import json
+import time
+from copy import deepcopy
+from dataclasses import dataclass
+from types import TracebackType
+from typing import Any, Generic, TypeVar
+
+import httpx
+from pydantic import BaseModel, ValidationError
+
+from ..errors import AnswerRefusedError, ConfigError, GatewayUnavailableError
+
+__all__ = ["Gateway", "Reply", "strict_schema"]
+
+T = TypeVar("T", bound=BaseModel)
+
+
+@dataclass(frozen=True)
+class Reply(Generic[T]):
+    """A validated answer and what the call cost. ``request`` and ``answer``
+    are the bodies as sent and received, kept only where
+    PROMPT_RETENTION_DAYS says so."""
+
+    value: T
+    model: str
+    tokens_in: int
+    tokens_out: int
+    duration_ms: int
+    request: dict[str, Any]
+    answer: dict[str, Any]
+
+
+def strict_schema(schema: type[BaseModel]) -> dict[str, Any]:
+    """The JSON schema of ``schema`` in the strict form structured output
+    asks for: every object closed and every property required. A field
+    that may be empty says so with ``null`` in its type, not by being left
+    out."""
+    found = deepcopy(schema.model_json_schema())
+
+    def close(node: Any) -> None:
+        if isinstance(node, dict):
+            if node.get("type") == "object" and "properties" in node:
+                node["additionalProperties"] = False
+                node["required"] = list(node["properties"])
+            for value in node.values():
+                close(value)
+        elif isinstance(node, list):
+            for value in node:
+                close(value)
+
+    close(found)
+    return found
+
+
+class Gateway:
+    """An OpenAI-compatible chat completions endpoint, for one agent's key
+    and one model alias."""
+
+    def __init__(
+        self,
+        base_url: str,
+        key: str,
+        model: str,
+        *,
+        timeout: float = 120.0,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self.model = model
+        self._http = httpx.AsyncClient(
+            base_url=base_url.rstrip("/"),
+            headers={"Authorization": f"Bearer {key}"},
+            timeout=httpx.Timeout(timeout, connect=10.0),
+            transport=transport,
+            trust_env=False,
+        )
+
+    async def __aenter__(self) -> Gateway:
+        return self
+
+    async def __aexit__(
+        self,
+        kind: type[BaseException] | None,
+        error: BaseException | None,
+        trace: TracebackType | None,
+    ) -> None:
+        await self.aclose()
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
+
+    def request(self, *, system: str, content: str, schema: type[T]) -> dict[str, Any]:
+        """The body of one call."""
+        return {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": content},
+            ],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema.__name__,
+                    "strict": True,
+                    "schema": strict_schema(schema),
+                },
+            },
+            "temperature": 0,
+        }
+
+    async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]:
+        """One call. Raises :class:`GatewayUnavailableError` when the
+        gateway is away, :class:`ConfigError` when it refuses the key or
+        the alias, and :class:`AnswerRefusedError` for a request it refuses
+        or an answer that does not fit ``schema``."""
+        body = self.request(system=system, content=content, schema=schema)
+        started = time.monotonic()
+        try:
+            response = await self._http.post("/chat/completions", json=body)
+        except httpx.TransportError as exc:
+            raise GatewayUnavailableError(
+                f"the gateway is away ({type(exc).__name__})"
+            ) from None
+        duration_ms = int((time.monotonic() - started) * 1000)
+        _check(response)
+        try:
+            answer = response.json()
+        except ValueError:
+            raise AnswerRefusedError(
+                "the gateway answered no JSON", reason="schema"
+            ) from None
+        value = _value(answer, schema)
+        usage = answer.get("usage") or {}
+        return Reply(
+            value=value,
+            model=str(answer.get("model") or self.model),
+            tokens_in=int(usage.get("prompt_tokens") or 0),
+            tokens_out=int(usage.get("completion_tokens") or 0),
+            duration_ms=duration_ms,
+            request=body,
+            answer=answer,
+        )
+
+
+def _check(response: httpx.Response) -> None:
+    status = response.status_code
+    if status < 400:
+        return
+    if status >= 500 or status in (408, 429):
+        raise GatewayUnavailableError(f"the gateway answered {status}")
+    if status in (401, 403, 404):
+        raise ConfigError(f"the gateway refused the key or the model alias ({status})")
+    raise AnswerRefusedError(
+        f"the gateway refused the request ({status})", reason="request"
+    )
+
+
+def _value(answer: Any, schema: type[T]) -> T:
+    """The content of the first choice, validated against ``schema``."""
+    try:
+        content = answer["choices"][0]["message"]["content"]
+        return schema.model_validate(json.loads(content))
+    except (KeyError, IndexError, TypeError, ValueError, ValidationError):
+        raise AnswerRefusedError(
+            "the answer does not fit the schema", reason="schema"
+        ) from None
