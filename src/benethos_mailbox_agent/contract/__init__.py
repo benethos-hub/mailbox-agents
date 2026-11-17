@@ -1,0 +1,36 @@
+"""The agent contract: what an agent declares and implements, what it may
+reach, and the registry that finds the agents. See SPECS.md section 7."""
+
+from __future__ import annotations
+
+from .agent import (
+    EVENTS,
+    REVERSED_BY,
+    Action,
+    ActionRequest,
+    Agent,
+    Limits,
+    Requires,
+    Route,
+    Trigger,
+)
+from .context import Context, Items, Model, Reader
+from .registry import discover, load
+
+__all__ = [
+    "EVENTS",
+    "REVERSED_BY",
+    "Action",
+    "ActionRequest",
+    "Agent",
+    "Context",
+    "Items",
+    "Limits",
+    "Model",
+    "Reader",
+    "Requires",
+    "Route",
+    "Trigger",
+    "discover",
+    "load",
+]

@@ -4,6 +4,7 @@ what reads a field."""
 from __future__ import annotations
 
 from .decisions import LABEL, Decision, Evidence, StepResult
+from .items import OpenItem
 from .mail import (
     Address,
     Attachment,
@@ -24,6 +25,7 @@ __all__ = [
     "FolderRef",
     "MailMessage",
     "MessageRef",
+    "OpenItem",
     "StepResult",
     "Thread",
 ]

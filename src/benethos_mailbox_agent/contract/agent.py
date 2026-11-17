@@ -1,0 +1,235 @@
+"""``Agent``: the base every agent implements, and what it declares.
+
+Every agent package defines exactly one concrete subclass in its
+``agent.py``. The class attributes are validated when the class is
+instantiated, so a mistake in a declaration stops the process at its
+start rather than at the first message. See SPECS.md section 7.
+"""
+
+from __future__ import annotations
+
+import re
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import StrEnum
+from typing import ClassVar
+
+from ..errors import ContractError
+from ..records import Decision, Event, MailMessage, MessageRef
+from ..settings import Settings
+from .context import Context
+
+__all__ = [
+    "EVENTS",
+    "NAME_PATTERN",
+    "REVERSED_BY",
+    "Action",
+    "ActionRequest",
+    "Agent",
+    "Limits",
+    "Requires",
+    "Route",
+    "Trigger",
+]
+
+NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
+
+# The events of the change feed an agent may ask for.
+EVENTS = frozenset(
+    {"message.created", "message.updated", "message.deleted", "message.sent"}
+)
+
+# Characters an IMAP keyword may not carry.
+_NOT_IN_KEYWORD = set(' \t()[]{}"\\%*')
+
+
+class Action(StrEnum):
+    """The actions that exist. A new one is added to SPECS.md section 7
+    first, with how it is taken back."""
+
+    ADD_KEYWORD = "add_keyword"
+    REMOVE_KEYWORD = "remove_keyword"
+    MOVE_TO_FOLDER = "move_to_folder"
+
+
+# How each action is taken back. A move is taken back by a move to the
+# folder recorded before it.
+REVERSED_BY: dict[Action, Action] = {
+    Action.ADD_KEYWORD: Action.REMOVE_KEYWORD,
+    Action.REMOVE_KEYWORD: Action.ADD_KEYWORD,
+    Action.MOVE_TO_FOLDER: Action.MOVE_TO_FOLDER,
+}
+
+
+class Route(StrEnum):
+    """What the runtime does with an event an agent selected.
+
+    ``decide`` records the message as ``pending`` and runs the steps once
+    per message, prompt version and model. ``observe`` fetches the message
+    and asks :meth:`Agent.observe` at once, with no model and no record of
+    its own, for an event that may come many times for one message.
+    """
+
+    DECIDE = "decide"
+    OBSERVE = "observe"
+
+
+@dataclass(frozen=True)
+class Trigger:
+    """The feed events an agent wants, and whether it wants the tick."""
+
+    events: frozenset[str]
+    tick: bool = False
+
+
+@dataclass(frozen=True)
+class Limits:
+    """Model calls an agent may make, per message and per day."""
+
+    model_calls_per_message: int = 1
+    model_calls_per_day: int = 2000
+
+
+@dataclass(frozen=True)
+class Requires:
+    """Settings that must be present before the agent starts, by their
+    field names in :class:`~benethos_mailbox_agent.settings.Settings`."""
+
+    settings: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ActionRequest:
+    """One action an agent asks the runtime to take.
+
+    ``keyword`` for the keyword actions, ``folder`` for a move: the path of
+    the target folder, ``/`` between the names. The runtime resolves it and
+    refuses a folder that does not exist.
+    """
+
+    action: Action
+    ref: MessageRef
+    keyword: str | None = None
+    folder: str | None = None
+    why: str = field(default="", compare=False)
+
+
+class Agent(ABC):
+    """Base class of every agent. See SPECS.md section 7."""
+
+    name: ClassVar[str]
+    version: ClassVar[str]
+    description: ClassVar[str]
+    triggers: ClassVar[Trigger]
+    actions: ClassVar[frozenset[Action]]
+    limits: ClassVar[Limits] = Limits()
+    requires: ClassVar[Requires] = Requires()
+    # The keyword the agent sets when MAILBOX_AGENT_KEYWORD is unset.
+    default_keyword: ClassVar[str]
+    # The version of the prompt the model step runs under. A step stored
+    # under the same message, prompt version and model is not run again.
+    prompt_version: ClassVar[str] = ""
+
+    def __init__(self, settings: Settings) -> None:
+        self.validate_definition()
+        self.settings = settings
+        self.keyword = settings.keyword or self.default_keyword
+
+    # -- to implement ---------------------------------------------------------
+
+    @abstractmethod
+    def select(self, event: Event) -> Route | None:
+        """Whether this event concerns the agent, and how. Code only."""
+
+    def admit(self, message: MailMessage) -> bool:
+        """After the fetch: whether the message is one for this agent, such
+        as one in the inbox. Code only. A message not admitted is
+        ``skipped``."""
+        return True
+
+    @abstractmethod
+    def baseline(self, message: MailMessage) -> Decision:
+        """The question answered by rules."""
+
+    @abstractmethod
+    async def decide(self, message: MailMessage, context: Context) -> Decision:
+        """The question answered with the model, at most as many calls as
+        the limits allow."""
+
+    @abstractmethod
+    async def effect(
+        self, decision: Decision, message: MailMessage, context: Context
+    ) -> list[ActionRequest]:
+        """The actions that follow from a decision the evidence check let
+        through."""
+
+    async def observe(
+        self, message: MailMessage, context: Context
+    ) -> list[ActionRequest]:
+        """For an event routed to ``observe``: the actions it calls for."""
+        return []
+
+    async def tick(self, now: datetime, context: Context) -> list[ActionRequest]:
+        """For agents with deadlines: the actions that are due."""
+        return []
+
+    def prepare(self) -> None:
+        """Read what the agent needs beyond its settings, such as a list
+        in a file, and raise a ConfigError if it is wrong. Called once
+        before the agent starts, and by ``status``."""
+        return None
+
+    # -- provided -------------------------------------------------------------
+
+    @classmethod
+    def validate_definition(cls) -> None:
+        """Raise a :class:`ContractError` for a declaration that breaks the
+        contract."""
+        for attr in (
+            "name",
+            "version",
+            "description",
+            "triggers",
+            "actions",
+            "default_keyword",
+        ):
+            if not hasattr(cls, attr):
+                raise ContractError(f"{cls.__name__}: {attr} must be declared")
+        _check_identity(cls)
+        _check_declarations(cls)
+
+
+def _check_identity(cls: type[Agent]) -> None:
+    if not NAME_PATTERN.match(cls.name):
+        raise ContractError(
+            f"{cls.__name__}: the name {cls.name!r} is not lowercase letters, "
+            "digits and _"
+        )
+    package = cls.__module__.split(".")
+    if len(package) >= 2 and package[-1] == "agent" and package[-2] != cls.name:
+        raise ContractError(
+            f"{cls.__name__}: the name {cls.name!r} differs from its package "
+            f"{package[-2]!r}"
+        )
+    if not cls.version or not cls.description:
+        raise ContractError(f"{cls.name}: version and description must not be empty")
+
+
+def _check_declarations(cls: type[Agent]) -> None:
+    unknown = set(cls.triggers.events) - EVENTS
+    if unknown:
+        raise ContractError(f"{cls.name}: unknown events {sorted(unknown)}")
+    if not cls.triggers.events and not cls.triggers.tick:
+        raise ContractError(f"{cls.name}: triggers name no event and no tick")
+    if not cls.actions or not all(isinstance(a, Action) for a in cls.actions):
+        raise ContractError(f"{cls.name}: actions must name actions of the list")
+    if cls.limits.model_calls_per_message < 0 or cls.limits.model_calls_per_day < 0:
+        raise ContractError(f"{cls.name}: limits must not be negative")
+    fields = set(Settings.model_fields)
+    wrong = [name for name in cls.requires.settings if name not in fields]
+    if wrong:
+        raise ContractError(f"{cls.name}: requires unknown settings {wrong}")
+    keyword = cls.default_keyword
+    if not keyword or _NOT_IN_KEYWORD & set(keyword):
+        raise ContractError(f"{cls.name}: the default keyword is not one word")

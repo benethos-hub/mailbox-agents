@@ -14,6 +14,7 @@ __all__ = [
     "AnswerRefusedError",
     "ChangesExpiredError",
     "ConfigError",
+    "ContractError",
     "GatewayUnavailableError",
     "LimitReachedError",
     "MailboxAgentError",
@@ -76,6 +77,13 @@ class ConfigError(MailboxAgentError):
     """A setting or a configuration file is missing or wrong."""
 
     code = "config"
+
+
+class ContractError(MailboxAgentError):
+    """An agent class breaks the contract of SPECS.md section 7, or the
+    registry cannot find the agent named."""
+
+    code = "contract"
 
 
 class UnavailableError(MailboxAgentError):

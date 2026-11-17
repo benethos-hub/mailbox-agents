@@ -243,14 +243,29 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `actions` | the actions it may take, from the list below |
 | `limits` | model calls per message and per day |
 | `requires` | settings that must be present before it starts |
+| `default_keyword` | the keyword it sets when `MAILBOX_AGENT_KEYWORD` is unset |
+| `prompt_version` | the version of the prompt its model step runs under |
 
 | Method | Meaning |
 |---|---|
-| `select(event)` | whether this event concerns the agent. Code only |
+| `select(event)` | whether this event concerns the agent, and its route: `decide` or `observe`. Code only |
+| `admit(message)` | after the fetch, whether the message is one for the agent, such as one in the inbox. Code only |
 | `baseline(message)` | the question answered by rules |
-| `decide(message)` | the question answered with one model call |
-| `effect(decision)` | the actions that follow from a decision |
-| `tick(now)` | for agents with deadlines: what is due |
+| `decide(message, context)` | the question answered with the model, within the limits |
+| `effect(decision, message, context)` | the actions that follow from a decision |
+| `observe(message, context)` | for an event routed to `observe`: the actions it calls for, no model |
+| `tick(now, context)` | for agents with deadlines: what is due |
+| `prepare()` | reads what the agent needs beyond its settings, such as a list in a file |
+
+An event routed to `decide` makes the message `pending` and runs the steps
+of section 8 once per message, prompt version and model. An event routed to
+`observe` is one that may come many times for one message, such as an
+update of its flags. It is fetched and handed to `observe` at once.
+
+The `context` is all an agent reaches while it works: the model, as one call
+with a schema that the runtime counts, records and keeps the content of for
+the evidence check, the mailbox read-only, and its open items. An agent never
+holds the mailbox client, the gateway client or the state file.
 
 The actions that exist:
 
