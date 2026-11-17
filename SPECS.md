@@ -443,8 +443,8 @@ supplier with a folder of its own?
 |---|---|
 | Triggers | `message.created` in the inbox |
 | Baseline | a sender on the supplier list, a PDF or XML attachment, invoice words in subject and attachment names |
-| Model | label `invoice` or `other`, and for `other` the near miss it is: reminder, quotation, order confirmation, payment receipt, none |
-| Supplier | from the sender and the supplier list, never from the model |
+| Model | label `invoice` or `other`, for `other` the near miss it is: reminder, quotation, order confirmation, payment receipt, none, and for an invoice a supplier of the list or none |
+| Supplier | a sender rule of the list first, the model's choice from the list only when no rule matches (decided 2026-11-17) |
 | Actions | `add_keyword`, `move_to_folder` |
 
 **What counts (decided 2026-11-17).** An invoice is a message that carries
@@ -484,9 +484,21 @@ its start and `status` names what is wrong.
 | an invoice from a sender not listed | the keyword. It stays in the inbox, and `report` names the sender as a candidate for the list |
 | not an invoice | nothing |
 
-The folder a message goes to follows from its sender and the list alone.
-The model decides only whether the message is an invoice, so the content of
-a mail cannot choose where it is moved.
+**The supplier (decided 2026-11-17).** When a sender rule of the list
+matches, it decides the supplier and the model cannot overrule it: what the
+model named instead is recorded as `model_supplier` and not used. When no
+rule matches, the model may name a supplier of the list, as an enum in the
+schema, with a quote that the code finds in the mail. Without that quote
+the supplier is dropped and the invoice gets the keyword only. The
+decision records the source of its supplier as `supplier_source`: `rule`,
+`model` or `none`, and `report` and the evaluation tell them apart. So the
+content of a mail can at worst move an invoice of an unlisted sender into
+the folder of a listed supplier, never anywhere else, and a move is
+reversible.
+
+The prompt is `prompts/system.v1.md`, version `v1`. The model is given the
+sender, the subject, the names and types of the attachments and the first
+6000 characters of the text.
 
 Recognising an electronic invoice by its embedded data needs the attachment
 read and is not part of the first version.

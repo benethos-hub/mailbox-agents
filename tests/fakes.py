@@ -29,6 +29,8 @@ FOLDERS = [
     {"id": "inv", "name": "Invoices", "role": None},
     {"id": "inv-hosting", "name": "Hosting", "role": None, "parent_id": "inv"},
     {"id": "inv-mo", "name": "mo", "role": None, "parent_id": "inv"},
+    {"id": "inv-cloudhost", "name": "CloudHost", "role": None, "parent_id": "inv"},
+    {"id": "inv-telco", "name": "Telco", "role": None, "parent_id": "inv"},
 ]
 
 

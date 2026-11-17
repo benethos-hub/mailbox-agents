@@ -25,5 +25,11 @@ commit that makes the change. Design decisions live in
 - The container image, one for every agent, and compose files for
   operation, one service per agent behind a profile of its name, and for
   development against a test account of invented mail.
+- The agent `invoices`: marks invoices and invoice notices from suppliers
+  with the keyword `invoice`, and moves those of a listed supplier into
+  its folder under `MAILBOX_AGENT_INVOICES_FOLDER`. The supplier comes from
+  a sender rule of the JSON list in `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`,
+  or from the model's choice among the listed suppliers when no rule
+  matches.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.

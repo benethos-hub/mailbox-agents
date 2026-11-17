@@ -1,0 +1,63 @@
+"""What the model must answer, and the text it is given.
+
+The supplier the model may name is one of the list's names or null, as an
+enum in the schema: no other value passes the validation, so no answer can
+name a folder that is not on the list.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, create_model
+
+from ...records import MailMessage
+
+__all__ = ["LABELS", "MAX_TEXT", "NEAR_MISSES", "Answer", "answer_schema", "render"]
+
+LABELS = ("invoice", "other")
+NEAR_MISSES = ("reminder", "quotation", "order_confirmation", "payment_receipt", "none")
+
+# The text of a mail is cut here. An invoice says what it is near the top.
+MAX_TEXT = 6000
+
+
+class Answer(BaseModel):
+    """The answer, its supplier narrowed to the list by answer_schema."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: Literal["invoice", "other"]
+    near_miss: Literal[
+        "reminder", "quotation", "order_confirmation", "payment_receipt", "none"
+    ]
+    quote: str
+    supplier: str | None
+    supplier_quote: str | None
+
+
+def answer_schema(names: tuple[str, ...]) -> type[Answer]:
+    """The schema of an answer, its supplier one of ``names`` or null."""
+    supplier: Any = Literal[names] | None if names else type(None)
+    return create_model(
+        "InvoiceAnswer",
+        __base__=Answer,
+        supplier=(supplier, ...),
+    )
+
+
+def render(message: MailMessage) -> str:
+    """The content of one call: sender, subject, attachments, text."""
+    sender = message.sender
+    lines = []
+    if sender is not None:
+        named = f"{sender.name} <{sender.email}>" if sender.name else sender.email
+        lines.append(f"From: {named}")
+    lines.append(f"Subject: {message.subject or ''}")
+    if message.attachments:
+        files = ", ".join(
+            f"{a.filename or '(no name)'} ({a.content_type})"
+            for a in message.attachments
+        )
+        lines.append(f"Attachments: {files}")
+    return "\n".join(lines) + "\n\n" + message.text[:MAX_TEXT]
