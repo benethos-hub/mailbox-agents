@@ -555,9 +555,14 @@ and several recipients of whom one answers.
 | | |
 |---|---|
 | Triggers | `message.created` in the inbox |
-| Baseline | sender domains and phrases known from the gold set, patterns for dates and rates |
+| Baseline | phrases of an inquiry, patterns for dates and rates, and the sender domains and phrases of `INQUIRIES_PATTERNS_FILE` (JSON, optional) taken from the gold set |
 | Model | label `inquiry` or `other`, then the fields below |
 | Actions | `add_keyword` |
+
+The label comes first (built 2026-11-17, prompt `system.v1.md`): an
+inquiry gets the keyword `inquiry`. The rules call a message an inquiry
+when its sender's domain is known, when it carries two phrases of an
+inquiry, or one together with a date or a rate.
 
 Fields, each optional: role, start, end, duration, workload, location,
 remote share, contract form, intermediary, end client, rate, required

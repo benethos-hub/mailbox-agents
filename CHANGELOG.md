@@ -35,5 +35,8 @@ commit that makes the change. Design decisions live in
   model finds asking for an answer, closes it on a reply in its thread or
   when the keyword is taken off, and sets the keyword `awaiting-reply` on
   the sent message after `MAILBOX_AGENT_REPLY_DAYS` working days.
+- The agent `inquiries`: marks project inquiries with the keyword
+  `inquiry`. Its rules read phrases, dates and rates, and the sender
+  domains and phrases of `MAILBOX_AGENT_INQUIRIES_PATTERNS_FILE`.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.

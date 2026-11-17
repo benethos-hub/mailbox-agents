@@ -1,0 +1,8 @@
+# Invented messages of tests/data/invented-inquiries.json, labelled for inquiries.
+{"account_id": "acc1", "message_id": "inq-staffing", "label": "inquiry"}
+{"account_id": "acc1", "message_id": "inq-direct", "label": "inquiry"}
+{"account_id": "acc1", "message_id": "inq-english", "label": "inquiry"}
+{"account_id": "acc1", "message_id": "job-digest", "label": "other"}
+{"account_id": "acc1", "message_id": "meeting", "label": "other"}
+{"account_id": "acc1", "message_id": "invoice", "label": "other"}
+{"account_id": "acc1", "message_id": "personal", "label": "other"}

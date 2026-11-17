@@ -79,9 +79,9 @@ def wire_message(
     }
 
 
-def invented() -> list[dict[str, Any]]:
-    """The messages of tests/data/invented.json in the service's wire format."""
-    found = json.loads(INVENTED.read_text(encoding="utf-8"))
+def invented(name: str = "invented.json") -> list[dict[str, Any]]:
+    """The messages of tests/data/<name> in the service's wire format."""
+    found = json.loads((INVENTED.parent / name).read_text(encoding="utf-8"))
     return [wire_message(item.pop("id"), **item) for item in found]
 
 
