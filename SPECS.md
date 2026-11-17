@@ -307,13 +307,21 @@ setting is missing, without starting it.
 
 One loop per process:
 
-1. Read the feed from the stored cursor. On `410` take a new state and run
-   `backfill` over the window the setting names.
-2. For each event the agent selects, record the message as `pending`.
-3. For each `pending` message run the steps: fetch, baseline, model, check,
-   effect. Each step writes its result before the next begins.
+1. Read the feed from the stored cursor. On the first pass, start from the
+   state of now. On `410` take a new state and run `backfill` over
+   `BACKFILL_DAYS`.
+2. For each event the agent routes to `decide`, record the message as
+   `pending`. Hand each one routed to `observe` to the agent at once.
+3. For each `pending` message whose next attempt has come, at most 50 a
+   pass, run the steps: fetch, baseline, model, check, effect. Each step
+   writes its result before the next begins.
 4. On the tick, ask the agent what is due and run the effects.
-5. Store the cursor, then sleep.
+5. Store the cursor and the time of the pass, then sleep `POLL_SECONDS`.
+
+A mailbox service or gateway that is away while the feed is read stops the
+pass before the cursor moves. One that is away while pending messages run
+leaves them `pending`, the cursor moves, and the next pass waits twice as
+long as the last, up to `BACKOFF_CEILING_SECONDS`.
 
 Message states: `pending`, `skipped` (not admitted, or gone from the
 mailbox), `decided` (recorded and not acted on, such as a label whose quote
