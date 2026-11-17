@@ -36,7 +36,7 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
     # The mailbox service, behind one module.
     "sources": frozenset({"errors", "records"}),
     # The model gateway, behind one module, and the evidence check.
-    "llm": frozenset({"errors"}),
+    "llm": frozenset({"errors", "records"}),
     # An agent sees the contract and the records, never the client, the
     # gateway, the state file or the runtime that holds them.
     "agents": frozenset({"errors", "records", "settings", "contract"}),
