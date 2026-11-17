@@ -143,29 +143,36 @@ class Mailbox:
                 return events, state
 
     async def recent(
-        self, since: date, accounts: list[str] | None = None
+        self,
+        since: date,
+        accounts: list[str] | None = None,
+        roles: tuple[str, ...] = ("inbox", "sent"),
     ) -> list[MessageRef]:
-        """The messages received from ``since`` on, in every folder, for a
-        backfill."""
-        refs: list[MessageRef] = []
-        cursor: str | None = None
-        while True:
-            page = await _call(
-                self._client.list_all_messages(
-                    accounts=accounts or None,
-                    after=since.isoformat(),
-                    limit=_PAGE,
-                    cursor=cursor,
+        """The messages received from ``since`` on in the folders of
+        ``roles``, for a backfill. The service lists the inbox alone when
+        no folder is named, so each role is asked for by itself."""
+        refs: dict[MessageRef, None] = {}
+        for role in roles:
+            cursor: str | None = None
+            while True:
+                page = await _call(
+                    self._client.list_all_messages(
+                        accounts=accounts or None,
+                        folder=role,
+                        after=since.isoformat(),
+                        limit=_PAGE,
+                        cursor=cursor,
+                    )
                 )
-            )
-            refs += [
-                MessageRef(account_id=item.account_id, message_id=item.id)
-                for item in page.items
-                if item.account_id
-            ]
-            cursor = page.next_cursor
-            if not cursor:
-                return refs
+                for item in page.items:
+                    if item.account_id:
+                        refs[
+                            MessageRef(account_id=item.account_id, message_id=item.id)
+                        ] = None
+                cursor = page.next_cursor
+                if not cursor:
+                    break
+        return list(refs)
 
     # -- reading ---------------------------------------------------------------------
 

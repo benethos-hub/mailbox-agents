@@ -68,7 +68,8 @@ src/benethos_mailbox_agent/
                   # baseline.py, prompts/
 tests/            # offline: REST and gateway through httpx.MockTransport
 live/             # run by hand, outside testpaths: a mail server of its own
-containers/       # images/, production/, development/
+containers/       # images/, production/, development/, and live/: a mail
+                  # server and a mailbox service of their own for live/
 config/           # .env.example versioned, .env local
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
@@ -98,8 +99,9 @@ uv lock --check
 - **The gates do not cover the upstreams changing.** Verify a new
   assumption about the mailbox service or the gateway with a live check
   before building on it, and mark it **(to verify)** in SPECS.md until then.
-- A live check is a manual run, never a gate: `live/README.md` says how to
-  start the mail server of its own and run `live/smoke.py`.
+- A live check is a manual run, never a gate: `containers/live/README.md`
+  says how to start the mail server of its own, and `live/smoke.py` checks
+  the package against it, read-only.
 - An evaluation run is manual too, against a gold set under `data/`. Its
   report goes into `reports/` and holds numbers only.
 

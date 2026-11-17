@@ -178,12 +178,14 @@ Operation names below are the service's `operationId`s.
 | The conversation a message belongs to | `get_thread` |
 | Set or remove a keyword, move to a folder | `update_message`, `batch_messages` |
 | The folders of an account | `list_folders` |
-| The messages received since a day, for `backfill` | `list_all_messages` |
+| The messages received since a day, for `backfill` | `list_all_messages`, once for the inbox and once for sent mail |
 
 `sources/mailbox.py` offers these and nothing else: no send, no delete, no
 trash, no folder creation. A move sets the message's folders to the one
 target. A message without a text body is read with an empty text
 **(to verify: whether the service always converts an HTML-only message)**.
+`list_all_messages` without a folder lists the inbox alone (measured
+2026-11-17 against 0.7.5), so a backfill names each folder role it wants.
 
 What the agents rely on:
 
@@ -638,9 +640,11 @@ directory unless the command line names another.
   this document to the code where they can be compared.
 - Async tests run with pytest-asyncio.
 - Live checks are scripts in `live/`, run by hand against a test account.
-  The direction (2026-11-17): a mail server of our own in a local container,
-  with an account made for the agents and filled with invented mail. How it
-  is set up is settled with the first live check.
+  `containers/live/` holds it (decided 2026-11-17): a mail server of our
+  own, Stalwart, in a local container, with an account made for the agents
+  and filled with invented mail, and the published image of the mailbox
+  service in front of it. `setup.sh` makes it in one run, and
+  `live/smoke.py` reads it through the package without writing to it.
 
 ## 16. Roadmap
 
@@ -664,14 +668,16 @@ authorities.
 1. **How the daily overview reaches the owner.** A mail to the owner's own
    address, from a user that may send there and nowhere else, or a draft.
    Not decided, the overview is phase 7.
-2. **The test setup for live checks.** Section 15 names the direction.
-3. **Schema through the gateway.** Section 6, to verify with the first
+2. **Schema through the gateway.** Section 6, to verify with the first
    local model.
-4. **Keywords per provider.** Section 5, to verify per account.
-5. **Folder-narrowed grants and moves.** Section 5, to verify. It decides
+3. **Keywords per provider.** Section 5, to verify per account.
+4. **Folder-narrowed grants and moves.** Section 5, to verify. It decides
    whether the grant of `invoices` can be narrowed to the inbox and the
    parent folder of section 10.1.
-6. **Automatic answers.** Section 10.2, to verify.
+5. **Automatic answers.** The service exposes no header of a message
+   (measured 2026-11-17 against 0.7.5), so `Auto-Submitted` cannot be read.
+   `awaiting_reply` uses a heuristic on sender and subject (decided
+   2026-11-17) and the evaluation counts what it misses.
 
 Answered, all on 2026-11-17:
 
@@ -683,3 +689,4 @@ Answered, all on 2026-11-17:
 - **Settings.** pydantic-settings.
 - **Sync or async.** asyncio.
 - **A report command.** Yes, section 8.2.
+- **The test setup for live checks.** `containers/live/`, section 15.

@@ -165,7 +165,11 @@ class FakeService:
         )
 
     def _list(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
-        items = sorted(self.messages.values(), key=lambda m: m["id"])
+        role = request.url.params.get("folder", "inbox")
+        items = sorted(
+            (m for m in self.messages.values() if self._in_role(m, role)),
+            key=lambda m: m["id"],
+        )
         cursor = int(request.url.params.get("cursor", "0"))
         limit = int(request.url.params.get("limit", "200"))
         page = items[cursor : cursor + limit]
@@ -177,6 +181,14 @@ class FakeService:
                 "next_cursor": str(cursor + limit) if more else None,
             },
         )
+
+    def _in_role(self, message: dict[str, Any], role: str) -> bool:
+        """As the service lists: by the role of a folder, the inbox when
+        no folder is named."""
+        roles = {
+            f["id"]: f.get("role") for f in self.folders.get(message["account_id"], [])
+        }
+        return any(roles.get(i) == role for i in message["folder_ids"])
 
     def _folders(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
         return httpx.Response(200, json=self.folders.get(parts[1], []))

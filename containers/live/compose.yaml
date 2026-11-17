@@ -1,0 +1,62 @@
+# A mail server and a mailbox service of their own, for the live checks.
+# Nothing here reaches a real mailbox: Stalwart holds one account made for
+# the agents, filled with invented mail, and the service is the published
+# image. setup.sh makes it, README.md says how to use it, and
+# live/smoke.py checks the package against it. Every port is on
+# 127.0.0.1 only.
+name: mailbox-agent-live
+
+services:
+  stalwart:
+    image: stalwartlabs/stalwart:v1.1.1
+    init: true
+    restart: unless-stopped
+    environment:
+      # Set by setup.sh for the first start only, then empty.
+      STALWART_RECOVERY_ADMIN: ${STALWART_RECOVERY_ADMIN:-}
+    networks:
+      live:
+        aliases:
+          - mail.agents.test
+    ports:
+      - "127.0.0.1:38080:8080"
+      - "127.0.0.1:38465:465"
+      - "127.0.0.1:38993:993"
+    volumes:
+      - stalwart-etc:/etc/stalwart
+      - stalwart-data:/var/lib/stalwart
+
+  mailbox-service:
+    image: ghcr.io/benethos-hub/benethos-mailbox-service:0.7.5
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      # The mail server's name resolves to a private address, which the
+      # service refuses unless it is named here.
+      MAILBOX_SERVICE_DISCOVERY_INTERNAL_HOSTS: '["mail.agents.test"]'
+      # The service checks every certificate. This one trusts the test CA.
+      SSL_CERT_FILE: /run/secrets/ca.pem
+      MAILBOX_SERVICE_SYNC_INTERVAL: "30"
+      MAILBOX_SERVICE_RATE_LIMIT_PER_MINUTE: "0"
+    networks:
+      - live
+    ports:
+      - "127.0.0.1:38081:8080"
+    volumes:
+      - service-data:/data
+      - ./secrets/master_key:/run/secrets/master_key:ro
+      - ./secrets/tls/ca.pem:/run/secrets/ca.pem:ro
+
+networks:
+  live:
+
+volumes:
+  stalwart-etc:
+  stalwart-data:
+  service-data:

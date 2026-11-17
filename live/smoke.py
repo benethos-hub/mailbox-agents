@@ -1,0 +1,184 @@
+"""The read-only live check, against the test account of containers/live/.
+
+    sh containers/live/setup.sh          # once, in a shell with Docker
+    uv run python live/smoke.py [--env-file containers/live/secrets/agent.env]
+
+It reads the change feed, the folders, every message of the last weeks, a
+thread and the attachments, through the package's own module for the
+mailbox service, and runs the agent ``counting`` over all of it with a
+state file in a folder of its own. It writes nothing to the mailbox. Each
+check says ok, skipped or FAILED, and the exit code is 1 if one failed.
+Never point it at an account that is not a test account.
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import sys
+import tempfile
+import time
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+
+from benethos_mailbox_agent.agents.counting.agent import Counting
+from benethos_mailbox_agent.cli.session import NoModel
+from benethos_mailbox_agent.records import MailMessage, MessageRef
+from benethos_mailbox_agent.runtime.loop import Worker
+from benethos_mailbox_agent.settings import Settings, load_settings
+from benethos_mailbox_agent.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agent.store import Store
+
+ROOT = Path(__file__).resolve().parent.parent
+ENV = ROOT / "containers" / "live" / "secrets" / "agent.env"
+
+# What containers/live/mail.py puts into the test account.
+INVENTED = 14
+PDFS = 3
+
+
+class Skip(Exception):  # noqa: N818 - a reason to skip, not an error
+    pass
+
+
+@dataclass
+class Live:
+    settings: Settings
+    mailbox: Mailbox
+    refs: list[MessageRef] = field(default_factory=list)
+    messages: list[MailMessage] = field(default_factory=list)
+
+    @property
+    def accounts(self) -> list[str]:
+        return self.settings.accounts
+
+
+async def feed(live: Live) -> str:
+    state = await live.mailbox.start(live.accounts)
+    events, after = await live.mailbox.changes(state, live.accounts)
+    return f"state read, {len(events)} changes since it, state {after}"
+
+
+async def folders(live: Live) -> str:
+    found = await live.mailbox.folders(live.accounts[0])
+    missing = {"inbox", "sent"} - {f.role for f in found.values()}
+    if missing:
+        raise AssertionError(f"no folder with the roles {sorted(missing)}")
+    if "Invoices/CloudHost" not in {f.path for f in found.values()}:
+        raise AssertionError("the supplier folder Invoices/CloudHost is missing")
+    return f"{len(found)} folders, inbox and sent, Invoices/CloudHost"
+
+
+async def recent(live: Live) -> str:
+    """The service syncs the account after it was connected: wait for it."""
+    end = time.monotonic() + 120
+    since = date.today() - timedelta(days=30)
+    while True:
+        live.refs = await live.mailbox.recent(since, live.accounts)
+        if len(live.refs) >= INVENTED or time.monotonic() > end:
+            break
+        await asyncio.sleep(3)
+    if len(live.refs) < INVENTED:
+        raise AssertionError(f"{len(live.refs)} messages, {INVENTED} expected")
+    return f"{len(live.refs)} messages in the inbox and in sent mail"
+
+
+async def fetch(live: Live) -> str:
+    if not live.refs:
+        raise Skip("no messages")
+    live.messages = [await live.mailbox.message(ref) for ref in live.refs]
+    empty = [m for m in live.messages if not m.text.strip()]
+    if empty:
+        raise AssertionError(f"{len(empty)} messages without text")
+    return f"{len(live.messages)} fetched, each with text and folders"
+
+
+async def attachments(live: Live) -> str:
+    found = [
+        a.filename
+        for m in live.messages
+        for a in m.attachments
+        if a.content_type == "application/pdf"
+    ]
+    if len(found) < PDFS:
+        raise AssertionError(f"{len(found)} PDF attachments, {PDFS} expected")
+    return f"{len(found)} PDF attachments, each named"
+
+
+async def thread(live: Live) -> str:
+    replies = [m for m in live.messages if m.in_reply_to and m.thread_id]
+    if not replies:
+        raise Skip("no reply with a thread among the messages")
+    first = replies[0]
+    found = await live.mailbox.thread(first.ref.account_id, first.thread_id or "")
+    roles = {f.role for m in found.messages for f in m.folders}
+    if len(found.messages) < 2 or not {"inbox", "sent"} <= roles:
+        raise AssertionError(f"the thread holds {len(found.messages)} messages")
+    return f"{len(found.messages)} messages, sent and received"
+
+
+async def counting(live: Live) -> str:
+    with tempfile.TemporaryDirectory() as folder:
+        agent = Counting(live.settings.model_copy(update={"data_dir": Path(folder)}))
+        with Store.open(Path(folder) / "counting.db") as store:
+            worker = Worker(
+                agent=agent,
+                store=store,
+                mailbox=live.mailbox,
+                gateway=NoModel(),
+                now=lambda: datetime.now(UTC),
+            )
+            await worker.run_pass()
+            taken = await worker.backfill(30)
+            while await worker.process_due():
+                pass
+            counts = store.counts()
+    if counts["done"] != taken or taken < INVENTED:
+        raise AssertionError(f"{taken} taken up, counts {counts}")
+    return f"{taken} taken up and done, nothing written to the mailbox"
+
+
+CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
+    ("feed", feed),
+    ("folders", folders),
+    ("recent messages", recent),
+    ("every message", fetch),
+    ("attachments", attachments),
+    ("a thread", thread),
+    ("the agent counting", counting),
+]
+
+
+async def run(settings: Settings) -> int:
+    failed = 0
+    async with connect(
+        settings.service_url or "",
+        settings.secret("service_token"),
+        allow_http=settings.service_allow_http,
+    ) as mailbox:
+        live = Live(settings, mailbox)
+        for name, check in CHECKS:
+            try:
+                said = await check(live)
+            except Skip as skip:
+                print(f"skipped  {name}: {skip}")
+            except Exception as exc:  # noqa: BLE001 - every failure is reported
+                failed += 1
+                print(f"FAILED   {name}: {type(exc).__name__}: {exc}")
+            else:
+                print(f"ok       {name}: {said}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="The read-only live check.")
+    parser.add_argument("--env-file", type=Path, default=ENV)
+    args = parser.parse_args()
+    if not args.env_file.is_file():
+        sys.exit(f"smoke: no settings at {args.env_file}, run containers/live/setup.sh")
+    found = load_settings(args.env_file)
+    if not found.accounts:
+        sys.exit("smoke: the settings name no account, the check needs the test one")
+    sys.exit(asyncio.run(run(found)))

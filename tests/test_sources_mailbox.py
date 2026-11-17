@@ -126,12 +126,20 @@ async def test_a_thread_oldest_first(service: FakeService, mailbox: Mailbox) -> 
 async def test_recent_follows_the_pages(service: FakeService, mailbox: Mailbox) -> None:
     for number in range(250):
         service.add(wire_message(f"m{number:03d}"), change=None)
+    service.add(wire_message("s1", folder_ids=["sent"]), change=None)
+    service.add(wire_message("x1", folder_ids=["inv"]), change=None)
 
     found = await mailbox.recent(date(2026, 11, 10))
 
-    assert len(found) == 250
-    first = service.requests[-2].url.params
-    assert first["after"] == "2026-11-10"
+    assert len(found) == 251
+    assert MessageRef(account_id=ACCOUNT, message_id="s1") in found
+    asked = [r.url.params for r in service.requests if r.url.path == "/v1/messages"]
+    assert [(p["folder"], p.get("cursor")) for p in asked] == [
+        ("inbox", None),
+        ("inbox", "200"),
+        ("sent", None),
+    ]
+    assert asked[0]["after"] == "2026-11-10"
 
 
 async def test_the_three_actions(service: FakeService, mailbox: Mailbox) -> None:
