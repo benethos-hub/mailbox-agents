@@ -1,0 +1,8 @@
+# The build needs pyproject.toml, uv.lock, README.md and src/. Everything
+# else stays out of the context, above all what holds secrets or mail ids.
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+**/__pycache__
