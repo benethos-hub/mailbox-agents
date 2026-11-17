@@ -174,6 +174,11 @@ class Agent(ABC):
         """For agents with deadlines: the actions that are due."""
         return []
 
+    def summarize(self, decided: list[tuple[str | None, Decision]]) -> list[str]:
+        """For ``report``: lines about the messages shown, each given as its
+        sender's address and its decision. Nothing by default."""
+        return []
+
     def prepare(self) -> None:
         """Read what the agent needs beyond its settings, such as a list
         in a file, and raise a ConfigError if it is wrong. Called once

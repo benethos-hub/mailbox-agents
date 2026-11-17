@@ -12,6 +12,7 @@ names the sender as a candidate for the list. See SPECS.md section 10.1.
 
 from __future__ import annotations
 
+from collections import Counter
 from functools import cached_property
 
 from ...contract import (
@@ -158,3 +159,21 @@ class Invoices(Agent):
                 )
             )
         return requests
+
+    def summarize(self, decided: list[tuple[str | None, Decision]]) -> list[str]:
+        """The senders of invoices no supplier of the list was found for,
+        with how many each sent: candidates for the list."""
+        counted = Counter(
+            sender.lower()
+            for sender, decision in decided
+            if sender
+            and decision.label == "invoice"
+            and decision.actionable
+            and "supplier" not in decision.fields
+        )
+        if not counted:
+            return []
+        return ["candidates for the supplier list:"] + [
+            f"  {sender} ({count} invoice{'s' if count > 1 else ''})"
+            for sender, count in counted.most_common()
+        ]

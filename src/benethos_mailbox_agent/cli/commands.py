@@ -146,7 +146,8 @@ def paths(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def report(args: argparse.Namespace, settings: Settings) -> int:
-    name = load(args.agent).name
+    agent = load(args.agent)(settings)
+    name = agent.name
     if args.state is not None and args.state not in STATES:
         raise ConfigError(f"--state is one of {', '.join(STATES)}")
     if args.limit < 1:
@@ -159,7 +160,7 @@ def report(args: argparse.Namespace, settings: Settings) -> int:
         )
     lines = asyncio.run(
         make_report(
-            name, settings, limit=args.limit, state=args.state, offline=args.offline
+            agent, settings, limit=args.limit, state=args.state, offline=args.offline
         )
     )
     print("\n".join(lines) if lines else f"{name}: nothing recorded yet")

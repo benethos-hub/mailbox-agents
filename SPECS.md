@@ -277,6 +277,7 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `observe(message, context)` | for an event routed to `observe`: the actions it calls for, no model |
 | `tick(now, context)` | for agents with deadlines: what is due |
 | `prepare()` | reads what the agent needs beyond its settings, such as a list in a file |
+| `summarize(decided)` | for `report`: lines about the messages shown, given as sender and decision |
 
 An event routed to `decide` makes the message `pending` and runs the steps
 of section 8 once per message, prompt version and model. An event routed to
@@ -392,7 +393,10 @@ otherwise, and with `--state` those in one state. Per message it prints
 sender and subject, the decision with its source, model, fields and
 details, each quote and whether it was found, the label of the baseline,
 and each action with its stage and whether it was carried out or would
-have been. It opens the state file read-only, so it runs beside the agent.
+have been. It ends with what the agent has to say about the messages shown: for
+`invoices`, the senders of invoices no supplier was found for, with how many
+each sent, as candidates for the supplier list. It opens the state file
+read-only, so it runs beside the agent.
 `--offline` reads the state file alone, without subject and sender. What
 it prints goes to stdout for the person who asked and never to the log.
 

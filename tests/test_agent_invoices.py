@@ -374,3 +374,54 @@ async def test_a_gateway_that_is_away_leaves_the_invoice_pending(world: Wired) -
 
     with pytest.raises(Exception, match="gateway"):
         await run(world, "inv-cloudhost")
+
+
+# -- the report names candidates for the list ---------------------------------------
+
+
+def test_summarize_names_unlisted_senders_of_invoices() -> None:
+    from benethos_mailbox_agent.records import Decision
+
+    invoice = Decision(label="invoice", source="model")
+    listed = Decision(label="invoice", source="model", fields={"supplier": "Telco"})
+    refused = invoice.model_copy(update={"refused": "evidence"})
+    other = Decision(label="other", source="model")
+
+    lines = agent().summarize(
+        [
+            ("accounts@paperworks.example", invoice),
+            ("Accounts@Paperworks.example", invoice),
+            ("billing@new.example", invoice),
+            ("rechnung@telco.example", listed),
+            ("x@refused.example", refused),
+            ("y@other.example", other),
+            (None, invoice),
+        ]
+    )
+
+    assert lines == [
+        "candidates for the supplier list:",
+        "  accounts@paperworks.example (2 invoices)",
+        "  billing@new.example (1 invoice)",
+    ]
+    assert agent().summarize([("y@other.example", other)]) == []
+
+
+async def test_the_report_ends_with_the_candidates(world: Wired) -> None:
+    from benethos_mailbox_agent.cli.report import collect, render, summary
+
+    world.fake_gateway.answer(
+        answer("invoice", "please find attached invoice INV-77"),
+        answer("invoice", "Ihre Rechnung R-2026-1101"),
+    )
+    await run(world, "inv-unlisted")
+    await run(world, "inv-cloudhost")
+
+    entries = await collect(world.store, world.mailbox, limit=10)
+    lines = render(entries) + summary(agent(), entries)
+
+    assert lines[-2:] == [
+        "candidates for the supplier list:",
+        "  accounts@paperworks.example (1 invoice)",
+    ]
+    assert any("supplier=CloudHost" in line for line in lines)

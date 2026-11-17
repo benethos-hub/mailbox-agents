@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ..contract import Agent
 from ..errors import MailboxRefusedError
 from ..records import Decision, MailMessage, MessageRef
 from ..settings import Settings
@@ -18,7 +19,7 @@ from ..sources.mailbox import Mailbox, connect
 from ..store import ActionRow, MessageRow, Store, path_for
 from .session import TRANSPORTS
 
-__all__ = ["Entry", "collect", "render", "report"]
+__all__ = ["Entry", "collect", "render", "report", "summary"]
 
 
 @dataclass
@@ -118,17 +119,34 @@ def render(entries: list[Entry]) -> list[str]:
     return lines
 
 
+def summary(agent: Agent, entries: list[Entry]) -> list[str]:
+    """What the agent has to say about the messages shown."""
+    decided = [
+        (
+            entry.message.sender.email
+            if entry.message is not None and entry.message.sender is not None
+            else None,
+            entry.decision,
+        )
+        for entry in entries
+        if entry.decision is not None
+    ]
+    return agent.summarize(decided)
+
+
 async def report(
-    name: str, settings: Settings, *, limit: int, state: str | None, offline: bool
+    agent: Agent, settings: Settings, *, limit: int, state: str | None, offline: bool
 ) -> list[str]:
-    """The report of agent ``name``, read beside the running agent."""
-    with Store.open(path_for(settings.data_dir, name), read_only=True) as store:
+    """The report of ``agent``, read beside the running agent."""
+    with Store.open(path_for(settings.data_dir, agent.name), read_only=True) as store:
         if offline:
-            return render(await collect(store, None, limit=limit, state=state))
-        async with connect(
-            settings.service_url or "",
-            settings.secret("service_token"),
-            allow_http=settings.service_allow_http,
-            transport=TRANSPORTS.get("service"),
-        ) as mailbox:
-            return render(await collect(store, mailbox, limit=limit, state=state))
+            entries = await collect(store, None, limit=limit, state=state)
+        else:
+            async with connect(
+                settings.service_url or "",
+                settings.secret("service_token"),
+                allow_http=settings.service_allow_http,
+                transport=TRANSPORTS.get("service"),
+            ) as mailbox:
+                entries = await collect(store, mailbox, limit=limit, state=state)
+    return render(entries) + summary(agent, entries)
