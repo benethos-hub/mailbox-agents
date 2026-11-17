@@ -294,6 +294,12 @@ The actions that exist:
 An agent declares which of them it uses, and the runtime carries out no
 other. A new action is added here first, with how it is taken back.
 
+The runtime carries out an action only on these terms: it is declared, a
+keyword is the agent's own, a move goes into a folder that exists and is
+not the trash or junk, and the account is one the agent works on. An
+action whose result is already there is not taken again. What the stage
+does not allow is recorded as what would have been done.
+
 `status` reports for each agent whether it is ready and which required
 setting is missing, without starting it.
 
