@@ -17,5 +17,7 @@ commit that makes the change. Design decisions live in
   `run`, `backfill`, `status` and `paths`, and `--env-file`.
 - The command `report`: what an agent decided and did, or in `shadow` would
   have done, with subject and sender fetched at the moment of the report.
+- The command `health`, and metrics in the Prometheus text format on
+  `MAILBOX_AGENT_METRICS_PORT` while `worker` runs.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.

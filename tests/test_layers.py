@@ -68,6 +68,7 @@ CONFINED: dict[str, frozenset[str]] = {
     "sqlite3": frozenset({"store/store.py"}),
     "benethos_mailbox_client": frozenset({"sources/mailbox.py"}),
     "httpx": frozenset({"sources/mailbox.py", "llm/gateway.py"}),
+    "prometheus_client": frozenset({"runtime/metrics.py"}),
 }
 
 

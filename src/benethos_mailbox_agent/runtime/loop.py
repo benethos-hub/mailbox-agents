@@ -28,6 +28,7 @@ from ..errors import (
 from ..records import Event, MessageRef
 from ..store import Store
 from .actions import Executor, Writer
+from .metrics import Metrics
 from .model import Asker, Calls
 from .steps import StepRunner, backoff
 
@@ -69,7 +70,10 @@ class Worker:
         self.store = store
         self._mailbox = mailbox
         self._now = now
-        self.executor = Executor(agent=agent, store=store, mailbox=mailbox, now=now)
+        self.metrics = Metrics(agent.name, agent.version, agent.settings.stage)
+        self.executor = Executor(
+            agent=agent, store=store, mailbox=mailbox, now=now, metrics=self.metrics
+        )
         self.runner = StepRunner(
             agent=agent,
             store=store,
@@ -77,6 +81,7 @@ class Worker:
             gateway=gateway,
             effects=self.executor,
             now=now,
+            metrics=self.metrics,
         )
         self._gateway = gateway
         self._away = 0
@@ -118,6 +123,7 @@ class Worker:
         self.store.set_cursor(state, now)
         self.store.set_last_pass(now)
         self._purge(now)
+        self.metrics.state(self.store, now)
         logbook.pass_done(
             self.agent.name, time.monotonic() - started, self.store.counts()["pending"]
         )
@@ -191,6 +197,7 @@ class Worker:
 
     def _wait_after(self, error: BaseException) -> float:
         self._away += 1
+        self.metrics.step_failed(getattr(error, "code", type(error).__name__))
         wait = backoff(self.settings, self._away)
         logbook.upstream_away(self.agent.name, error, wait)
         return wait

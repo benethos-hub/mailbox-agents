@@ -21,6 +21,7 @@ from ..errors import AnswerRefusedError, LimitReachedError
 from ..llm.gateway import Reply
 from ..records import MessageRef, StepResult
 from ..store import Store
+from .metrics import Metrics
 
 __all__ = ["Asker", "Calls", "start_of_day"]
 
@@ -52,7 +53,9 @@ class Calls:
         prompt_version: str,
         retention_days: int,
         now: Callable[[], datetime],
+        metrics: Metrics | None = None,
     ) -> None:
+        self._metrics = metrics or Metrics("", "", "")
         self._gateway = gateway
         self._store = store
         self._ref = ref
@@ -92,11 +95,13 @@ class Calls:
             )
         except AnswerRefusedError as exc:
             self._record({"refused": exc.reason}, "", 0, 0, 0)
+            self._metrics.answer_refused(exc.reason)
             raise
         self.models.append(reply.model)
         self.tokens_in += reply.tokens_in
         self.tokens_out += reply.tokens_out
         self.duration_ms += reply.duration_ms
+        self._metrics.model_call(reply.tokens_in, reply.tokens_out, reply.duration_ms)
         self._record(
             {"answer": reply.value.model_dump(mode="json")},
             reply.model,

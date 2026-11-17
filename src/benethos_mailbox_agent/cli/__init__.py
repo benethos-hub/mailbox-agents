@@ -73,6 +73,12 @@ def build_parser() -> argparse.ArgumentParser:
     found = sub.add_parser("status", help="whether each agent is ready, and its counts")
     found.set_defaults(handler=commands.status)
 
+    found = sub.add_parser(
+        "health", help="exit 0 while the agent's loop makes progress, else 1"
+    )
+    _agent(found)
+    found.set_defaults(handler=commands.health)
+
     found = sub.add_parser("paths", help="where the settings and the state files are")
     found.set_defaults(handler=commands.paths)
     return parser

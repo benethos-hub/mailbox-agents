@@ -21,6 +21,7 @@ from ..records import Decision, MailMessage, MessageRef, StepResult
 from ..settings import Settings
 from ..store import Store
 from .items import StoredItems
+from .metrics import Metrics
 from .model import Asker, Calls, start_of_day
 
 __all__ = ["Effects", "StepRunner", "backoff"]
@@ -52,7 +53,11 @@ class StepRunner:
         gateway: Asker,
         effects: Effects,
         now: Callable[[], datetime],
+        metrics: Metrics | None = None,
     ) -> None:
+        self.metrics = metrics or Metrics(
+            agent.name, agent.version, agent.settings.stage
+        )
         self.agent = agent
         self.settings = agent.settings
         self._store = store
@@ -75,6 +80,7 @@ class StepRunner:
             prompt_version=self.agent.prompt_version,
             retention_days=self.settings.prompt_retention_days,
             now=self._now,
+            metrics=self.metrics,
         )
 
     def context(self, calls: Calls) -> Context:
@@ -119,6 +125,7 @@ class StepRunner:
             message = await self._reader.message(ref)
         except MailboxRefusedError as exc:
             logbook.step_failed(self.agent.name, ref.message_id, "fetch", exc)
+            self.metrics.step_failed(exc.code)
             if exc.status == 404:
                 return self._state(ref, "skipped")
             return self._retry(ref, attempts)
@@ -133,14 +140,17 @@ class StepRunner:
             return self._retry(ref, attempts)
         except LimitReachedError as exc:
             logbook.step_failed(self.agent.name, ref.message_id, "model", exc)
+            self.metrics.step_failed(exc.code)
             if not exc.per_day:
                 return self._state(ref, "failed", attempts=attempts + 1)
             tomorrow = start_of_day(self._now()) + timedelta(days=1)
             return self._state(ref, "pending", next_attempt=tomorrow)
         except MailboxRefusedError as exc:
             logbook.step_failed(self.agent.name, ref.message_id, "decide", exc)
+            self.metrics.step_failed(exc.code)
             return self._retry(ref, attempts)
         if not decision.actionable:
+            self.metrics.answer_refused(decision.refused or "")
             return self._state(ref, "decided")
         requests = await self.agent.effect(decision, message, self.context(calls))
         await self._effects(requests)

@@ -12,13 +12,14 @@ from contextlib import suppress
 from .. import logbook
 from ..contract import discover, load
 from ..errors import ConfigError
+from ..runtime.health import check
 from ..runtime.readiness import MAILBOX_SETTINGS, readiness
 from ..settings import DEFAULT_ENV_FILE, Settings
 from ..store import STATES, Store, path_for
 from .report import report as make_report
-from .session import session
+from .session import now, session
 
-__all__ = ["backfill", "paths", "report", "run", "status", "worker"]
+__all__ = ["backfill", "health", "paths", "report", "run", "status", "worker"]
 
 
 def _counts(store: Store) -> str:
@@ -49,7 +50,16 @@ async def _worker(name: str, settings: Settings) -> None:
         logbook.started(found.agent.name, found.agent.version, settings.stage)
         stop = asyncio.Event()
         _stop_on_signals(stop)
-        await found.worker.run(stop)
+        server = None
+        if settings.metrics_port:
+            server, _ = found.worker.metrics.serve(settings.metrics_port)
+            logbook.metrics_serving(found.agent.name, settings.metrics_port)
+        try:
+            await found.worker.run(stop)
+        finally:
+            if server is not None:
+                server.shutdown()
+                server.server_close()
         logbook.stopped(found.agent.name, "signal")
 
 
@@ -139,3 +149,15 @@ def report(args: argparse.Namespace, settings: Settings) -> int:
     )
     print("\n".join(lines) if lines else f"{name}: nothing recorded yet")
     return 0
+
+
+# -- health ---------------------------------------------------------------------------
+
+
+def health(args: argparse.Namespace, settings: Settings) -> int:
+    """0 while the agent's loop makes progress, 1 when it does not."""
+    name = load(args.agent).name
+    with Store.open(path_for(settings.data_dir, name), read_only=True) as store:
+        found = check(store, settings, now())
+    print(f"{name}: {'healthy' if found.healthy else 'unhealthy'}, {found.reason}")
+    return 0 if found.healthy else 1

@@ -364,6 +364,7 @@ changed until the evaluation was run again.
 | `run --agent <name>` | one pass, then the counts per state |
 | `backfill --agent <name> [--days N]` | takes the messages of the last days up anew and runs them |
 | `report --agent <name> [--limit N] [--state S] [--offline]` | section 8.2 |
+| `health --agent <name>` | exit 0 while the loop makes progress, section 14 |
 | `status` | for each agent whether it is ready, which setting it misses, its counts and its last pass |
 | `paths` | the settings file, the data folder and each state file |
 
@@ -605,13 +606,24 @@ directory unless the command line names another.
 - **Container:** non-root, read-only root file system, no capabilities, one
   volume for the state file. One Compose service per agent from the same
   image, `restart: unless-stopped`.
-- **Health:** the check passes when the last complete pass of the loop is
-  younger than a few poll intervals. A process that is alive and stuck is
-  unhealthy.
-- **Metrics:** an HTTP endpoint in the Prometheus text format, served with
-  the `prometheus-client` package (decided 2026-11-17): messages per
-  state, age of the oldest `pending` message, step failures by kind, answers
-  the schema or the evidence check refused, model calls, tokens and duration.
+- **Health:** `health --agent <name>` exits 0 while the loop's last sign
+  of progress, written to the state file after each message and at the end
+  of each pass, is younger than three poll intervals plus one model call
+  (`3 * POLL_SECONDS + GATEWAY_TIMEOUT_SECONDS`), and 1 otherwise. It reads
+  the state file beside the running agent. A process that is alive and
+  stuck is unhealthy. One whose gateway is away is not, its loop goes on.
+- **Metrics:** an HTTP endpoint in the Prometheus text format on
+  `METRICS_PORT`, served with the `prometheus-client` package (decided
+  2026-11-17), one registry per process: `mailbox_agent_info` with agent,
+  version and stage, `mailbox_agent_messages` per state,
+  `mailbox_agent_oldest_pending_age_seconds`,
+  `mailbox_agent_last_pass_timestamp_seconds`,
+  `mailbox_agent_step_failures_total` by kind,
+  `mailbox_agent_answers_refused_total` by reason (schema, request,
+  evidence), `mailbox_agent_model_calls_total`,
+  `mailbox_agent_model_tokens_total` by direction,
+  `mailbox_agent_model_call_seconds` and `mailbox_agent_actions_total` by
+  action and whether it was carried out.
 - **Cost:** read at the gateway, per key.
 - **Logs:** stderr, through `logbook/` only.
 

@@ -20,6 +20,7 @@ from ..contract import Action, ActionRequest, Agent
 from ..errors import ActionRefusedError, MailboxRefusedError
 from ..records import FolderRef, MailMessage, MessageRef
 from ..store import Store
+from .metrics import Metrics
 
 __all__ = ["FORBIDDEN_ROLES", "STAGE_ALLOWS", "Executor", "Writer"]
 
@@ -58,7 +59,11 @@ class Executor:
         store: Store,
         mailbox: Writer,
         now: Callable[[], datetime],
+        metrics: Metrics | None = None,
     ) -> None:
+        self.metrics = metrics or Metrics(
+            agent.name, agent.version, agent.settings.stage
+        )
         self.agent = agent
         self.stage = agent.settings.stage
         self._store = store
@@ -83,6 +88,7 @@ class Executor:
             logbook.action_refused(
                 self.agent.name, request.ref.message_id, request.action.value, exc
             )
+            self.metrics.step_failed(exc.code)
             return False
         if planned is None:
             return False
@@ -99,6 +105,7 @@ class Executor:
             executed=executed,
             now=self._now(),
         )
+        self.metrics.action(request.action.value, executed)
         logbook.action_done(
             self.agent.name,
             request.ref.message_id,
