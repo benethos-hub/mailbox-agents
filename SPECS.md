@@ -234,8 +234,10 @@ request stays visible, storable and mockable.
   the gateway followed by an evaluation run. The model the gateway reports
   in its answer is stored with every step.
 - **The answer is forced into a schema** with `response_format` and a JSON
-  schema, and validated again with pydantic. That the gateway hands the
-  schema to a local backend unchanged is **(to verify)**.
+  schema, and validated again with pydantic. The gateway hands the schema
+  to a local backend, which builds a grammar from it: measured 2026-11-17
+  with LiteLLM v1.108.10 in front of llama.cpp build 12464, a schema
+  allowing one value only got that value against a prompt asking for prose.
 - **No fallback** from one model to another inside the agent. A fallback at
   the gateway from a local to a hosted model must not be configured for a
   key that reads customer mail.
@@ -755,17 +757,15 @@ authorities.
 1. **How the daily overview reaches the owner.** A mail to the owner's own
    address, from a user that may send there and nowhere else, or a draft.
    Not decided, the overview is phase 7.
-2. **Schema through the gateway.** Section 6, to verify with the first
-   local model.
-3. **Keywords per provider.** Section 5, to verify per account. Measured
+2. **Keywords per provider.** Section 5, to verify per account. Measured
    2026-11-17 for IMAP at Stalwart through the service 0.7.5: a keyword is
    set and taken off, and a move to another folder keeps the message's id
    and is taken back by a move to the folder before. Other providers are
    still to verify.
-4. **Folder-narrowed grants and moves.** Section 5, to verify. It decides
+3. **Folder-narrowed grants and moves.** Section 5, to verify. It decides
    whether the grant of `invoices` can be narrowed to the inbox and the
    parent folder of section 10.1.
-5. **Automatic answers.** The service exposes no header of a message
+4. **Automatic answers.** The service exposes no header of a message
    (measured 2026-11-17 against 0.7.5), so `Auto-Submitted` cannot be read.
    `awaiting_reply` uses a heuristic on sender and subject (decided
    2026-11-17) and the evaluation counts what it misses.
@@ -781,3 +781,4 @@ Answered, all on 2026-11-17:
 - **Sync or async.** asyncio.
 - **A report command.** Yes, section 8.2.
 - **The test setup for live checks.** `containers/live/`, section 15.
+- **Schema through the gateway.** It reaches a local backend, section 6.
