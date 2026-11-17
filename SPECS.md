@@ -113,7 +113,8 @@ src/benethos_mailbox_agent/
   logbook/        # every line on stderr, and what a line may never carry
   contract/       # Agent (ABC), Action, Trigger, Limits, Requires
   records/        # the models passed between layers: MessageRef, Decision,
-                  # Evidence, StepResult
+                  # Evidence, StepResult, and what an agent sees of a
+                  # mailbox: Event, MailMessage, Address, FolderRef, Thread
   sources/
     mailbox.py    # the only module importing benethos_mailbox_client
   llm/
