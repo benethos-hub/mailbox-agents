@@ -1,0 +1,65 @@
+#!/bin/sh
+# Refuse commits that would put credentials, state files or the gold set
+# into the history.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# Deliberate bypass:      git commit --no-verify
+# Example in a doc/test:  end the line with "pragma: allowlist secret"
+#
+# Checks the staged content, not the working tree.
+
+set -eu
+
+fail=0
+note() {
+    printf 'pre-commit: %s\n' "$1" >&2
+    fail=1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -n "$staged" ] || exit 0
+
+# 1. Files that never belong in the repository: a .env other than the
+#    example, anything under data/ but .gitkeep, and SQLite files anywhere.
+forbidden=$(
+    printf '%s\n' "$staged" | while IFS= read -r file; do
+        case "$file" in
+            *.env.example) ;;
+            .env | */.env | .env.* | */.env.*) printf '%s\n' "$file" ;;
+            data/*/.gitkeep | data/.gitkeep) ;;
+            data/*) printf '%s\n' "$file" ;;
+            *.db | *.db-journal | *.db-wal | *.db-shm | *.sqlite | *.sqlite3)
+                printf '%s\n' "$file" ;;
+        esac
+    done
+)
+if [ -n "$forbidden" ]; then
+    note "these files hold configuration, state or real mail ids:"
+    printf '%s\n' "$forbidden" | sed 's/^/  /' >&2
+fi
+
+# 2. Credentials inside the staged lines, whatever the file is called.
+patterns='sk-ant-[A-Za-z0-9_-]{16,}'
+patterns="$patterns|sk-[A-Za-z0-9]{20,}"
+patterns="$patterns|gh[pousr]_[A-Za-z0-9]{16,}"
+patterns="$patterns|glpat-[A-Za-z0-9_-]{16,}"
+patterns="$patterns|AKIA[0-9A-Z]{16}"
+patterns="$patterns|BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY"
+patterns="$patterns|(TOKEN|SECRET|PASSWORD|API_KEY|_KEY)[A-Z_]*=[A-Za-z0-9+/_.-]{12,}"
+
+hits=$(
+    git diff --cached -U0 \
+        | grep '^+' \
+        | grep -E "$patterns" \
+        | grep -v 'pragma: allowlist secret' \
+        || true
+)
+if [ -n "$hits" ]; then
+    note "staged lines look like a credential:"
+    printf '%s\n' "$hits" | cut -c 1-120 | sed 's/^/  /' >&2
+fi
+
+if [ "$fail" -ne 0 ]; then
+    printf 'pre-commit: nothing was committed (override with --no-verify).\n' >&2
+    exit 1
+fi
