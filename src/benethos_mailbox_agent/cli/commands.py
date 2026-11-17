@@ -7,19 +7,34 @@ from __future__ import annotations
 import argparse
 import asyncio
 import signal
+import tempfile
 from contextlib import suppress
+from pathlib import Path
+from typing import Any
 
 from .. import logbook
-from ..contract import discover, load
+from ..contract import Agent, discover, load
 from ..errors import ConfigError
+from ..evaluation.gold import GoldItem, load_gold
+from ..evaluation.report import build, render, write
+from ..evaluation.run import evaluate as run_evaluation
 from ..runtime.health import check
 from ..runtime.readiness import MAILBOX_SETTINGS, readiness
 from ..settings import DEFAULT_ENV_FILE, Settings
 from ..store import STATES, Store, path_for
 from .report import report as make_report
-from .session import now, session
+from .session import now, session, start_agent, upstreams
 
-__all__ = ["backfill", "health", "paths", "report", "run", "status", "worker"]
+__all__ = [
+    "backfill",
+    "evaluate",
+    "health",
+    "paths",
+    "report",
+    "run",
+    "status",
+    "worker",
+]
 
 
 def _counts(store: Store) -> str:
@@ -161,3 +176,30 @@ def health(args: argparse.Namespace, settings: Settings) -> int:
         found = check(store, settings, now())
     print(f"{name}: {'healthy' if found.healthy else 'unhealthy'}, {found.reason}")
     return 0 if found.healthy else 1
+
+
+# -- eval -----------------------------------------------------------------------------
+
+
+def evaluate(args: argparse.Namespace, settings: Settings) -> int:
+    """Run an agent over a gold set, print the scores, write the report."""
+    cls = load(args.agent)
+    items = load_gold(args.gold)
+    report = asyncio.run(_evaluate(cls, items, settings))
+    for line in render(report):
+        print(line)
+    print(f"report: {write(report, args.reports)}")
+    return 0
+
+
+async def _evaluate(
+    cls: type[Agent], items: list[GoldItem], settings: Settings
+) -> dict[str, Any]:
+    agent = start_agent(cls, settings)
+    async with upstreams(agent, settings) as (mailbox, gateway):
+        with tempfile.TemporaryDirectory() as folder:
+            with Store.open(Path(folder) / "evaluation.db") as store:
+                outcomes = await run_evaluation(
+                    agent, items, reader=mailbox, gateway=gateway, store=store, now=now
+                )
+    return build(agent, gateway.model, outcomes, now())

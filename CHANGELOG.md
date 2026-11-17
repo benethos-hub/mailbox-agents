@@ -17,6 +17,9 @@ commit that makes the change. Design decisions live in
   `run`, `backfill`, `status` and `paths`, and `--env-file`.
 - The command `report`: what an agent decided and did, or in `shadow` would
   have done, with subject and sender fetched at the moment of the report.
+- The command `eval`: an agent over a gold set of labelled mail, the model
+  beside the rules, precision and recall per label, each field right,
+  wrong, missing or invented, and a report file of numbers only.
 - The command `health`, and metrics in the Prometheus text format on
   `MAILBOX_AGENT_METRICS_PORT` while `worker` runs.
 - The container image, one for every agent, and compose files for

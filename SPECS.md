@@ -369,6 +369,7 @@ changed until the evaluation was run again.
 | `run --agent <name>` | one pass, then the counts per state |
 | `backfill --agent <name> [--days N]` | takes the messages of the last days up anew and runs them |
 | `report --agent <name> [--limit N] [--state S] [--offline]` | section 8.2 |
+| `eval --agent <name> --gold <file> [--reports DIR]` | section 12 |
 | `health --agent <name>` | exit 0 while the loop makes progress, section 14 |
 | `status` | for each agent whether it is ready, which setting it misses, its counts and its last pass |
 | `paths` | the settings file, the data folder and each state file |
@@ -573,9 +574,15 @@ agent runs over it and the scoring counts where it agrees.
 - **A run is manual.** `benethos-mailbox-agent eval --agent <name>` needs a
   mailbox service and a model, which a public CI has not. It is a live
   check, outside `testpaths`, and never a gate.
-- **A report is versioned.** Each run writes one file naming the agent
-  version, prompt version, model and date, with numbers only and no content
-  of any mail. A change to a prompt or a model is merged with its report.
+- **A report is versioned.** Each run writes one file,
+  `reports/<agent>/<date>-v<agent version>-<prompt version>-<model alias>.json`,
+  naming the agent version, prompt version, model alias, the models the
+  gateway reported and the date, with numbers only: no id, no label of a
+  single message and no content of any mail. A change to a prompt or a
+  model is merged with its report.
+- **A run never touches the agent's state file.** It counts its model
+  calls on a state file of its own and applies the evidence check as in
+  operation. A gateway that is away ends the run.
 
 Size to start with: about 200 labelled messages for `invoices`, about 150
 sent messages for `awaiting_reply`, 80 to 150 inquiries for `inquiries`.

@@ -19,7 +19,15 @@ from ..settings import Settings
 from ..sources.mailbox import Mailbox, connect
 from ..store import Store, path_for
 
-__all__ = ["TRANSPORTS", "NoModel", "Session", "now", "session"]
+__all__ = [
+    "TRANSPORTS",
+    "NoModel",
+    "Session",
+    "now",
+    "session",
+    "start_agent",
+    "upstreams",
+]
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -66,8 +74,10 @@ def start_agent(cls: type[Agent], settings: Settings) -> Agent:
 
 
 @asynccontextmanager
-async def session(cls: type[Agent], settings: Settings) -> AsyncIterator[Session]:
-    agent = start_agent(cls, settings)
+async def upstreams(
+    agent: Agent, settings: Settings
+) -> AsyncIterator[tuple[Mailbox, Gateway | NoModel]]:
+    """The mailbox service, and the gateway for an agent that asks a model."""
     async with AsyncExitStack() as stack:
         mailbox = await stack.enter_async_context(
             connect(
@@ -78,7 +88,7 @@ async def session(cls: type[Agent], settings: Settings) -> AsyncIterator[Session
             )
         )
         gateway: Gateway | NoModel = NoModel()
-        if uses_model(cls):
+        if uses_model(type(agent)):
             gateway = await stack.enter_async_context(
                 Gateway(
                     settings.gateway_url or "",
@@ -88,6 +98,14 @@ async def session(cls: type[Agent], settings: Settings) -> AsyncIterator[Session
                     transport=TRANSPORTS.get("gateway"),
                 )
             )
+        yield mailbox, gateway
+
+
+@asynccontextmanager
+async def session(cls: type[Agent], settings: Settings) -> AsyncIterator[Session]:
+    agent = start_agent(cls, settings)
+    async with AsyncExitStack() as stack:
+        mailbox, gateway = await stack.enter_async_context(upstreams(agent, settings))
         store = stack.enter_context(Store.open(path_for(settings.data_dir, agent.name)))
         worker = Worker(
             agent=agent, store=store, mailbox=mailbox, gateway=gateway, now=now

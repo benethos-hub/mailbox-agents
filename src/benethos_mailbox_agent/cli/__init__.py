@@ -74,6 +74,19 @@ def build_parser() -> argparse.ArgumentParser:
     found.set_defaults(handler=commands.status)
 
     found = sub.add_parser(
+        "eval", help="run an agent over a gold set, beside its rules, and report"
+    )
+    _agent(found)
+    found.add_argument("--gold", type=Path, required=True, help="the gold file")
+    found.add_argument(
+        "--reports",
+        type=Path,
+        default=Path("reports"),
+        help="where the report goes, reports/ by default",
+    )
+    found.set_defaults(handler=commands.evaluate)
+
+    found = sub.add_parser(
         "health", help="exit 0 while the agent's loop makes progress, else 1"
     )
     _agent(found)

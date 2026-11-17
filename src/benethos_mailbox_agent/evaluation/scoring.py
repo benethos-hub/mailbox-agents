@@ -90,6 +90,7 @@ class Outcome:
     tokens_out: int = 0
     duration_ms: int = 0
     failure: str | None = None
+    models: tuple[str, ...] = ()
 
 
 @dataclass
