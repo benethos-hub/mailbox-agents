@@ -334,10 +334,15 @@ once released.
 | Table | Holds |
 |---|---|
 | `cursor` | the feed state token |
+| `passes` | when the last complete pass of the loop finished, for the health check |
 | `messages` | message id, account id, state, attempts, next attempt |
-| `steps` | message, step, prompt version, model, result, tokens, duration |
-| `actions` | message, action, what it was before, when, stage |
-| `open_items` | for agents with deadlines: message, thread, due, closed and why |
+| `steps` | message, step, prompt version, model alias and the model reported, result, tokens, duration |
+| `actions` | message, action, what it was before, when, stage, whether it was carried out |
+| `open_items` | for agents with deadlines: message, thread, due, whether the keyword is set, closed and why |
+| `calls` | the full request and answer of a model call, only while `PROMPT_RETENTION_DAYS` keeps them |
+
+The schema version is the file's `user_version`. A reader opens the file
+read-only and refuses one newer than it knows.
 
 What is stored: ids, decisions, evidence quotes, counts and times. What is
 not: the text of a mail, its subject, its sender or an attachment. A message
