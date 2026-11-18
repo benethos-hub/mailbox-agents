@@ -1,2 +1,3 @@
-"""The agents, one package each: ``agent.py``, ``schema.py``,
-``baseline.py`` and ``prompts/``. See SPECS.md section 4."""
+"""The agents, one package each: ``agent.py`` always. ``schema.py``,
+``baseline.py`` and ``prompts/`` for an agent that asks a model, and
+modules of its own. See SPECS.md section 4."""

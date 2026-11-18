@@ -1,7 +1,9 @@
 # Specification — Mailbox Agents
 
-> **Status: draft, 2026-11-17. Nothing is built.** This document records what
-> was decided before the first line of code. A statement about another system
+> **Status: 2026-11-18. The runtime and the agents `invoices`,
+> `awaiting_reply` and `inquiries` are built and run against a test account
+> of invented mail. None has run on a real mailbox yet.** This document
+> records what was decided and moves with the code. A statement about another system
 > that nobody has checked yet is marked **(to verify)**, and a choice that is
 > still open is listed in section 17 rather than written as fact.
 
@@ -111,24 +113,33 @@ src/benethos_mailbox_agent/
   errors.py       # the error hierarchy, and redact
   settings/       # settings resolution, secrets from files
   logbook/        # every line on stderr, and what a line may never carry
-  contract/       # Agent (ABC), Action, Trigger, Limits, Requires
+  contract/       # Agent (ABC), Action, Trigger, Limits, Requires, the
+                  # Context an agent is handed with its protocols Model,
+                  # Reader and Items, the registry of agents, prompt loading
   records/        # the models passed between layers: MessageRef, Decision,
-                  # Evidence, StepResult, and what an agent sees of a
-                  # mailbox: Event, MailMessage, Address, FolderRef, Thread
+                  # Evidence, StepResult, OpenItem, and what an agent sees of
+                  # a mailbox: Event, MailMessage, Address, Attachment,
+                  # FolderRef, Thread
   sources/
     mailbox.py    # the only module importing benethos_mailbox_client
   llm/
     gateway.py    # the only module that talks to the model gateway
+    evidence.py   # whether a quote is in the mail the model was given
   store/          # SQLite: schema, migrations, one file per agent
-  runtime/        # registry, worker loop, feed reader, tick, step runner,
-                  # action executor, health, metrics
+  runtime/        # worker loop, feed reader, tick, step runner, the model
+                  # calls of one message, open items over the state file,
+                  # the read-only mailbox, action executor, readiness,
+                  # health, metrics
   evaluation/     # the gold format, scoring per label and per field, report
   agents/
     <name>/       # one package per agent
-      agent.py    # one Agent subclass, no side effects at import
-      schema.py   # what the model must answer
-      baseline.py # the same question answered by rules
-      prompts/    # system prompts as Markdown, each with a version
+      agent.py    # one Agent subclass, no side effects at import, always
+      schema.py   # for an agent that asks a model: what it must answer
+      baseline.py # for an agent that asks a model: the question by rules
+      prompts/    # for an agent that asks a model: its system prompts as
+                  # Markdown, each with a version
+      ...         # modules of its own, such as invoices/suppliers.py,
+                  # inquiries/patterns.py, awaiting_reply/text.py
 tests/            # offline: REST and gateway through httpx.MockTransport
 live/             # run by hand, outside testpaths: smoke against a test
                   # account, the evaluation against the gold set
@@ -139,7 +150,8 @@ containers/
   development/    # built from the checkout, against the test account
   live/           # a mail server and a mailbox service of their own, with
                   # a test account of invented mail
-config/           # .env.example versioned, .env local
+config/           # .env.example and the example lists *.example.json
+                  # versioned, .env local
 data/             # state files and the gold set, never versioned
 ```
 
@@ -182,7 +194,7 @@ Operation names below are the service's `operationId`s.
 | What changed since the last look | `list_all_changes` with a state token |
 | A message, its text and attachment list | `get_message` |
 | The conversation a message belongs to | `get_thread` |
-| Set or remove a keyword, move to a folder | `update_message`, `batch_messages` |
+| Set or remove a keyword, move to a folder | `update_message` |
 | The folders of an account | `list_folders` |
 | The messages received since a day, for `backfill` | `list_all_messages`, once for the inbox and once for sent mail |
 
@@ -311,8 +323,8 @@ other. A new action is added here first, with how it is taken back.
 
 The runtime carries out an action only on these terms: it is declared, a
 keyword is the agent's own, a move goes into a folder that exists and is
-neither the trash or junk nor below them, the message itself is not in
-the trash or junk, and the account is one the agent works on. An
+neither the trash, junk or spam nor below them, the message itself is
+not in one of them, and the account is one the agent works on. An
 action whose result is already there is not taken again. What the stage
 does not allow is recorded as what would have been done.
 

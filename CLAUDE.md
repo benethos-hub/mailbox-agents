@@ -55,22 +55,26 @@ src/benethos_mailbox_agent/
   settings/       # settings resolution, secrets from files
   logbook/        # every line on stderr, one function per line
   records/        # the models passed between layers
-  contract/       # Agent (ABC), Action, Trigger, Limits, Requires, registry
+  contract/       # Agent (ABC), Action, Trigger, Limits, Requires, the
+                  # Context protocols, registry, prompt loading
   store/          # SQLite: schema, migrations, one file per agent
   sources/
     mailbox.py    # the only module importing benethos_mailbox_client
   llm/
     gateway.py    # the only module that talks to the model gateway
     evidence.py   # whether a quote is in the text the model was given
-  runtime/        # worker loop, step runner, action executor, health, metrics
+  runtime/        # worker loop, step runner, model calls, open items, the
+                  # read-only mailbox, action executor, readiness, health,
+                  # metrics
   evaluation/     # the gold format, the scoring, the report
-  agents/<name>/  # one package per agent: agent.py, schema.py,
-                  # baseline.py, prompts/
+  agents/<name>/  # one package per agent: agent.py always, schema.py,
+                  # baseline.py and prompts/ for one that asks a model,
+                  # and modules of its own
 tests/            # offline: REST and gateway through httpx.MockTransport
 live/             # run by hand, outside testpaths: a mail server of its own
 containers/       # images/, production/, development/, and live/: a mail
                   # server and a mailbox service of their own for live/
-config/           # .env.example versioned, .env local
+config/           # .env.example and *.example.json versioned, .env local
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
 ```
