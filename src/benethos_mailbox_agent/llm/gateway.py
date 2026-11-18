@@ -12,6 +12,7 @@ See SPECS.md section 6.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import time
 from copy import deepcopy
@@ -77,8 +78,10 @@ class Gateway:
         model: str,
         *,
         timeout: float = 120.0,
+        allow_http: bool = False,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
+        _check_url(base_url, allow_http)
         self.model = model
         self._http = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
@@ -165,6 +168,36 @@ def _check(response: httpx.Response) -> None:
     raise AnswerRefusedError(
         f"the gateway refused the request ({status})", reason="request"
     )
+
+
+def _check_url(url: str, allow_http: bool) -> None:
+    """https anywhere, http to this machine, or anywhere when allowed: the
+    key and the mail would otherwise travel unencrypted."""
+    try:
+        parts = httpx.URL(url)
+    except httpx.InvalidURL:
+        raise ConfigError("MAILBOX_AGENT_GATEWAY_URL is not a URL") from None
+    if parts.scheme == "https" and parts.host:
+        return
+    if parts.scheme != "http" or not parts.host:
+        raise ConfigError("MAILBOX_AGENT_GATEWAY_URL must be an http or https URL")
+    if allow_http or _loopback(parts.host):
+        return
+    raise ConfigError(
+        f"MAILBOX_AGENT_GATEWAY_URL is http to {parts.host}, so the key and the "
+        "mail would travel unencrypted. Use https, or set "
+        "MAILBOX_AGENT_GATEWAY_ALLOW_HTTP=true for a network you trust, such as "
+        "between containers."
+    )
+
+
+def _loopback(host: str) -> bool:
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def _value(answer: Any, schema: type[T]) -> T:

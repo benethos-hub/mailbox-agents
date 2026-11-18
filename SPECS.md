@@ -683,6 +683,7 @@ may be given as a file with the suffix `_FILE`.
 | `SERVICE_URL`, `SERVICE_TOKEN` | the mailbox service and this agent's token |
 | `SERVICE_ALLOW_HTTP` | allow http to another machine, as between two containers, `false` when unset |
 | `GATEWAY_URL`, `GATEWAY_KEY` | the model gateway and this agent's key |
+| `GATEWAY_ALLOW_HTTP` | allow http to another machine for the gateway, as between two containers, `false` when unset. https or http to this machine otherwise |
 | `GATEWAY_TIMEOUT_SECONDS` | how long one model call may take, `120` when unset |
 | `MODEL` | the alias the gateway resolves |
 | `ACCOUNTS` | the accounts to work on, comma separated, all the user may read when unset |

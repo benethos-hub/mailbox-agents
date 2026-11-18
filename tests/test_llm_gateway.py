@@ -164,6 +164,29 @@ async def test_a_gateway_out_of_reach_is_unavailable(
             await gateway.ask(system="s", content="c", schema=Answer)
 
 
+@pytest.mark.parametrize(
+    ("url", "allow"),
+    [
+        ("https://gw.example.com/v1", False),
+        ("http://127.0.0.1:4000/v1", False),
+        ("http://localhost:4000/v1", False),
+        ("http://[::1]:4000/v1", False),
+        ("http://gw.example.com/v1", True),
+    ],
+)
+async def test_a_gateway_url_that_keeps_the_key_safe(url: str, allow: bool) -> None:
+    async with Gateway(url, "k", "m", allow_http=allow):
+        pass
+
+
+@pytest.mark.parametrize(
+    "url", ["http://gw.example.com/v1", "http://10.0.0.5/v1", "ftp://gw/v1", "x"]
+)
+def test_http_to_another_machine_is_refused(url: str) -> None:
+    with pytest.raises(ConfigError, match="MAILBOX_AGENT_GATEWAY"):
+        Gateway(url, "k", "m")
+
+
 async def test_the_alias_stands_in_when_no_model_is_reported(gateway: Gateway) -> None:
     transport = httpx.MockTransport(
         lambda request: httpx.Response(

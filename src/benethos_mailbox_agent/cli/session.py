@@ -95,6 +95,7 @@ async def upstreams(
                     settings.secret("gateway_key"),
                     settings.model or "",
                     timeout=settings.gateway_timeout_seconds,
+                    allow_http=settings.gateway_allow_http,
                     transport=TRANSPORTS.get("gateway"),
                 )
             )

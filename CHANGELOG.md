@@ -42,6 +42,8 @@ commit that makes the change. Design decisions live in
   domains and phrases of `MAILBOX_AGENT_INQUIRIES_PATTERNS_FILE`.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.
+- The setting `MAILBOX_AGENT_GATEWAY_ALLOW_HTTP`, for a gateway reached
+  over http between two containers.
 
 ### Changed
 
@@ -57,3 +59,5 @@ commit that makes the change. Design decisions live in
   quote that names the supplier or a domain of its sender rules.
 - `report` writes a control character or line separator from a mail or a
   model as its escape, so a subject cannot move the cursor or fake a line.
+- The gateway is reached over https, or over http to this machine. http to
+  another machine needs `MAILBOX_AGENT_GATEWAY_ALLOW_HTTP`.

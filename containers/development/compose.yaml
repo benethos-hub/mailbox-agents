@@ -48,6 +48,8 @@ x-agent: &agent
     # containers, which the client refuses unless it is allowed.
     MAILBOX_AGENT_SERVICE_URL: http://mailbox-service:8080
     MAILBOX_AGENT_SERVICE_ALLOW_HTTP: "true"
+    # The gateway too, when ./.env names it by its name on the network.
+    MAILBOX_AGENT_GATEWAY_ALLOW_HTTP: "true"
     MAILBOX_AGENT_DATA_DIR: /data
     MAILBOX_AGENT_POLL_SECONDS: "15"
 

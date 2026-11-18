@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     # the deployment's decision.
     service_allow_http: bool = False
     gateway_url: str | None = None
+    gateway_allow_http: bool = False
     gateway_key: SecretStr | None = None
     gateway_key_file: Path | None = None
     gateway_timeout_seconds: float = Field(default=120.0, gt=0)
