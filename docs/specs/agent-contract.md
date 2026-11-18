@@ -11,7 +11,7 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `limits` | model calls per message and per day |
 | `requires` | settings that must be present before it starts |
 | `default_keyword` | the keyword it sets when `MAILBOX_AGENTS_KEYWORD` is unset |
-| `prompt_version` | the version of the prompt its model step runs under |
+| `prompt_version` | the version of the prompt its model step runs under. Read from the instance: `sorting` sets it from its list |
 
 **An agent's keyword is `agent-<word>` (decided 2026-11-18).** A keyword
 in that form is recognisable as set by an agent, shares no name with a

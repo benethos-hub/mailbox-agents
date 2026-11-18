@@ -101,10 +101,11 @@ def mail(world: Wired, message_id: str) -> dict[str, Any]:
 
 
 def decision(world: Wired, message_id: str) -> dict[str, Any]:
+    """The decision stored last for the message."""
     ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    found = world.store.step(ref, "decision", Sorting.prompt_version, "")
-    assert found is not None
-    return found.result
+    found = [s for s in world.store.steps(ref) if s.step == "decision"]
+    assert found
+    return found[-1].result
 
 
 def actions(world: Wired, message_id: str) -> list[tuple[str, str, bool]]:
@@ -260,6 +261,46 @@ async def test_a_sender_added_to_the_list_reaches_a_message_decided_before(
     assert await run(world, "hosting", agent(tmp_path), again=True) == "done"
 
     assert mail(world, "hosting")["folder_ids"] == ["inv-hosting"]
+
+
+async def test_a_changed_list_is_decided_anew(world: Wired, tmp_path: Path) -> None:
+    from benethos_mailbox_agents.cli.report import collect, summary
+
+    without = [g for g in GROUPS if g["name"] != "Hosting"]
+    first = Sorting(settings(stage="full", sorting_file=listed(tmp_path, without)))
+    first.prepare()
+    assert await run(world, "hosting", first) == "done"
+    assert decision(world, "hosting")["label"] == "none"
+
+    second = agent(tmp_path)
+    second.prepare()
+    assert second.prompt_version != first.prompt_version
+    assert await run(world, "hosting", second, again=True) == "done"
+
+    found = decision(world, "hosting")
+    assert (found["label"], found["details"]) == (
+        "Hosting",
+        {"match": "group", "rule": "pattern"},
+    )
+    entries = await collect(world.store, world.mailbox, limit=10)
+    assert summary(second, entries) == ["groups:", "  Hosting: 1 moved"]
+
+
+def test_the_version_is_the_list_read(tmp_path: Path) -> None:
+    one, other = agent(tmp_path), agent(tmp_path)
+    one.prepare()
+    other.prepare()
+
+    assert one.prompt_version == other.prompt_version
+    assert one.prompt_version.startswith("list-")
+    assert len(one.prompt_version) == len("list-") + 12
+    assert Sorting.prompt_version == ""
+
+    released = [{**g, "hold": False} for g in GROUPS]
+    (tmp_path / "other").mkdir()
+    changed = Sorting(settings(sorting_file=listed(tmp_path / "other", released)))
+    changed.prepare()
+    assert changed.prompt_version != one.prompt_version
 
 
 # -- no model -------------------------------------------------------------------

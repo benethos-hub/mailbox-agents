@@ -128,6 +128,10 @@ commit that makes the change. Design decisions live in
 - An action recorded and not carried out is recorded once per message and
   stage. A second `backfill` in `shadow` adds no row to the state file and
   no line to `report`.
+- `sorting` decides a message anew under a changed list. Its decision is
+  stored under a version made from the list, so after `backfill` the
+  label, the details and `report` follow the list the message was moved
+  with, not the one it was first decided with.
 
 ### Removed
 

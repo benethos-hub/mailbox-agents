@@ -112,7 +112,8 @@ write `*@domain` or `*@*.domain`.
   `status` names what is wrong. A wrong rule is named by its group and
   its place in the group's list, `group 'Bank', sender 2`, never by
   itself, as a rule often names a person (decided 2026-11-18).
-- A changed list takes effect at the next start.
+- A changed list takes effect at the next start. It is new work: the
+  decision is stored under a version made from the list, see section 3.
 - `sorting` reads and matches it with code of its own. The supplier list
   of `invoices` version 3, whose rules differed, is gone with its rebuild
   (step I5).
@@ -165,6 +166,13 @@ folder and the move below it in the same effect, so both are recorded.
   the kind of rule, and whether the group is held. No quote and no sender
   is stored.
 - No model step. The decision is stored under an empty model alias.
+- **The version of the decision is the list (decided 2026-11-18).** It is
+  `list-` and the first 12 hex digits of the SHA-256 of the list as read,
+  in JSON with sorted keys. A changed list, a sender, a folder or `hold`,
+  gives a new version, and a message taken up again, as by `backfill`, is
+  decided anew under it. So the label, the details and `report` follow the
+  list the message was acted on with, and a message decided `none` before
+  a sender was added counts as moved once it is.
 - The group is looked up again when the agent acts, against the list as it
   is then. So a sender added to the list reaches older mail through
   `backfill`.

@@ -15,6 +15,8 @@ is then, so a sender added since reaches older mail through
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections import Counter
 from collections.abc import Mapping
 from functools import cached_property
@@ -48,6 +50,13 @@ def _plural(count: int, word: str) -> str:
     return f"{count} {word}{'' if count == 1 else 's'}"
 
 
+def _version(groups: Groups) -> str:
+    """The version of a list: a digest of the groups as read, in JSON with
+    sorted keys, so the same list gives the same version."""
+    normal = json.dumps(groups.model_dump(mode="json"), sort_keys=True)
+    return "list-" + hashlib.sha256(normal.encode("utf-8")).hexdigest()[:12]
+
+
 def _fate(item: Shown) -> str:
     """What became of a message of a group: moved, held, recorded, or not
     moved, when its move was refused or not asked for."""
@@ -78,15 +87,21 @@ class Sorting(Agent):
     # -- what it reads besides its settings -----------------------------------
 
     def prepare(self) -> None:
-        """Read the list now, so a wrong one stops the start."""
+        """Read the list now, so a wrong one stops the start, and with it
+        the version the decision is stored under."""
         _ = self.groups
 
     @cached_property
     def groups(self) -> Groups:
+        """The list, read once. Reading it sets the version of the decision
+        to a digest of the list, so a changed list is new work and each
+        message is decided anew under it (decided 2026-11-18)."""
         path = self.settings.sorting_file
         if path is None:
             raise ConfigError(f"{PREFIX}SORTING_FILE is not set")
-        return load_groups(path)
+        found = load_groups(path)
+        self.prompt_version = _version(found)
+        return found
 
     def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
         # The list names whole paths: the folders above do not matter.

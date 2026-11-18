@@ -142,7 +142,9 @@ class Agent(ABC):
     default_keyword: ClassVar[str]
     # The version of the prompt the model step runs under. A step stored
     # under the same message, prompt version and model is not run again.
-    prompt_version: ClassVar[str] = ""
+    # Read from the instance: an agent whose decision rests on a list it
+    # reads, such as sorting, sets it from that list.
+    prompt_version: str = ""
 
     def __init__(self, settings: Settings) -> None:
         self.validate_definition()
