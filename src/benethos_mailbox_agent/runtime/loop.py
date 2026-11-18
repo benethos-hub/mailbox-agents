@@ -30,9 +30,9 @@ from ..records import Event, MessageRef
 from ..store import Store
 from .actions import Executor, Outcome, Writer
 from .metrics import Metrics
-from .model import Asker, Calls
+from .model import Asker
 from .reader import ReadOnlyMailbox
-from .steps import StepRunner, backoff
+from .steps import StepRunner, backoff, make_calls
 
 __all__ = ["BATCH", "Upstream", "Worker"]
 
@@ -102,14 +102,13 @@ class Worker:
 
     def context(self) -> Context:
         """A context without the model, for observe and tick."""
-        calls = Calls(
+        calls = make_calls(
+            self.agent,
             gateway=self._gateway,
             store=self.store,
             ref=MessageRef(account_id="", message_id=""),
-            limits=Limits(model_calls_per_message=0, model_calls_per_day=0),
-            prompt_version=self.agent.prompt_version,
-            retention_days=0,
             now=self._now,
+            limits=Limits(model_calls_per_message=0, model_calls_per_day=0),
         )
         return self.runner.context(calls)
 

@@ -45,9 +45,7 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
     ),
     "agents": frozenset({"errors", "records", "settings", "contract"}),
     # Scores an agent the way the runtime runs it, on a state file of its own.
-    "evaluation": frozenset(
-        {"errors", "records", "contract", "store", "llm", "runtime"}
-    ),
+    "evaluation": frozenset({"errors", "records", "contract", "store", "runtime"}),
     # The top: it wires the upstreams, the state file and the runtime.
     "cli": frozenset(
         {

@@ -17,7 +17,7 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from .. import logbook
-from ..contract import ActionRequest, Agent, Context, Reader
+from ..contract import ActionRequest, Agent, Context, Items, Limits, Reader
 from ..errors import (
     AnswerRefusedError,
     GatewayUnavailableError,
@@ -33,7 +33,14 @@ from .items import StoredItems
 from .metrics import Metrics
 from .model import Asker, Calls, start_of_day
 
-__all__ = ["Effects", "StepRunner", "backoff"]
+__all__ = [
+    "Effects",
+    "StepRunner",
+    "backoff",
+    "decide_checked",
+    "make_calls",
+    "make_context",
+]
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -50,6 +57,62 @@ def backoff(settings: Settings, attempts: int) -> float:
             settings.backoff_ceiling_seconds,
         )
     )
+
+
+def make_calls(
+    agent: Agent,
+    *,
+    gateway: Asker,
+    store: Store,
+    ref: MessageRef,
+    now: Callable[[], datetime],
+    retention_days: int = 0,
+    limits: Limits | None = None,
+    metrics: Metrics | None = None,
+) -> Calls:
+    """The model calls of one attempt at one message, counted against the
+    agent's limits unless others are named."""
+    return Calls(
+        gateway=gateway,
+        store=store,
+        ref=ref,
+        limits=limits or agent.limits,
+        prompt_version=agent.prompt_version,
+        retention_days=retention_days,
+        now=now,
+        metrics=metrics,
+    )
+
+
+def make_context(
+    agent: Agent,
+    *,
+    calls: Calls,
+    reader: Reader,
+    store: Store,
+    now: Callable[[], datetime],
+    items: Items | None = None,
+) -> Context:
+    """The context an agent is handed, its open items over ``store``
+    unless others are named."""
+    return Context(
+        settings=agent.settings,
+        model=calls,
+        reader=reader,
+        items=items or StoredItems(store, now),
+        now=now,
+    )
+
+
+async def decide_checked(
+    agent: Agent, message: MailMessage, context: Context, calls: Calls
+) -> Decision:
+    """The agent's decision, its evidence checked when the model made it:
+    the same in operation and in the evaluation."""
+    decided = await agent.decide(message, context)
+    if decided.source == "model":
+        decided = check(decided, calls.evidence)
+    return decided
 
 
 class _Away:
@@ -100,24 +163,24 @@ class StepRunner:
         gateway: Asker = self._gateway
         if self.gateway_away is not None:
             gateway = _Away(gateway, self.gateway_away)
-        return Calls(
+        return make_calls(
+            self.agent,
             gateway=gateway,
             store=self._store,
             ref=ref,
-            limits=self.agent.limits,
-            prompt_version=self.agent.prompt_version,
-            retention_days=self.settings.prompt_retention_days,
             now=self._now,
+            retention_days=self.settings.prompt_retention_days,
             metrics=self.metrics,
         )
 
     def context(self, calls: Calls) -> Context:
-        return Context(
-            settings=self.settings,
-            model=calls,
+        return make_context(
+            self.agent,
+            calls=calls,
             reader=self._reader,
-            items=self.items,
+            store=self._store,
             now=self._now,
+            items=self.items,
         )
 
     def _state(
@@ -229,14 +292,10 @@ class StepRunner:
         if stored is not None:
             return Decision.model_validate(stored.result)
         started = time.monotonic()
-        decided = await self.agent.decide(message, self.context(calls))
-        if decided.source == "model":
-            decided = check(decided, calls.evidence)
-            for item in decided.evidence:
-                if not item.found:
-                    logbook.evidence_missing(
-                        self.agent.name, ref.message_id, item.field
-                    )
+        decided = await decide_checked(self.agent, message, self.context(calls), calls)
+        for item in decided.evidence:
+            if item.found is False:
+                logbook.evidence_missing(self.agent.name, ref.message_id, item.field)
         duration = _since(started)
         self._store.add_step(
             ref,

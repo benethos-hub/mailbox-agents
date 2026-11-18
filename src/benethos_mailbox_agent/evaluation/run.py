@@ -12,12 +12,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import datetime
 
-from ..contract import Agent, Context, Reader
+from ..contract import Agent, Reader
 from ..errors import AnswerRefusedError, LimitReachedError, MailboxRefusedError
-from ..llm.evidence import check
-from ..runtime.items import StoredItems
-from ..runtime.model import Asker, Calls
+from ..runtime.model import Asker
 from ..runtime.reader import ReadOnlyMailbox
+from ..runtime.steps import decide_checked, make_calls, make_context
 from ..store import Store
 from .gold import GoldItem
 from .scoring import Outcome
@@ -43,27 +42,11 @@ async def evaluate(
             outcomes.append(Outcome(item, None, None, failure=f"fetch:{exc.reason}"))
             continue
         baseline = agent.baseline(message)
-        calls = Calls(
-            gateway=gateway,
-            store=store,
-            ref=item.ref,
-            limits=agent.limits,
-            prompt_version=agent.prompt_version,
-            retention_days=0,
-            now=now,
-        )
-        context = Context(
-            settings=agent.settings,
-            model=calls,
-            reader=reader,
-            items=StoredItems(store, now),
-            now=now,
-        )
+        calls = make_calls(agent, gateway=gateway, store=store, ref=item.ref, now=now)
+        context = make_context(agent, calls=calls, reader=reader, store=store, now=now)
         failure = None
         try:
-            decision = await agent.decide(message, context)
-            if decision.source == "model":
-                decision = check(decision, calls.evidence)
+            decision = await decide_checked(agent, message, context, calls)
         except AnswerRefusedError as exc:
             decision, failure = None, f"answer:{exc.reason}"
         except LimitReachedError:
