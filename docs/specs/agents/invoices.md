@@ -96,6 +96,7 @@ that still names them starts, as an unknown setting is ignored.
 | was marked in the inbox and now lies in a folder it looks in | a move to the subfolder, no model call. The open item closes as `filed` |
 | was marked in the inbox and now lies in a folder it does not look in | nothing. The open item closes as `moved_elsewhere` |
 | has an item closed as `filed` and still lies in a folder it looks in | a move to the subfolder again, as for an open item |
+| was marked in the inbox and is deleted since, its update answered `404` | nothing. The open item closes as `message_gone` |
 
 The item closes before the runtime takes the actions. A mailbox service
 that is away in between leaves the cursor where it was, and the same

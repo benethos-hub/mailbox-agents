@@ -197,8 +197,9 @@ class Worker:
 
     async def _observe(self, ref: MessageRef) -> None:
         """Hand an updated message to the agent and take its actions. A
-        message gone, before or in the middle of its actions, is logged and
-        left."""
+        message refused, before or in the middle of its actions, is logged
+        and left. One gone closes its open item as ``message_gone``: no
+        update of it can come any more."""
         try:
             message = await self._mailbox.message(ref)
             await self.executor(await self.agent.observe(message, self.context()))
@@ -211,6 +212,8 @@ class Worker:
                     error=exc,
                 )
             )
+            if isinstance(exc, MessageGoneError):
+                self.store.close_item(ref, MESSAGE_GONE, self._now())
 
     async def process_due(self) -> int:
         """Run the steps of the pending messages that are due. Answers how

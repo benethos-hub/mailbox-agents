@@ -250,3 +250,6 @@ commit that makes the change. Design decisions live in
   `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` set, an invoice `sorting` moved
   while the model was asked was moved on into the inbox folder, out of the
   folder of its group. It is now filed into the subfolder there.
+- The open item of an invoice deleted after it was marked in the inbox
+  closes as `message_gone` on its next update. It stayed open before, and
+  the state file kept it.

@@ -6,7 +6,8 @@ One loop per process:
    state of now. On `410` take a new state and run `backfill` over
    `BACKFILL_DAYS`.
 2. For each event the agent routes to `decide`, record the message as
-   `pending`. Hand each one routed to `observe` to the agent at once.
+   `pending`. Hand each one routed to `observe` to the agent at once. One
+   deleted since closes its open item as `message_gone`.
 3. For each `pending` message whose next attempt has come, at most 50 a
    pass, run the steps: fetch, `admit`, baseline, decision with its evidence
    check, effect. Each step

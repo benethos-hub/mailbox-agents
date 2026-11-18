@@ -706,6 +706,25 @@ async def test_an_update_in_the_inbox_leaves_the_item_open(world: Wired) -> None
     assert world.service.made() == []
 
 
+async def test_an_update_of_an_invoice_deleted_since_closes_its_item(
+    world: Wired,
+) -> None:
+    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
+    marking = worker(world, agent())
+    await marking.run_pass()
+    await run(world, "inv-unlisted", agent())
+
+    del world.service.messages[(ACCOUNT, "inv-unlisted")]
+    world.service.change("message.updated", "inv-unlisted")
+    await marking.run_pass()
+
+    found = item(world, "inv-unlisted")
+    assert found is not None and (found.is_open, found.reason) == (
+        False,
+        "message_gone",
+    )
+
+
 async def test_an_update_of_a_message_without_an_item_does_nothing(
     world: Wired,
 ) -> None:
