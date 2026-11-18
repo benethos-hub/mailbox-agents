@@ -61,7 +61,7 @@ changed until the evaluation was run again.
 |---|---|
 | `worker --agent <name>` | runs one agent pass after pass until SIGTERM or SIGINT |
 | `run --agent <name>` | one pass, then the counts per state |
-| `backfill --agent <name> [--days N]` | takes the messages of the last days up anew and runs them: those of the inbox and of sent mail, and those of the folders the agent wants besides, such as the folders `invoices` looks in |
+| `backfill --agent <name> [--days N]` | takes the messages of the last days up anew and runs them: those of the inbox and of sent mail, and those of the folders the agent wants besides, such as the folders `invoices` looks in. It runs until no message is due, and stops with exit code 1 after the first round that found the gateway away |
 | `report --agent <name> [--limit N] [--state S] [--offline]` | [report](#report) |
 | `eval --agent <name> --gold <file> [--reports DIR]` | [evaluation](evaluation.md) |
 | `health --agent <name>` | exit 0 while the loop makes progress, [operation](operation.md) |

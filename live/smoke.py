@@ -144,8 +144,7 @@ async def counting(live: Live) -> str:
             )
             await worker.run_pass()
             taken = await worker.backfill(30)
-            while await worker.process_due():
-                pass
+            await worker.drain()
             counts = store.counts()
     if counts["done"] != taken or taken < INVENTED:
         raise AssertionError(f"{taken} taken up, counts {counts}")

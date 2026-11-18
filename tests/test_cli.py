@@ -16,7 +16,7 @@ from benethos_mailbox_agents import __version__
 from benethos_mailbox_agents.cli import PROG, main, session
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.settings import PREFIX
-from fakes import FakeService, wire_message
+from fakes import FakeGateway, FakeService, wire_message
 from helpers import configure
 
 
@@ -96,6 +96,31 @@ def test_backfill_takes_recent_messages_up(
 
     assert "1 taken up" in capsys.readouterr().out
     assert service.requests[0].url.params["after"]
+
+
+def test_backfill_stops_when_the_gateway_is_away(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    gateway = FakeGateway()
+
+    def away(request: httpx.Request) -> httpx.Response:
+        # A backfill that asks again and again must fail, not hang the suite.
+        assert len(gateway.requests) < 3, "the gateway was asked again"
+        return gateway.handle(request)
+
+    monkeypatch.setitem(session.TRANSPORTS, "gateway", httpx.MockTransport(away))
+    service.add(wire_message("m1", subject="Your invoice"), change=None)
+
+    assert main(["backfill", "--agent", "invoices", "--days", "3"]) == 1
+
+    assert len(gateway.requests) == 1
+    assert "taken up" not in capsys.readouterr().out
 
 
 def test_a_negative_backfill_is_refused(

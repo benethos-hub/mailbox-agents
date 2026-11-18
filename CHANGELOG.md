@@ -192,3 +192,6 @@ commit that makes the change. Design decisions live in
   case of its name, such as `"password": "..."` in JSON or `token: ...` in
   YAML, and refuses every file in a folder `secrets/`, also one added with
   `git add -f`.
+- `backfill` ends with exit code 1 when the gateway is away, after asking
+  it once, instead of asking it again and again without end. The live
+  checks stop the same way.

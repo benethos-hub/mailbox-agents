@@ -217,6 +217,19 @@ class Worker:
             self.store.set_progress(self._now())
         return len(rows)
 
+    async def drain(self) -> int:
+        """Run the steps of the pending messages until none is due, as
+        ``backfill`` and the live checks want. Answers how many were taken
+        up. A gateway that is away is raised after the round that found it
+        away: a message that needs it stays due with no attempt counted,
+        so another round would ask it again and never end."""
+        taken = 0
+        while found := await self.process_due():
+            taken += found
+            if self.runner.gateway_away is not None:
+                raise self.runner.gateway_away
+        return taken
+
     def _only_gateway_waits(self) -> bool:
         """Whether every message still due waits for the gateway alone. Only
         then may the tick run without it: a reply still in the queue must

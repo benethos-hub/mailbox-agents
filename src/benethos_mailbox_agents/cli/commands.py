@@ -109,8 +109,7 @@ def backfill(args: argparse.Namespace, settings: Settings) -> int:
 async def _backfill(name: str, days: int, settings: Settings) -> int:
     async with session(load(name), settings) as found:
         added = await found.worker.backfill(days, again=True)
-        while await found.worker.process_due():
-            pass
+        await found.worker.drain()
         print(f"{found.agent.name}: {added} taken up, {_counts(found.store)}")
         return 0
 

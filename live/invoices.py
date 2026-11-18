@@ -118,8 +118,7 @@ async def sort(live: Live) -> None:
             now=lambda: datetime.now(UTC),
         )
         await worker.backfill(30)
-        while await worker.process_due():
-            pass
+        await worker.drain()
         live.sorted_moves = [
             a for a in store.actions() if a.action == "move_to_folder" and a.executed
         ]
@@ -152,8 +151,7 @@ async def invoices_first(live: Live) -> str:
     with store:
         await worker.run_pass()
         await worker.backfill(30)
-        while await worker.process_due():
-            pass
+        await worker.drain()
         if invoices_decided(store) != INVOICES:
             raise AssertionError(f"{invoices_decided(store)} invoices decided")
         opened = [i for i in (store.item(r) for r in live.before) if i and i.is_open]
@@ -190,8 +188,7 @@ async def sorting_first(live: Live) -> str:
     worker, store = live.invoices("second")
     with store:
         taken = await worker.backfill(30)
-        while await worker.process_due():
-            pass
+        await worker.drain()
         found = recorded_moves(store)
         if found != FILED:
             raise AssertionError(

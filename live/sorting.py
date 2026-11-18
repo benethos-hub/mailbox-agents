@@ -100,8 +100,7 @@ async def sort(
             now=lambda: datetime.now(UTC),
         )
         await worker.backfill(30)
-        while await worker.process_due():
-            pass
+        await worker.drain()
         labels: Counter[str] = Counter()
         for row in store.messages(None, 1000):
             steps = [s for s in store.steps(row.ref) if s.step == "decision"]
