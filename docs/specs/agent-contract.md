@@ -13,6 +13,16 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `default_keyword` | the keyword it sets when `MAILBOX_AGENT_KEYWORD` is unset |
 | `prompt_version` | the version of the prompt its model step runs under |
 
+**An agent's keyword is `agent-<word>` (decided 2026-11-18).** A keyword in
+that form is recognisable as set by an agent, shares no name with a keyword
+another mail client or tool uses, and carries no `$` in front, as IMAP
+registers such keywords with meanings, `$Junk` for a spam filter, `$label1`
+for a tag of Thunderbird. It is lower case, as a service may answer
+keywords in lower case. `sorting` follows it with `agent-sorted`. The
+defaults of `invoices`, `awaiting_reply` and `inquiries`, `invoice`,
+`awaiting-reply` and `inquiry`, are older and not renamed yet **(open)**.
+`MAILBOX_AGENT_KEYWORD` names another keyword for one deployment.
+
 | Method | Meaning |
 |---|---|
 | `select(event)` | whether this event concerns the agent, and its route: `decide` or `observe`. Code only |
