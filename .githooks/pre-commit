@@ -40,13 +40,16 @@ fi
 
 # 2. Credentials inside the staged lines, whatever the file is called.
 patterns='sk-ant-[A-Za-z0-9_-]{16,}'
-patterns="$patterns|sk-[A-Za-z0-9]{20,}"
+patterns="$patterns|sk-[A-Za-z0-9_-]{20,}"
+patterns="$patterns|mbx_[A-Za-z0-9_-]{16,}"
+patterns="$patterns|Bearer [A-Za-z0-9._-]{16,}"
 patterns="$patterns|gh[pousr]_[A-Za-z0-9]{16,}"
 patterns="$patterns|glpat-[A-Za-z0-9_-]{16,}"
 patterns="$patterns|AKIA[0-9A-Z]{16}"
 patterns="$patterns|BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY"
-# A value that starts with / is a path, as a *_FILE setting names one.
-patterns="$patterns|(TOKEN|SECRET|PASSWORD|API_KEY|_KEY)[A-Z_]*=[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
+# A name, then = or :, maybe a quote, then the value. A value that
+# starts with / is a path, as a *_FILE setting names one.
+patterns="$patterns|(TOKEN|SECRET|PASSWORD|API_KEY|_KEY)[A-Z_]*[[:space:]]*[:=][[:space:]]*[\"']?[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
 
 hits=$(
     git diff --cached -U0 \

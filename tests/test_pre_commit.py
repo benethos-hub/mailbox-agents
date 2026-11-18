@@ -90,6 +90,41 @@ def test_refuses_a_line_that_looks_like_a_credential(repo: Path) -> None:
     assert "credential" in answer.stderr
 
 
+# Each split, so this file does not look like a credential to the hook.
+@pytest.mark.parametrize(
+    "line",
+    [
+        '{"token": "' + "mbx_" + 'abcdefghijklmnop1234"}',
+        "Authorization: " + "Bearer " + "abcdefghijklmnop1234",
+        "GATEWAY_KEY: " + "sk-" + "live-abcdefghijklmnop1234",
+        "MAILBOX_AGENT_GATEWAY_KEY = " + '"' + "abcdefghijklmnop1234" + '"',
+        "SERVICE_TOKEN: " + "'" + "abcdefghijklmnop1234" + "'",
+    ],
+    ids=["json-token", "bearer", "sk-with-dash", "spaced-quoted", "yaml-quoted"],
+)
+def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
+    _stage(repo, "notes.txt", line + "\n")
+
+    answer = _hook(repo)
+
+    assert answer.returncode == 1
+    assert "credential" in answer.stderr
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "MAILBOX_AGENT_GATEWAY_KEY_FILE: /run/secrets/gateway_key",
+        "GATEWAY_KEY: ${GATEWAY_KEY}",
+        'headers={"Authorization": f"Bearer {key}"}',
+    ],
+)
+def test_a_reference_to_a_secret_passes(repo: Path, line: str) -> None:
+    _stage(repo, "notes.txt", line + "\n")
+
+    assert _hook(repo).returncode == 0
+
+
 def test_an_allowlisted_line_passes(repo: Path) -> None:
     line = "TOKEN=abcdefghijklmnop1234  # pragma: allowlist secret\n"
     _stage(repo, "notes.txt", line)
