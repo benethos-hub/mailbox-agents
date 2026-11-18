@@ -73,7 +73,9 @@ The runtime carries out an action only on these terms: it is declared, a
 keyword is the agent's own, a move goes into a folder that exists and is
 neither the trash, junk or spam nor below them, the message itself is in
 none of them nor in a folder below one, and the account is one the agent
-works on. A folder is made only when the agent's `may_create` answers yes
+works on. The path of a folder, for a move or to be made, is names between
+slashes: one that starts or ends with a slash, holds two in a row or names
+`.` or `..` is refused, whatever the agent may make. A folder is made only when the agent's `may_create` answers yes
 for its path, the folder above it exists and is none of those three nor
 below them, and no folder of the same name exists in another case. A folder
 below a missing one is made after it, each as an action of its own,

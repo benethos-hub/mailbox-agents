@@ -359,6 +359,37 @@ async def test_a_folder_is_refused(world: Wired, path: str) -> None:
     assert world.store.actions() == []
 
 
+class Lenient(Every):
+    def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
+        return True
+
+
+@pytest.mark.parametrize(
+    "path", ["A//B", "/A", "A/", "A/..", "Invoices/.", "Invoices/.."]
+)
+@pytest.mark.parametrize(
+    "action", [Action.MOVE_TO_FOLDER, Action.CREATE_FOLDER], ids=["move", "make"]
+)
+async def test_a_folder_path_out_of_form_is_refused_by_the_executor(
+    world: Wired, action: Action, path: str
+) -> None:
+    """Names between slashes, none empty, ``.`` or ``..``: the executor
+    holds to it whatever the agent may make, before it reads the message."""
+    run = Executor(
+        agent=Lenient(settings(stage="full")),
+        store=world.store,
+        mailbox=world.mailbox,
+        now=world.clock,
+    )
+    world.service.requests.clear()
+
+    assert await run([ActionRequest(action, REF, folder=path)]) == [Outcome.REFUSED]
+    assert ("GET", PATH) not in [(r.method, r.url.path) for r in world.service.requests]
+    assert world.service.writes() == []
+    assert world.service.made() == []
+    assert world.store.actions() == []
+
+
 async def test_a_folder_that_exists_is_not_made_again(world: Wired) -> None:
     assert await maker(world)([make("Invoices/Hosting")]) == [Outcome.PRESENT]
     assert world.service.made() == []

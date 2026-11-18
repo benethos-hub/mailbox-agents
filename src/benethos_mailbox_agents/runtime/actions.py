@@ -1,11 +1,12 @@
 """The action executor: the runtime's lock on what an agent may do.
 
 An agent asks, this module decides. It carries out only an action the
-agent declared, a keyword only if it is the agent's own, a move only into
-a folder that exists and is not the trash, junk or spam, nor below them,
-and makes only a folder the agent may make, below a folder that exists
-and not below those three, nor one whose name exists in another case. A
-message in one of them, or in a folder below one, is left alone. What the
+agent declared, a keyword only if it is the agent's own, a folder path
+only of names between slashes, a move only into a folder that exists and
+is not the trash, junk or spam, nor below them, and makes only a folder
+the agent may make, below a folder that exists and not below those three,
+nor one whose name exists in another case. A message in one of them, or
+in a folder below one, is left alone. What the
 stage allows is carried out, the rest is recorded as what would have been
 done, and so is an action the agent asks to be held, once per message and
 stage. Every action records what was there before, so it can be taken
@@ -55,6 +56,18 @@ FORBIDDEN_ROLES = DISCARD_ROLES
 # The actions after whose refusal the rest of a message's are not taken,
 # and after whose recording only the rest are recorded only.
 _FOLDER_ACTIONS = frozenset({Action.CREATE_FOLDER, Action.MOVE_TO_FOLDER})
+
+
+# The names a folder path may not hold between its slashes.
+_NO_NAMES = frozenset({"", ".", ".."})
+
+
+def _well_formed(path: str) -> None:
+    """Refuse a folder path that is not names between slashes: one that
+    starts or ends with a slash, holds two in a row, or names ``.`` or
+    ``..``. The executor holds to it whatever the agent may make."""
+    if any(name in _NO_NAMES for name in path.split("/")):
+        raise ActionRefusedError("the folder path is not names between slashes")
 
 
 class Outcome(StrEnum):
@@ -291,9 +304,11 @@ class Executor:
         if request.action is Action.MOVE_TO_FOLDER:
             if not request.folder:
                 raise ActionRefusedError("a move names no folder")
+            _well_formed(request.folder)
         elif request.action is Action.CREATE_FOLDER:
             if not request.folder:
                 raise ActionRefusedError("a folder to make has no path")
+            _well_formed(request.folder)
         elif request.keyword != self.agent.keyword:
             raise ActionRefusedError("an agent sets and takes off its own keyword only")
 
