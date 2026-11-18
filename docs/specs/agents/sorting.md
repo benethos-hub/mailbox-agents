@@ -1,4 +1,4 @@
-# The agent `sorting` (planned)
+# The agent `sorting`
 
 > **Status: built on 2026-11-18, steps S1 to S7, and run in `shadow` and in
 > `full` on the test account. Not run on a real mailbox.** Planned the same

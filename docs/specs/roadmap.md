@@ -7,7 +7,7 @@
 | 2 | `invoices`: gold set, baseline, model, first report, then `keyword`, then `full` |
 | 3 | `awaiting_reply` |
 | 4 | `inquiries`: label, then fields |
-| 4b | `sorting`: groups of senders to folders by rules alone, the action `create_folder`, then `invoices` rebuilt to look in folders named at its start and to move an invoice into a subfolder ([sorting](agents/sorting.md), [invoices](agents/invoices.md), planned 2026-11-18) |
+| 4b | `sorting`: groups of senders to folders by rules alone, the action `create_folder`, then `invoices` rebuilt to look in folders named at its start and to move an invoice into a subfolder ([sorting](agents/sorting.md), [invoices](agents/invoices.md), planned and built 2026-11-18, on the test account only) |
 | 5 | Recognising a repeated inquiry by embeddings, stored in the state file |
 | 6 | Handing a message to an external agent server over HTTP, and reply drafts |
 | 7 | A daily overview of what every agent did, read from the state files by a process of its own, with no model involved |
