@@ -55,7 +55,6 @@ def test_every_line_function_writes_one_line(stream: io.StringIO) -> None:
     error = errors.GatewayUnavailableError("away")
     logbook.started("a", "1", "shadow")
     logbook.stopped("a", "signal")
-    logbook.migrated("a", 1)
     logbook.metrics_serving("a", 9464)
     logbook.feed_read("a", 3, 1)
     logbook.feed_expired("a")
@@ -72,7 +71,7 @@ def test_every_line_function_writes_one_line(stream: io.StringIO) -> None:
     logbook.action_done("a", "m1", "add_keyword", "shadow", False)
     logbook.action_refused("a", "m1", "move_to_folder", error)
 
-    assert len(stream.getvalue().splitlines()) == 18
+    assert len(stream.getvalue().splitlines()) == 17
 
 
 def test_no_other_module_imports_logging() -> None:

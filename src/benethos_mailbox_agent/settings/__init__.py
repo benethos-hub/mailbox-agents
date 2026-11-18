@@ -21,7 +21,6 @@ __all__ = [
     "DEFAULT_ENV_FILE",
     "KEYWORD_FORBIDDEN",
     "PREFIX",
-    "STAGES",
     "Settings",
     "Stage",
     "load_settings",
@@ -37,7 +36,6 @@ PREFIX = "MAILBOX_AGENT_"
 DEFAULT_ENV_FILE = Path("config/benethos-mailbox-agent/.env")
 
 Stage = Literal["shadow", "keyword", "full"]
-STAGES: tuple[Stage, ...] = ("shadow", "keyword", "full")
 
 
 class Settings(BaseSettings):

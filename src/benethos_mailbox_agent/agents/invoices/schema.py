@@ -13,10 +13,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, create_model
 
 from ...records import MailMessage
 
-__all__ = ["LABELS", "MAX_TEXT", "NEAR_MISSES", "Answer", "answer_schema", "render"]
-
-LABELS = ("invoice", "other")
-NEAR_MISSES = ("reminder", "quotation", "order_confirmation", "payment_receipt", "none")
+__all__ = ["MAX_TEXT", "Answer", "answer_schema", "render"]
 
 # The text of a mail is cut here. An invoice says what it is near the top.
 MAX_TEXT = 6000

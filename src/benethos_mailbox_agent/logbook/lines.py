@@ -19,7 +19,6 @@ __all__ = [
     "feed_read",
     "message_state",
     "metrics_serving",
-    "migrated",
     "pass_done",
     "pass_failed",
     "started",
@@ -47,10 +46,6 @@ def started(agent: str, version: str, stage: str) -> None:
 
 def stopped(agent: str, reason: str) -> None:
     LOGGER.info("agent=%s stopped reason=%s", agent, reason)
-
-
-def migrated(agent: str, version: int) -> None:
-    LOGGER.info("agent=%s state file at schema version %d", agent, version)
 
 
 def metrics_serving(agent: str, port: int) -> None:

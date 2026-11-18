@@ -298,7 +298,7 @@ class Store:
         )
         return _message_row(row) if row else None
 
-    def due(self, now: datetime, limit: int = 100) -> list[MessageRow]:
+    def due(self, now: datetime, limit: int) -> list[MessageRow]:
         """The ``pending`` messages whose next attempt has come, oldest first."""
         rows = self._all(
             "SELECT account_id, message_id, state, attempts, next_attempt, created, "

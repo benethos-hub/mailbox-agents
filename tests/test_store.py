@@ -146,8 +146,8 @@ def test_due_waits_for_the_next_attempt(store: Store) -> None:
         REF, "pending", NOW, attempts=1, next_attempt=NOW + timedelta(hours=1)
     )
 
-    assert [row.ref for row in store.due(NOW + timedelta(minutes=1))] == [OTHER]
-    assert len(store.due(NOW + timedelta(hours=2))) == 2
+    assert [row.ref for row in store.due(NOW + timedelta(minutes=1), 50)] == [OTHER]
+    assert len(store.due(NOW + timedelta(hours=2), 50)) == 2
 
 
 def test_counts_name_every_state(store: Store) -> None:
