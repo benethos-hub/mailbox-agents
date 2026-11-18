@@ -72,6 +72,21 @@ Stalwart, on the test account:
   messages that `get_message` then answered with `404`: messages moved out
   of that folder shortly before **(to verify why)**. The runtime takes such
   a message as gone and ends it as `skipped`.
+- The feed names, while moves are synced, a message that lives for one
+  sync only. Measured 2026-11-18 in two runs of `live/invoices.py`:
+  `sorting` moved four messages out of the inbox, and the feed then named
+  each moved message as `message.updated` under its own id, once per sync
+  of the service, roughly every 35 seconds. Beside them, in each run, two
+  ids that no listing of the account had named before came as
+  `message.created`, each named
+  `message.deleted` in the next sync, 34 to 38 seconds later.
+  `invoices` read both changes in one pass after `sorting` was done, took
+  the created id up, and `get_message` answered it `404`. The runtime
+  logs it as `failed step fetch of message <id>: MessageGoneError` and
+  ends the message as `skipped`, as for any message deleted before it is
+  read, and nothing is decided or done. So these two warnings per run of
+  the check are this behaviour of the service, not a fault of the agents.
+  Whether it is the same cause as the listing above is **(to verify)**.
 - `get_me` answers the agents' user exactly the one account it is
   granted, the test account (measured 2026-11-18). `list_accounts` answers it `200` with no
   account at all: it belongs to the group `accounts.read`, which an agent
