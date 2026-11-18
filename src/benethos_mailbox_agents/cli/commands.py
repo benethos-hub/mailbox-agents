@@ -234,10 +234,10 @@ def evaluate(args: argparse.Namespace, settings: Settings) -> int:
     """Run an agent over a gold set, print the scores, write the report."""
     cls = load(args.agent)
     items = load_gold(args.gold)
-    report = asyncio.run(_evaluate(cls, items, settings))
-    for line in render(report):
+    built = asyncio.run(_evaluate(cls, items, settings))
+    for line in render(built):
         print(line)
-    print(f"report: {write(report, args.reports)}")
+    print(f"report: {write(built, args.reports)}")
     return 0
 
 
