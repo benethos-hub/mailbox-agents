@@ -51,7 +51,7 @@ async def collect(
     """The newest ``limit`` messages, in ``state`` if named, each with its
     subject and sender fetched now unless ``mailbox`` is None."""
     entries = []
-    for row in store.messages(state)[:limit]:
+    for row in store.messages(state, limit):
         message = None
         if mailbox is not None:
             try:

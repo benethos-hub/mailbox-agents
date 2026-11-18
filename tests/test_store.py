@@ -165,6 +165,8 @@ def test_counts_name_every_state(store: Store) -> None:
     assert store.oldest_pending() == NOW
     assert [row.ref for row in store.messages("skipped")] == [OTHER]
     assert len(store.messages()) == 2
+    assert len(store.messages(limit=1)) == 1
+    assert [row.ref for row in store.messages("skipped", 5)] == [OTHER]
 
 
 def test_an_unknown_state_is_refused(store: Store) -> None:

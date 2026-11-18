@@ -307,12 +307,18 @@ class Store:
         )
         return [_message_row(row) for row in rows]
 
-    def messages(self, state: str | None = None) -> list[MessageRow]:
-        """Every message, or those in ``state``, newest first."""
+    def messages(
+        self, state: str | None = None, limit: int | None = None
+    ) -> list[MessageRow]:
+        """Every message, or those in ``state``, newest first, at most
+        ``limit`` of them when it is given."""
+        where = " WHERE state = ?" if state else ""
+        args: tuple[Any, ...] = (state,) if state else ()
+        sql = _MESSAGE_SQL + where + " ORDER BY created DESC"
         rows = (
-            self._all(_MESSAGE_SQL + " WHERE state = ? ORDER BY created DESC", state)
-            if state
-            else self._all(_MESSAGE_SQL + " ORDER BY created DESC")
+            self._all(sql + " LIMIT ?", *args, limit)
+            if limit is not None
+            else self._all(sql, *args)
         )
         return [_message_row(row) for row in rows]
 
