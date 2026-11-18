@@ -43,6 +43,7 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
     "runtime": frozenset(
         {"errors", "logbook", "settings", "records", "contract", "store", "llm"}
     ),
+    # settings for PREFIX alone, which an agent's messages name settings by.
     "agents": frozenset({"errors", "records", "settings", "contract"}),
     # Scores an agent the way the runtime runs it, on a state file of its own.
     "evaluation": frozenset({"errors", "records", "contract", "store", "runtime"}),
@@ -72,7 +73,12 @@ CONFINED: dict[str, frozenset[str]] = {
     "benethos_mailbox_client": frozenset({"sources/mailbox.py"}),
     "httpx": frozenset({"sources/mailbox.py", "llm/gateway.py"}),
     "prometheus_client": frozenset({"runtime/metrics.py"}),
+    "pydantic_settings": frozenset({"settings/__init__.py"}),
 }
+
+# contract/registry.py is the one module that reaches into the package by
+# name, through importlib, to find the agents: no import statement shows it,
+# so no row of MAY_IMPORT can.
 
 
 def _layer(module: str) -> str:
@@ -133,6 +139,24 @@ def test_a_module_imports_only_the_layers_it_may(path: Path) -> None:
         and target not in allowed
     ]
     assert wrong == [], f"{layer} may import {sorted(allowed)}"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [p for p in _modules() if _layer_of(p) == "agents"],
+    ids=[
+        p.relative_to(SOURCE).as_posix() for p in _modules() if _layer_of(p) == "agents"
+    ],
+)
+def test_an_agent_imports_no_other_agent(path: Path) -> None:
+    """Agents stand on their own: prompt, schema and rules are never shared."""
+    parts = path.relative_to(SOURCE).parts
+    own = f"{PACKAGE}.agents.{parts[1]}" if len(parts) > 2 else None
+    for module, line in _imports(path):
+        if module.startswith(f"{PACKAGE}.agents."):
+            assert own is not None and (
+                module == own or module.startswith(f"{own}.")
+            ), f"line {line}: {module}"
 
 
 def test_every_layer_has_a_row() -> None:
