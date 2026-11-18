@@ -26,7 +26,13 @@ from enum import StrEnum
 from typing import Any, Protocol
 
 from ..contract import Action, ActionRequest, Agent
-from ..errors import ActionRefusedError, MailboxRefusedError, MessageGoneError
+from ..errors import (
+    ActionRefusedError,
+    MailboxAgentError,
+    MailboxRefusedError,
+    MailboxUnavailableError,
+    MessageGoneError,
+)
 from ..logbook import actions, record
 from ..records import FolderRef, MailMessage, MessageRef
 from ..store import Store
@@ -180,6 +186,9 @@ class Executor:
             except MailboxRefusedError as exc:
                 self._store.drop_action(recorded)
                 return self._refused(request, exc)
+            except MailboxUnavailableError:
+                await self._settle(request, target, recorded)
+                raise
             self._store.mark_action_executed(recorded)
         elif request.action is Action.CREATE_FOLDER:
             self._recorded_folders.add((request.ref.account_id, argument))
@@ -318,6 +327,31 @@ class Executor:
             for other in known.values()
             if other.role in FORBIDDEN_ROLES
         )
+
+    async def _settle(self, request: ActionRequest, target: str, recorded: int) -> None:
+        """After a write whose answer did not come: mark the action taken
+        when its result is there, and drop it when not, so a move that
+        went through counts as one. When the service cannot tell either,
+        the action stays recorded and not taken, with what was before."""
+        try:
+            reached = await self._reached(request, target)
+        except MailboxAgentError:
+            return
+        if reached:
+            self._store.mark_action_executed(recorded)
+        else:
+            self._store.drop_action(recorded)
+
+    async def _reached(self, request: ActionRequest, target: str) -> bool:
+        """Whether the result of the action is there now."""
+        if request.action is Action.CREATE_FOLDER:
+            found = await self._mailbox.folder_at(request.ref.account_id, target)
+            return found is not None
+        message = await self._mailbox.message(request.ref)
+        if request.action is Action.MOVE_TO_FOLDER:
+            return [f.id for f in message.folders] == [target]
+        present = target.casefold() in {k.casefold() for k in message.keywords}
+        return present == (request.action is Action.ADD_KEYWORD)
 
     async def _take(self, request: ActionRequest, target: str) -> None:
         if request.action is Action.ADD_KEYWORD:

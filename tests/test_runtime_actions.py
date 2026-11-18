@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
 from pathlib import Path
 
+import httpx
 import pytest
 
 from benethos_mailbox_agents.contract import Action, ActionRequest
@@ -203,6 +204,66 @@ async def test_a_service_that_is_away_is_raised(world: Wired) -> None:
 
     with pytest.raises(MailboxUnavailableError):
         await executor(world)([ADD])
+
+
+def taken_then_away(
+    world: Wired, monkeypatch: pytest.MonkeyPatch, *, down: bool = False
+) -> None:
+    """The service takes each write and then answers 503, and with
+    ``down`` answers 503 to everything after."""
+    for name in ("_update", "_create_folder"):
+        write = getattr(world.service, name)
+
+        def away(
+            request: httpx.Request,
+            parts: list[str],
+            write: Callable[[httpx.Request, list[str]], httpx.Response] = write,
+        ) -> httpx.Response:
+            write(request, parts)
+            world.service.down = down
+            return httpx.Response(503, json={"error": {"code": "unavailable"}})
+
+        monkeypatch.setattr(world.service, name, away)
+
+
+@pytest.mark.parametrize(
+    "request_",
+    [MOVE, ADD, ActionRequest(Action.CREATE_FOLDER, REF, folder="Providers")],
+    ids=["move", "keyword", "folder"],
+)
+async def test_an_action_taken_while_the_answer_failed_counts_as_taken(
+    world: Wired, monkeypatch: pytest.MonkeyPatch, request_: ActionRequest
+) -> None:
+    taken_then_away(world, monkeypatch)
+
+    with pytest.raises(MailboxUnavailableError):
+        await maker(world)([request_])
+
+    (taken,) = world.store.actions(REF)
+    assert (taken.action, taken.executed) == (request_.action.value, True)
+
+
+async def test_an_action_the_service_cannot_tell_of_stays_not_taken(
+    world: Wired, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taken_then_away(world, monkeypatch, down=True)
+
+    with pytest.raises(MailboxUnavailableError):
+        await executor(world)([MOVE])
+
+    (move,) = world.store.actions(REF)
+    assert (move.action, move.executed) == ("move_to_folder", False)
+
+
+async def test_a_move_not_taken_while_the_service_was_away_is_dropped(
+    world: Wired,
+) -> None:
+    world.service.write_refusal = (503, "unavailable")
+
+    with pytest.raises(MailboxUnavailableError):
+        await executor(world)([MOVE])
+
+    assert world.store.actions() == []
 
 
 # -- folders an agent makes -----------------------------------------------------

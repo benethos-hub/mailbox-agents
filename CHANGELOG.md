@@ -210,3 +210,6 @@ commit that makes the change. Design decisions live in
   recorded only, also in `full`. The move was sent with an empty folder
   and recorded as carried out, which then refused every later move of
   the message.
+- A move the mailbox service carried out without its answer reaching the
+  agent, after a timeout, counts as the agent's move. A later `backfill`
+  no longer moves a message again that the owner moved back.

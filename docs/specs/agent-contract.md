@@ -78,7 +78,12 @@ one is made after it, each as an action of its own, recorded under the
 message whose move needs it. `create_folder` is the one action without a
 reverse of its own. It is accepted because it changes no message
 (decided 2026-11-18). An
-action whose result is already there is not taken again. What the stage
+action whose result is already there is not taken again. A write whose
+answer does not come, a timeout or a service away, is looked up at once:
+an action whose result is there counts as taken, so a move that went
+through counts as the agent's one move, and one whose result is not
+there is dropped. When the service cannot tell either, it stays recorded
+and not taken. What the stage
 does not allow is recorded as what would have been done, and so is an
 action the agent asks to be `held`, whatever the stage: for a group of
 [sorting](agents/sorting.md) whose folder would lend a forged mail trust.
