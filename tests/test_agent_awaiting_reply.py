@@ -3,6 +3,7 @@ closing rules of SPECS.md 10.2, and each known miss."""
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -138,6 +139,16 @@ async def world(tmp_path: Path) -> AsyncIterator[World]:
 )
 def test_working_days_skip_the_weekend(start: datetime, due: datetime) -> None:
     assert add_working_days(start, 3) == due
+
+
+def test_decomposed_text_is_read_like_composed_text() -> None:
+    text = unicodedata.normalize(
+        "NFD",
+        "Könnten Sie mir den Entwurf schicken.\n\n-- Ursprüngliche Nachricht --\nAlt.",
+    )
+
+    assert asks(text)
+    assert "Alt." not in own_text(text)
 
 
 def test_own_text_leaves_the_quote_out() -> None:

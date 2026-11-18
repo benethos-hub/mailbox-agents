@@ -11,6 +11,7 @@ counted by the evaluation. See SPECS.md section 10.2.
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import datetime, timedelta
 
 from ...records import MailMessage
@@ -77,11 +78,16 @@ AUTOMATIC_SUBJECTS = (
 )
 
 
+def _nfc(text: str) -> str:
+    """``text`` in Unicode NFC, as the phrases here are written."""
+    return unicodedata.normalize("NFC", text)
+
+
 def own_text(text: str) -> str:
     """The text its sender wrote: everything before the quoted part."""
     lines = []
     for line in text.splitlines():
-        if _QUOTE_START.match(line.strip()):
+        if _QUOTE_START.match(_nfc(line).strip()):
             break
         lines.append(line)
     return "\n".join(lines).strip()
@@ -99,7 +105,7 @@ def asks(text: str) -> bool:
     paragraphs = written_paragraphs(text)
     if not paragraphs:
         return False
-    last = paragraphs[-1].lower()
+    last = _nfc(paragraphs[-1]).lower()
     return "?" in last or any(phrase in last for phrase in REQUEST_PHRASES)
 
 
