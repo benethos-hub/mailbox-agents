@@ -203,3 +203,6 @@ commit that makes the change. Design decisions live in
   `MAILBOX_AGENTS_INVOICES_FOLDERS` would take them in, as
   `Invoices,Invoices/*` takes in `Invoices/Rechnungen`. A `backfill` made
   an empty `Rechnungen` below the filed invoice before.
+- No folder is made for the move of a message the agent moved before.
+  The move is refused as before, and the folder the owner deleted after
+  moving the message back is no longer made again, empty.

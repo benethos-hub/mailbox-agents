@@ -89,7 +89,9 @@ folders and the move alike.
 **A message is moved at most once by one agent (decided 2026-11-18).** A
 move of a message the agent has moved before is refused, so a message the
 owner moved back, into the inbox or anywhere, stays where the owner put it,
-also when `backfill` takes it up anew. A move only recorded in
+also when `backfill` takes it up anew. The folders the move would need are
+not made either, so no empty folder is left behind the refused move. A
+move only recorded in
 `shadow` or `keyword` does not count. A message moved by hand never wanders
 back in a later pass. The actions of one message are taken in order, and
 after a refused move or folder the rest are not taken, so a keyword that

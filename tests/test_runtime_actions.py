@@ -302,6 +302,18 @@ async def test_a_message_the_owner_moved_back_is_not_moved_again(
     assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
 
 
+async def test_no_folder_is_made_for_a_message_moved_before(world: Wired) -> None:
+    run = maker(world)
+    await run([MOVE])
+    world.service.messages[(ACCOUNT, "m1")]["folder_ids"] = ["inbox"]
+
+    await run([make("Providers"), MOVE])
+
+    assert world.service.made() == []
+    assert [a.action for a in world.store.actions(REF)] == ["move_to_folder"]
+    assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
+
+
 async def test_a_move_only_recorded_does_not_count(world: Wired) -> None:
     assert await executor(world, "shadow").run(MOVE) is Outcome.RECORDED
 

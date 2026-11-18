@@ -10,7 +10,8 @@ carried out, the rest is recorded as what would have been done, and so is
 an action the agent asks to be held. Every
 action records what was there before, so it can be taken back. An action
 whose result is already there is not taken again, and a message the
-agent moved once is not moved again, so one the owner moved back stays.
+agent moved once is not moved again, so one the owner moved back stays,
+and no folder is made for its move.
 After a refused move or folder, the rest of the message's actions are not
 taken. See docs/specs/agent-contract.md,
 docs/specs/runtime.md and docs/specs/safety.md.
@@ -102,9 +103,19 @@ class Executor:
         """Take the actions in order. After a refused folder or move, or a
         message that is gone, those after it are not taken: an action
         asked after a move, such as a keyword that says the message was
-        moved, must not stand without it."""
+        moved, must not stand without it. For a message the agent moved
+        before, the folders made for its move are skipped: the move will be
+        refused, and an empty folder would stay."""
         self._recorded_folders = set()
+        moved = {
+            request.ref
+            for request in requests
+            if request.action is Action.MOVE_TO_FOLDER
+            and self._moved_before(request.ref)
+        }
         for request in requests:
+            if request.action is Action.CREATE_FOLDER and request.ref in moved:
+                continue
             outcome = await self.run(request)
             if outcome is Outcome.GONE or (
                 outcome is Outcome.REFUSED and request.action in _FOLDER_ACTIONS
