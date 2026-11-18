@@ -9,9 +9,21 @@ from typing import Any
 
 import httpx
 import pytest
+from pydantic import BaseModel, ValidationError
 
+from benethos_mailbox_agent.agents.awaiting_reply.schema import (
+    Answer as AwaitingAnswer,
+)
+from benethos_mailbox_agent.agents.inquiries.schema import FIELDS
+from benethos_mailbox_agent.agents.inquiries.schema import (
+    Inquiry as InquiryAnswer,
+)
 from benethos_mailbox_agent.agents.invoices.agent import Invoices, _mentions
-from benethos_mailbox_agent.agents.invoices.schema import render
+from benethos_mailbox_agent.agents.invoices.schema import (
+    MAX_ANSWER_TEXT,
+    answer_schema,
+    render,
+)
 from benethos_mailbox_agent.errors import ConfigError
 from benethos_mailbox_agent.evaluation.gold import load_gold
 from benethos_mailbox_agent.records import MailMessage, MessageRef
@@ -484,3 +496,48 @@ async def test_the_report_ends_with_the_candidates(world: Wired) -> None:
         "  accounts@paperworks.example (1 invoice)",
     ]
     assert any("supplier=CloudHost" in line for line in lines)
+
+
+LONG = "x" * (MAX_ANSWER_TEXT + 1)
+EMPTY = {"value": None, "quote": None}
+
+
+@pytest.mark.parametrize(
+    ("schema", "answer_"),
+    [
+        (
+            answer_schema(("CloudHost",)),
+            {
+                "label": "invoice",
+                "near_miss": "none",
+                "quote": "Ihre Rechnung",
+                "supplier": "CloudHost",
+                "supplier_quote": LONG,
+            },
+        ),
+        (AwaitingAnswer, {"expects_reply": True, "quote": LONG}),
+        (
+            InquiryAnswer,
+            {
+                "label": "inquiry",
+                "quote": "Projektanfrage",
+                **{name: EMPTY for name in FIELDS},
+                "role": {"value": LONG, "quote": "Python"},
+            },
+        ),
+    ],
+    ids=["invoices", "awaiting_reply", "inquiries"],
+)
+def test_an_answer_that_copies_the_mail_does_not_fit(
+    schema: type[BaseModel], answer_: dict[str, Any]
+) -> None:
+    with pytest.raises(ValidationError, match="longer than 300"):
+        schema.model_validate(answer_)
+
+
+async def test_a_long_quote_is_refused_as_schema(world: Wired) -> None:
+    world.fake_gateway.answer(answer("invoice", "y" * 1000))
+
+    assert await run(world, "inv-cloudhost") == "pending"
+
+    assert mail(world, "inv-cloudhost")["keywords"] == []

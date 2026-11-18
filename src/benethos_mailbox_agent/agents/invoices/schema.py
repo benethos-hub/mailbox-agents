@@ -7,9 +7,9 @@ name a folder that is not on the list.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, create_model
+from pydantic import AfterValidator, BaseModel, ConfigDict, create_model
 
 from ...records import MailMessage
 
@@ -21,6 +21,20 @@ NEAR_MISSES = ("reminder", "quotation", "order_confirmation", "payment_receipt",
 # The text of a mail is cut here. An invoice says what it is near the top.
 MAX_TEXT = 6000
 
+# The longest quote or value an answer may hold. A longer one is refused as
+# not fitting the schema, so an answer cannot copy the mail into the state
+# file. Checked after parsing, the schema sent to the model is unchanged.
+MAX_ANSWER_TEXT = 300
+
+
+def _short(value: str) -> str:
+    if len(value) > MAX_ANSWER_TEXT:
+        raise ValueError(f"longer than {MAX_ANSWER_TEXT} characters")
+    return value
+
+
+Short = Annotated[str, AfterValidator(_short)]
+
 
 class Answer(BaseModel):
     """The answer, its supplier narrowed to the list by answer_schema."""
@@ -31,9 +45,9 @@ class Answer(BaseModel):
     near_miss: Literal[
         "reminder", "quotation", "order_confirmation", "payment_receipt", "none"
     ]
-    quote: str
+    quote: Short
     supplier: str | None
-    supplier_quote: str | None
+    supplier_quote: Short | None
 
 
 def answer_schema(names: tuple[str, ...]) -> type[Answer]:

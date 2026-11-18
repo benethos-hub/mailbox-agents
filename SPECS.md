@@ -242,7 +242,10 @@ request stays visible, storable and mockable.
   the gateway from a local to a hosted model must not be configured for a
   key that reads customer mail.
 - **The schema is sent in its strict form:** every object closed, every
-  property required, a value that may be empty typed with `null`. No tools
+  property required, a value that may be empty typed with `null`. A quote
+  or a free value longer than 300 characters does not fit, checked after
+  parsing so the schema sent stays plain, and no answer copies the mail
+  into the state file. No tools
   are sent, and no sampling setting: some hosted models refuse one, so the
   gateway sets it per model, such as a temperature of 0 for a local one.
 - **A gateway that is away** (no connection, a timeout, a 5xx, a 408 or a
