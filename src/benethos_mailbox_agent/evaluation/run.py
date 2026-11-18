@@ -13,7 +13,12 @@ from collections.abc import Callable
 from datetime import datetime
 
 from ..contract import Agent, Reader
-from ..errors import AnswerRefusedError, LimitReachedError, MailboxRefusedError
+from ..errors import (
+    AnswerRefusedError,
+    LimitReachedError,
+    MailboxRefusedError,
+    MessageGoneError,
+)
 from ..runtime.model import Asker
 from ..runtime.reader import ReadOnlyMailbox
 from ..runtime.steps import decide_checked, make_calls, make_context
@@ -39,7 +44,9 @@ async def evaluate(
         try:
             message = await reader.message(item.ref)
         except MailboxRefusedError as exc:
-            outcomes.append(Outcome(item, None, None, failure=f"fetch:{exc.reason}"))
+            gone = isinstance(exc, MessageGoneError)
+            why = "fetch:gone" if gone else "fetch:refused"
+            outcomes.append(Outcome(item, None, None, failure=why))
             continue
         baseline = agent.baseline(message)
         calls = make_calls(agent, gateway=gateway, store=store, ref=item.ref, now=now)

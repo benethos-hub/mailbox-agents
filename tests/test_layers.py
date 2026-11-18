@@ -141,6 +141,44 @@ def test_every_layer_has_a_row() -> None:
     assert layers == set(MAY_IMPORT)
 
 
+# Where an HTTP status may be read: the modules of the upstreams, and the
+# error that carries it.
+HTTP_HOMES = frozenset({"sources", "llm", "errors"})
+
+
+@pytest.mark.parametrize(
+    "path",
+    [p for p in _modules() if _layer_of(p) not in HTTP_HOMES],
+    ids=[
+        p.relative_to(SOURCE).as_posix()
+        for p in _modules()
+        if _layer_of(p) not in HTTP_HOMES
+    ],
+)
+def test_no_http_status_beyond_the_upstreams(path: Path) -> None:
+    """A status code or a comparison with one stays where the upstream is
+    spoken to, so a change of client touches nothing else."""
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    caught = {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ExceptHandler) and node.name
+    }
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr == "status"
+            and isinstance(node.value, ast.Name)
+        ):
+            assert node.value.id not in caught, f"{path.name} reads an error's .status"
+        if isinstance(node, ast.Compare):
+            for side in (node.left, *node.comparators):
+                code = side.value if isinstance(side, ast.Constant) else None
+                assert not (isinstance(code, int) and 100 <= code <= 599), (
+                    f"{path.name} compares with {code}"
+                )
+
+
 def _third_party(path: Path) -> set[str]:
     """The top-level names of what ``path`` imports from outside the package."""
     found: set[str] = set()

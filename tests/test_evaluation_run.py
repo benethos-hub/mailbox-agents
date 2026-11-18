@@ -61,7 +61,7 @@ async def test_the_model_beside_the_rules(tmp_path: Path) -> None:
     assert model["labels"]["match"]["recall"] == 1.0
     assert rules["labels"]["match"]["recall"] == 0.5
     assert report["models_reported"] == ["reported-model"]
-    assert report["unanswered_because"] == {"fetch:not_found": 1}
+    assert report["unanswered_because"] == {"fetch:gone": 1}
     assert report["per_message"]["tokens_in"] == 90.0
     text = json.dumps(report)
     assert "m1" not in text and "Your invoice" not in text

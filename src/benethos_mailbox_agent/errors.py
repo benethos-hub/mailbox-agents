@@ -24,6 +24,7 @@ __all__ = [
     "MailboxAgentError",
     "MailboxRefusedError",
     "MailboxUnavailableError",
+    "MessageGoneError",
     "UnavailableError",
     "describe_invalid",
     "forget_secrets",
@@ -139,6 +140,11 @@ class MailboxRefusedError(MailboxAgentError):
         super().__init__(message)
         self.status = status
         self.reason = reason
+
+
+class MessageGoneError(MailboxRefusedError):
+    """The message is not there any more: deleted, or moved out of reach.
+    The same ``code`` as its base, so logs and metrics count it alike."""
 
 
 class AnswerRefusedError(MailboxAgentError):

@@ -23,6 +23,7 @@ from ..errors import (
     GatewayUnavailableError,
     LimitReachedError,
     MailboxRefusedError,
+    MessageGoneError,
 )
 from ..llm.evidence import check
 from ..llm.gateway import Reply
@@ -217,7 +218,7 @@ class StepRunner:
         except MailboxRefusedError as exc:
             logbook.step_failed(self.agent.name, ref.message_id, "fetch", exc)
             self.metrics.step_failed(exc.code)
-            if exc.status == 404:
+            if isinstance(exc, MessageGoneError):
                 return self._state(ref, "skipped")
             return self._retry(ref, attempts)
         if not self.agent.admit(message):
@@ -259,7 +260,7 @@ class StepRunner:
         except MailboxRefusedError as exc:
             logbook.step_failed(self.agent.name, ref.message_id, "effect", exc)
             self.metrics.step_failed(exc.code)
-            if exc.status == 404:
+            if isinstance(exc, MessageGoneError):
                 return self._state(ref, "skipped")
             return self._retry(ref, attempts)
         return self._state(ref, "done")

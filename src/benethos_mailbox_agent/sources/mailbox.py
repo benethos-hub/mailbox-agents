@@ -33,6 +33,7 @@ from ..errors import (
     ConfigError,
     MailboxRefusedError,
     MailboxUnavailableError,
+    MessageGoneError,
 )
 from ..records import (
     Address,
@@ -63,7 +64,8 @@ async def _call(pending: Awaitable[T]) -> T:
             raise MailboxUnavailableError(
                 f"the mailbox service answered {exc.status} ({exc.code})"
             ) from None
-        raise MailboxRefusedError(
+        refused = MessageGoneError if exc.status == 404 else MailboxRefusedError
+        raise refused(
             f"the mailbox service refused: {exc.code}",
             status=exc.status,
             reason=exc.code,
