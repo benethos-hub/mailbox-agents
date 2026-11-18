@@ -123,48 +123,81 @@ MAILBOX_AGENT_MODEL=claude/haiku-5-5 uv run benethos-mailbox-agent \
     --reports containers/live/secrets/reports
 ```
 
-The local models were measured on 2026-11-17 with llama.cpp build 12464,
-an RTX 4070 with 12 GB and a 12th generation Core i9 with 24 threads.
-Claude was measured on 2026-11-18 through the Claude API, its seconds
-include the way over the internet. The labels agreed with the gold set,
-out of 11 messages for `invoices` and `inquiries` and 3 for
+The local models were measured with llama.cpp build 12464, an RTX 4070
+with 12 GB and a 12th generation Core i9 with 24 threads: `invoices` and
+`awaiting_reply` on 2026-11-17, `inquiries` with its prompt `v3` on
+2026-11-18. Claude was measured on 2026-11-18 through the Claude API, its
+seconds include the way over the internet. The labels agreed with the
+gold set, out of 11 messages for `invoices` and `inquiries` and 3 for
 `awaiting_reply`. The fields are the right values of `invoices` against
-all it should have filled or did fill. The seconds are per message:
+all it should have filled or did fill. The seconds are per message, the
+first message of a run waiting for a local model to load:
 
 | Model | Size | invoices | inquiries | awaiting_reply | Fields | Seconds, invoices / inquiries |
 |---|---|---|---|---|---|---|
-| `cpu/qwen3-4b-2507` | 2.5 GB | 10 | 9 | 3 | 5 of 9 | 4.0 / 16.4 |
-| `cpu/qwen3.5-4b` | 2.7 GB | 11 | 11 | 3 | 6 of 9 | 4.5 / 17.9 |
-| `cpu/gemma-4-e4b` | 5.0 GB | 11 | 11 | 3 | 6 of 9 | 4.9 / 25.1 |
-| `cpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 11 | 3 | 6 of 7 | 4.7 / 22.2 |
-| `gpu/ministral-3-8b` | 5.2 GB | 11 | 1 | 3 | 6 of 7 | 0.8 / 4.4 |
-| `gpu/qwen3.5-9b` | 5.7 GB | 11 | 11 | 3 | 6 of 8 | 1.0 / 5.3 |
-| `gpu/gemma-4-12b` | 7.0 GB | 11 | 11 | 3 | 6 of 7 | 1.4 / 7.4 |
-| `gpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 11 | 3 | 6 of 7 | 1.7 / 7.7 |
-| `claude/haiku-5-5` | hosted | 11 | refused | 3 | 6 of 7 | 1.1 / - |
-| `claude/opus-5-5` | hosted | 11 | refused | 3 | 6 of 7 | 1.8 / - |
+| `cpu/qwen3-4b-2507` | 2.5 GB | 10 | 11 | 3 | 5 of 9 | 4.0 / 8.9 |
+| `cpu/qwen3.5-4b` | 2.7 GB | 11 | 11 | 3 | 6 of 9 | 4.5 / 11.8 |
+| `cpu/gemma-4-e4b` | 5.0 GB | 11 | 11 | 3 | 6 of 9 | 4.9 / 13.5 |
+| `cpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 10 | 3 | 6 of 7 | 4.7 / 22.6 |
+| `gpu/ministral-3-8b` | 5.2 GB | 11 | 2 | 3 | 6 of 7 | 0.8 / 3.9 |
+| `gpu/qwen3.5-9b` | 5.7 GB | 11 | 11 | 3 | 6 of 8 | 1.0 / 4.2 |
+| `gpu/gemma-4-12b` | 7.0 GB | 11 | 11 | 3 | 6 of 7 | 1.4 / 6.0 |
+| `gpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 10 | 3 | 6 of 7 | 1.7 / 11.0 |
+| `claude/haiku-5-5` | hosted | 11 | 11 | 3 | 6 of 7 | 1.1 / 2.4 |
+| `claude/opus-5-5` | hosted | 11 | 11 | 3 | 6 of 7 | 1.8 / 2.3 |
 
 What decided:
 
 - `ministral-3-8b` words its quotes anew, so the evidence check refuses
-  ten answers of `inquiries` out of eleven.
+  nine answers of `inquiries` out of eleven.
 - `gemma-4-e4b` named a listed supplier where the gold set has none, the
   one kind of mistake that moves mail into a wrong folder.
-- On the card, `qwen3.6-35b-a3b` costs well under a second more per
-  message than the smaller models and is the largest of them. It fills
-  the card, `--fit` keeps the rest of its experts in main memory.
-- On the CPU, `qwen3.5-4b` agrees on every label like the 35B model, in an
-  eighth of its memory. The 35B model stays at hand as
-  `cpu/qwen3.6-35b-a3b`, for a server with 32 GB or more.
+- On the card, `qwen3.6-35b-a3b` is the largest model, and llama.cpp
+  worked 4.1 s on an inquiry with it, against 2.4 s for `qwen3.5-9b`. It
+  fills the card, `--fit` keeps the rest of its experts in main memory.
+  With the prompt `v3` of `inquiries` it gave one quote the mail does not
+  hold, on the card and on the CPU alike, and the evidence check refused
+  that answer. `qwen3.5-9b` and `gemma-4-12b` lost none.
+- On the CPU, `qwen3.5-4b` agrees on every label of `inquiries` and
+  `invoices`, in an eighth of the 35B model's memory. The 35B model stays
+  at hand as `cpu/qwen3.6-35b-a3b`, for a server with 32 GB or more.
+- Haiku and Opus agree on every label and field. Haiku answers as fast
+  and costs a fortieth of Opus. So `mail-classifier` is Haiku.
 
-- The Claude API refuses the schema of `inquiries`, for Haiku and Opus
-  alike: its fourteen fields hold 28 values that may be null, and the
-  API compiles at most 16 parameters with union types. Every answer of
-  `inquiries` is refused as `request`. The local models take the schema.
-- Haiku and Opus agree on every label and field of `invoices` and
-  `awaiting_reply`. Haiku answers faster, and for a fraction of Opus's
-  price per token. Both read about 1200 tokens of an invoice and write
-  about 120 (Haiku) or 75 (Opus). So `mail-classifier` is Haiku.
+### What a model costs
+
+The gateway counts what each call cost, by the price per token set for
+its alias in `litellm.yaml`, and its web interface shows the sum per key
+and per model. For Claude the price is the list price of the Claude API
+on 2026-11-18. For a local model it is an estimate of the electricity the
+call burns, without the hardware:
+
+- the time llama.cpp spent reading and writing tokens in the runs of
+  `inquiries` above, from its own timing lines,
+- times the power: on the card what `nvidia-smi` read each second while
+  the card worked, plus 100 W for the rest of the machine, and 220 W for
+  the CPU at full load where it computes, the CPU models and the 35B
+  model's experts,
+- at $0.40 a kWh, about 0.35 euro.
+
+A local model reads its system prompt from the cache of llama.cpp after
+the first message, so most of what it is counted as reading costs next to
+nothing. The tokens of Claude and of a local model are not the same
+size: Claude counted about 3,800 tokens for an inquiry, the local models
+about 570.
+
+| Model | Dollars per million tokens in | Dollars per million tokens out | Dollars per 1,000 inquiries |
+|---|---|---|---|
+| `cpu/qwen3-4b-2507` | 0.042 | 1.30 | 0.19 |
+| `cpu/qwen3.5-4b` | 0.044 | 1.40 | 0.27 |
+| `cpu/gemma-4-e4b` | 0.029 | 1.50 | 0.30 |
+| `cpu/qwen3.6-35b-a3b` | 0.057 | 1.40 | 0.26 |
+| `gpu/ministral-3-8b` | 0.002 | 0.39 | 0.06 |
+| `gpu/qwen3.5-9b` | 0.007 | 0.40 | 0.07 |
+| `gpu/gemma-4-12b` | 0.010 | 0.50 | 0.10 |
+| `gpu/qwen3.6-35b-a3b` | 0.036 | 0.64 | 0.13 |
+| `claude/haiku-5-5` | 0.10 | 0.50 | 0.50 |
+| `claude/opus-5-5` | 4.00 | 20.00 | 18.64 |
 
 Eleven invented messages show a model that fails outright, not which of
 the good ones is best. That takes the evaluation on real mail of SPECS.md
