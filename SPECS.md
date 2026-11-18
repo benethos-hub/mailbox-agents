@@ -153,6 +153,7 @@ containers/
 config/           # .env.example and the example lists *.example.json
                   # versioned, .env local
 data/             # state files and the gold set, never versioned
+reports/          # evaluation reports, numbers only, versioned
 ```
 
 ### Design decisions
