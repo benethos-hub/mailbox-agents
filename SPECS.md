@@ -617,7 +617,9 @@ Further rules:
   every run of spaces, tabs, line breaks and non-breaking spaces counts as
   one space. Nothing else is forgiven, not case and not a changed
   character. A quote of fewer than eight characters besides whitespace
-  counts as not found (decided 2026-11-17). A field whose quote is not found is dropped, and
+  counts as not found (decided 2026-11-17). A value code found by a rule,
+  such as the supplier of a sender rule, carries no quote, so nothing of
+  the mail is stored for it. A field whose quote is not found is dropped, and
   a label whose quote is not found is recorded and not acted on. A
   confidence the model reports about itself is not used.
 - **Reversible only.** Every action records what was there before.

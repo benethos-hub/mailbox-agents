@@ -153,7 +153,9 @@ class Invoices(Agent):
             if named and named != rule.supplier.name:
                 details["model_supplier"] = named
             return [
-                Evidence(field="supplier", value=rule.supplier.name, quote=sender or "")
+                Evidence(
+                    field="supplier", value=rule.supplier.name, quote="", found=True
+                )
             ]
         said = answer.supplier_quote
         chosen = self.suppliers.named(named) if named else None

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -102,6 +103,7 @@ async def test_an_invoice_of_a_listed_supplier_is_marked_and_moved(
     found = decision(world, "inv-cloudhost")
     assert found["fields"] == {"supplier": "CloudHost"}
     assert found["details"] == {"supplier_source": "rule", "supplier_rule": "address"}
+    assert "@" not in json.dumps(found)
 
 
 async def test_an_invoice_of_a_sender_not_listed_is_marked_only(world: Wired) -> None:

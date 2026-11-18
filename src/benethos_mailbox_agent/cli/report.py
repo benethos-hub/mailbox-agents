@@ -109,9 +109,8 @@ def render(entries: list[Entry]) -> list[str]:
             lines.append(_decision(entry.decision, entry.model))
             for item in entry.decision.evidence:
                 found = {True: "found", False: "NOT found", None: "not checked"}
-                lines.append(
-                    f'  evidence: {item.field} "{item.quote}" {found[item.found]}'
-                )
+                said = f'"{item.quote}"' if item.quote else "(by a rule)"
+                lines.append(f"  evidence: {item.field} {said} {found[item.found]}")
         if entry.baseline is not None:
             lines.append(f"  baseline: {entry.baseline.label}")
         lines.extend(_action(action) for action in entry.actions)

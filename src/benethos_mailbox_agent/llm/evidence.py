@@ -48,13 +48,17 @@ def check(decision: Decision, parts: Sequence[str]) -> Decision:
     """``decision`` with every quote looked up in ``parts``, the parts of
     the mail the model was given, each on its own.
 
-    Each evidence is marked ``found``. A field whose quote is missing or
+    Each evidence is marked ``found``. One that code already found by a
+    rule stays found. A field whose quote is missing or
     not found is dropped. A decision whose label has no quote that is
     found is ``refused`` with the reason ``evidence``.
     """
     evidence = tuple(
         item.model_copy(
-            update={"found": any(contains(part, item.quote) for part in parts)}
+            update={
+                "found": item.found is True
+                or any(contains(part, item.quote) for part in parts)
+            }
         )
         for item in decision.evidence
     )

@@ -108,6 +108,15 @@ def test_a_label_without_any_quote_is_refused() -> None:
     assert check(_decision(), PARTS).refused == "evidence"
 
 
+def test_a_value_found_by_a_rule_stays_found() -> None:
+    label = Evidence(field=LABEL, value="invoice", quote="Ihre Rechnung")
+    rule = Evidence(field="supplier", value="CloudHost", quote="", found=True)
+
+    decided = check(_decision(label, rule, supplier="CloudHost"), PARTS)
+
+    assert decided.fields == {"supplier": "CloudHost"}
+
+
 def test_an_earlier_refusal_is_kept() -> None:
     decided = _decision(
         Evidence(field=LABEL, value="invoice", quote="Ihre Rechnung")
