@@ -71,6 +71,8 @@ commit that makes the change. Design decisions live in
   marked and stays, unless `MAILBOX_AGENT_INVOICES_INBOX_FOLDER` names a
   folder. The rules no longer take a listed sender with a file for an
   invoice. `status` names a folder an agent expects that is missing.
+- `backfill` takes up the messages of the folders an agent looks in besides
+  the inbox and sent mail, for `invoices` those it looks in.
 - An agent moves a message at most once. A message its owner moved back,
   into the inbox or anywhere, stays there, also when `backfill --again`
   takes it up anew. After a refused move the rest of the message's

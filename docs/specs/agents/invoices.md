@@ -61,6 +61,9 @@ be there, those named, the parents of `Parent/*` and the inbox folder, and
 names each one missing in an account the agent works on. A missing one does
 not stop the start, as `sorting` may make it later.
 
+`backfill` takes up the messages of the last days in the inbox and in every
+folder it looks in, account by account, each folder by its id.
+
 `MAILBOX_AGENT_INVOICES_FOLDER` and `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`
 are no longer read and retire with step I5, with the supplier list and its
 example.

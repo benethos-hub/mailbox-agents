@@ -178,6 +178,32 @@ class Mailbox:
                     break
         return list(refs)
 
+    async def recent_in(
+        self, account_id: str, folder_id: str, since: date
+    ) -> list[MessageRef]:
+        """The messages from ``since`` on in one folder of one account, named
+        by its id: the service lists a folder by its id per account, not by
+        its path and not across accounts (measured 2026-11-18)."""
+        refs: list[MessageRef] = []
+        cursor: str | None = None
+        while True:
+            page = await _call(
+                self._client.list_messages(
+                    account_id,
+                    folder=folder_id,
+                    after=since.isoformat(),
+                    limit=_PAGE,
+                    cursor=cursor,
+                )
+            )
+            refs += [
+                MessageRef(account_id=account_id, message_id=item.id)
+                for item in page.items
+            ]
+            cursor = page.next_cursor
+            if not cursor:
+                return refs
+
     # -- reading ---------------------------------------------------------------------
 
     async def folders(

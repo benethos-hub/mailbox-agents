@@ -16,7 +16,7 @@ from enum import StrEnum
 from typing import ClassVar
 
 from ..errors import ContractError
-from ..records import EVENTS, Decision, Event, MailMessage, MessageRef
+from ..records import EVENTS, Decision, Event, FolderRef, MailMessage, MessageRef
 from ..settings import KEYWORD_FORBIDDEN, Settings
 from .context import Context
 
@@ -191,6 +191,12 @@ class Agent(ABC):
         sender's address, its decision and its actions. Nothing by
         default."""
         return []
+
+    def backfill_folder(self, folder: FolderRef) -> bool:
+        """Whether ``backfill`` takes up the messages of ``folder`` besides
+        those of the inbox and of sent mail, such as a folder the agent
+        looks in. None by default."""
+        return False
 
     def folders_needed(self) -> tuple[str, ...]:
         """The folders the agent's configuration names and expects to be

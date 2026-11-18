@@ -255,3 +255,20 @@ async def test_http_to_another_machine_needs_allowing() -> None:
         "http://mailbox.example.test", "token-value", allow_http=True
     ) as mailbox:
         assert isinstance(mailbox, Mailbox)
+
+
+async def test_recent_in_lists_one_folder_of_one_account(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    service.add(wire_message("h1", folder_ids=["inv-hosting"]), change=None)
+    service.add(wire_message("i1"), change=None)
+
+    found = await mailbox.recent_in(ACCOUNT, "inv-hosting", date(2026, 11, 10))
+
+    assert found == [MessageRef(account_id=ACCOUNT, message_id="h1")]
+    (asked,) = [r for r in service.requests if r.url.path.endswith("/messages")]
+    assert asked.url.path == f"/v1/accounts/{ACCOUNT}/messages"
+    assert (asked.url.params["folder"], asked.url.params["after"]) == (
+        "inv-hosting",
+        "2026-11-10",
+    )

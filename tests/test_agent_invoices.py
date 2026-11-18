@@ -727,3 +727,33 @@ async def test_an_update_of_a_message_without_an_item_does_nothing(
 
     assert mail(world, "plain")["folder_ids"] == ["inv-hosting"]
     assert world.fake_gateway.requests == []
+
+
+# -- backfill takes in the folders it looks in ---------------------------------------
+
+
+async def test_backfill_takes_up_the_folders_it_looks_in(world: Wired) -> None:
+    taken = await worker(world).backfill(30)
+
+    pending = {row.ref.message_id for row in world.store.messages("pending", 100)}
+    assert "filed" in pending
+    assert "at-top" not in pending
+    assert taken == len(pending)
+
+
+async def test_backfill_of_an_agent_that_wants_no_folder(world: Wired) -> None:
+    from benethos_mailbox_agent.agents.counting.agent import Counting
+
+    counting = Worker(
+        agent=Counting(settings()),
+        store=world.store,
+        mailbox=world.mailbox,
+        gateway=world.gateway,
+        now=world.clock,
+    )
+
+    await counting.backfill(30)
+
+    pending = {row.ref.message_id for row in world.store.messages("pending", 100)}
+    assert "filed" not in pending
+    assert "inv-unlisted" in pending

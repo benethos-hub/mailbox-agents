@@ -166,6 +166,7 @@ class FakeService:
         route: Callable[[httpx.Request, list[str]], httpx.Response] | None = {
             ("GET", "changes"): self._changes,
             ("GET", "messages"): self._list,
+            ("GET", "account_messages"): self._list_folder,
             ("GET", "folders"): self._folders,
             ("GET", "message"): self._message,
             ("GET", "thread"): self._thread,
@@ -208,6 +209,22 @@ class FakeService:
                 "next_cursor": str(cursor + limit) if more else None,
             },
         )
+
+    def _list_folder(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
+        """One account's messages, of a folder named by its id or its role,
+        in one page: the tests list few."""
+        named = request.url.params.get("folder", "inbox")
+        roles = {f["id"]: f.get("role") for f in self.folders.get(parts[1], [])}
+        items = sorted(
+            (
+                m
+                for (account, _), m in self.messages.items()
+                if account == parts[1]
+                and any(i == named or roles.get(i) == named for i in m["folder_ids"])
+            ),
+            key=lambda m: m["id"],
+        )
+        return httpx.Response(200, json={"items": items, "next_cursor": None})
 
     def _in_role(self, message: dict[str, Any], role: str) -> bool:
         """As the service lists: by the role of a folder, the inbox when
@@ -300,6 +317,8 @@ def _kind(parts: list[str]) -> str:
         return "changes"
     if parts == ["messages"]:
         return "messages"
+    if len(parts) == 3 and parts[0] == "accounts" and parts[2] == "messages":
+        return "account_messages"
     if len(parts) == 3 and parts[0] == "accounts" and parts[2] == "folders":
         return "folders"
     if len(parts) == 4 and parts[0] == "accounts" and parts[2] == "messages":

@@ -12,6 +12,7 @@ Operation names below are the service's `operationId`s.
 | The folders of an account | `list_folders` |
 | Make a folder, below a parent or at the top | `create_folder` |
 | The messages received since a day, for `backfill` | `list_all_messages`, once for the inbox and once for sent mail |
+| The messages of one folder since a day, for `backfill` | `list_messages` of one account, the folder by its id |
 
 `sources/mailbox.py` offers these and nothing else: no send, no delete, no
 trash. Which folder an agent may make is the runtime's to decide
