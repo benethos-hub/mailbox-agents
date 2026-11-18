@@ -16,7 +16,7 @@ from enum import StrEnum
 from typing import ClassVar
 
 from ..errors import ContractError
-from ..records import Decision, Event, MailMessage, MessageRef
+from ..records import EVENTS, Decision, Event, MailMessage, MessageRef
 from ..settings import KEYWORD_FORBIDDEN, Settings
 from .context import Context
 
@@ -34,11 +34,6 @@ __all__ = [
 ]
 
 NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
-
-# The events of the change feed an agent may ask for.
-EVENTS = frozenset(
-    {"message.created", "message.updated", "message.deleted", "message.sent"}
-)
 
 
 class Action(StrEnum):

@@ -12,6 +12,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 __all__ = [
+    "EVENTS",
     "Address",
     "Attachment",
     "Event",
@@ -33,10 +34,17 @@ class MessageRef(_Record):
     message_id: str
 
 
+# The events of the change feed this package knows, and an agent may ask
+# for.
+EVENTS = frozenset(
+    {"message.created", "message.updated", "message.deleted", "message.sent"}
+)
+
+
 class Event(_Record):
     """One entry of the change feed."""
 
-    type: str  # message.created, message.updated, message.deleted, message.sent
+    type: str  # one of EVENTS
     ref: MessageRef
     at: datetime
 

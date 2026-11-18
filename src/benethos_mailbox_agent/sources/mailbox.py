@@ -36,6 +36,7 @@ from ..errors import (
     MessageGoneError,
 )
 from ..records import (
+    EVENTS,
     Address,
     Attachment,
     Event,
@@ -139,7 +140,7 @@ class Mailbox:
                     at=change.at,
                 )
                 for change in found.changes
-                if change.type.startswith("message.")
+                if change.type in EVENTS
             ]
             state = found.state
             if not found.more:

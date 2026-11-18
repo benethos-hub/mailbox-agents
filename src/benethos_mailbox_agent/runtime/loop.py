@@ -163,6 +163,8 @@ class Worker:
         observe: list[MessageRef] = []
         selected = 0
         for event in events:
+            if event.type not in self.agent.triggers.events:
+                continue
             route = self.agent.select(event)
             if route is Route.DECIDE:
                 self.store.enqueue(event.ref, now)
@@ -255,7 +257,10 @@ class Worker:
         added = 0
         for ref in await self._mailbox.recent(since, self.accounts):
             event = Event(type="message.created", ref=ref, at=now)
-            if self.agent.select(event) is Route.DECIDE:
+            if (
+                event.type in self.agent.triggers.events
+                and self.agent.select(event) is Route.DECIDE
+            ):
                 added += self.store.enqueue(ref, now, again=again)
         logbook.backfill_done(self.agent.name, added, days)
         return added

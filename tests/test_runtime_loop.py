@@ -96,6 +96,29 @@ async def test_a_refused_write_blocks_nothing(world: Wired) -> None:
     assert world.service.messages[(ACCOUNT, "m1")]["keywords"] == []
 
 
+async def test_select_sees_only_the_events_of_the_triggers(world: Wired) -> None:
+    class Spy(Echo):
+        triggers = Trigger(events=frozenset({"message.sent"}))
+        seen: list[str] = []
+
+        def select(self, event: Event) -> Route | None:
+            self.seen.append(event.type)
+            return None
+
+    spy = Spy(settings(stage="full"))
+    run = worker(world, spy)
+    await run.run_pass()
+    world.service.add(wire_message("m1"))
+    world.service.add(wire_message("m2"), "message.sent")
+    world.service.change("message.updated", "m1")
+    world.service.change("mailbox.renamed", "m1")
+
+    await run.run_pass()
+    await run.backfill(30)
+
+    assert spy.seen == ["message.sent"]
+
+
 def test_observe_and_tick_count_into_the_workers_metrics(world: Wired) -> None:
     run = worker(world)
 
