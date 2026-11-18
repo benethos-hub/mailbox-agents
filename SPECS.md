@@ -434,7 +434,7 @@ once released.
 | Table | Holds |
 |---|---|
 | `cursor` | the feed state token |
-| `passes` | when the last complete pass of the loop finished, for the health check |
+| `passes` | when the loop last showed progress, after a message, a pass or a slice of a wait, for the health check |
 | `messages` | message id, account id, state, attempts, next attempt |
 | `steps` | message, step, prompt version, model alias and the model reported, result, tokens, duration |
 | `actions` | message, action, what it was before, when, stage, whether it was carried out |

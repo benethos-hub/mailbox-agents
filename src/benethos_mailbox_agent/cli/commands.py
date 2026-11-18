@@ -124,9 +124,9 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
         path = path_for(settings.data_dir, cls.name)
         if path.is_file():
             with Store.open(path, read_only=True) as store:
-                last = store.last_pass()
+                last = store.progress()
                 print(f"  {_counts(store)}")
-                print(f"  last pass: {last.isoformat() if last else 'none'}")
+                print(f"  last progress: {last.isoformat() if last else 'none'}")
     return 0
 
 

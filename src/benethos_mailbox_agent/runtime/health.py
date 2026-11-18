@@ -33,7 +33,7 @@ class Health:
 
 
 def check(store: Store, settings: Settings, now: datetime) -> Health:
-    last = store.last_pass()
+    last = store.progress()
     if last is None:
         return Health(False, "no pass yet")
     age = now - last

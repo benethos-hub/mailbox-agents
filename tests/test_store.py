@@ -278,12 +278,12 @@ def test_kept_calls_are_purged(store: Store) -> None:
     assert store.count_calls() == 1
 
 
-def test_last_pass(store: Store) -> None:
-    assert store.last_pass() is None
-    store.set_last_pass(NOW)
-    store.set_last_pass(NOW + timedelta(seconds=5))
+def test_progress(store: Store) -> None:
+    assert store.progress() is None
+    store.set_progress(NOW)
+    store.set_progress(NOW + timedelta(seconds=5))
 
-    assert store.last_pass() == NOW + timedelta(seconds=5)
+    assert store.progress() == NOW + timedelta(seconds=5)
 
 
 def test_a_failed_migration_leaves_the_file_as_it_was(

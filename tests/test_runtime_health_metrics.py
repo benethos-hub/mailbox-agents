@@ -39,7 +39,7 @@ async def test_healthy_while_the_loop_makes_progress(world: Wired) -> None:
     found = settings(poll_seconds=60, gateway_timeout_seconds=120)
     assert not check(world.store, found, world.clock()).healthy
 
-    world.store.set_last_pass(world.clock())
+    world.store.set_progress(world.clock())
     world.clock.advance(seconds=299)
     assert check(world.store, found, world.clock()).healthy
 

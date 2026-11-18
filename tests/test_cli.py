@@ -102,7 +102,7 @@ def test_run_and_status_with_a_state_file(
     out = capsys.readouterr().out
     assert "counting 1: ready" in out
     assert "done=2" in out
-    assert "last pass: 20" in out
+    assert "last progress: 20" in out
 
 
 def test_backfill_takes_recent_messages_up(

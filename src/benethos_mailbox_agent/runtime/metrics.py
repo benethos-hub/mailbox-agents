@@ -110,7 +110,7 @@ class Metrics:
             self.messages.labels(state).set(count)
         oldest = store.oldest_pending()
         self.oldest_pending.set((now - oldest).total_seconds() if oldest else 0)
-        last = store.last_pass()
+        last = store.progress()
         if last is not None:
             self.last_pass.set(last.timestamp())
 

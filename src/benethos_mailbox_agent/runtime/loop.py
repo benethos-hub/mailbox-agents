@@ -132,7 +132,7 @@ class Worker:
             away = self.runner.gateway_away
         now = self._now()
         self.store.set_cursor(state, now)
-        self.store.set_last_pass(now)
+        self.store.set_progress(now)
         self._purge(now)
         self.metrics.state(self.store, now)
         logbook.pass_done(
@@ -196,7 +196,7 @@ class Worker:
             except GatewayUnavailableError as exc:
                 self.runner.gateway_away = exc
                 self._waiting.add(row.ref)
-            self.store.set_last_pass(self._now())
+            self.store.set_progress(self._now())
         return len(rows)
 
     def _only_gateway_waits(self) -> bool:
@@ -283,5 +283,5 @@ class Worker:
             try:
                 await asyncio.wait_for(stop.wait(), timeout=step)
             except TimeoutError:
-                self.store.set_last_pass(self._now())
+                self.store.set_progress(self._now())
             left -= step

@@ -61,7 +61,7 @@ async def test_the_first_pass_starts_from_now(world: Wired) -> None:
 
     assert world.store.cursor() == "1"
     assert world.store.message(ref("old")) is None
-    assert world.store.last_pass() == world.clock()
+    assert world.store.progress() == world.clock()
 
 
 async def test_a_new_message_is_decided_and_marked(world: Wired) -> None:

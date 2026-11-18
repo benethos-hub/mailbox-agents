@@ -97,3 +97,5 @@ commit that makes the change. Design decisions live in
 - Keywords are compared without case, since the mailbox service may
   answer them in lower case. A `MAILBOX_AGENT_KEYWORD` with capitals no
   longer closes every `awaiting_reply` item at once.
+- `status` says `last progress:` instead of `last pass:`, since the time
+  is the loop's last sign of progress, not its last complete pass.

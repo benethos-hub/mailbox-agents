@@ -239,11 +239,15 @@ class Store:
             _text(now),
         )
 
-    def last_pass(self) -> datetime | None:
+    def progress(self) -> datetime | None:
+        """When the loop last showed progress: after a message it ran, a
+        pass it finished, or a slice of a wait. The health check reads it."""
         row = self._one("SELECT finished FROM passes WHERE id = 1")
         return _time(row[0]) if row else None
 
-    def set_last_pass(self, now: datetime) -> None:
+    def set_progress(self, now: datetime) -> None:
+        """Note progress of the loop at ``now``. The table and its column
+        keep the names of migration 1."""
         self._write(
             "INSERT INTO passes (id, finished) VALUES (1, ?) "
             "ON CONFLICT (id) DO UPDATE SET finished = excluded.finished",
