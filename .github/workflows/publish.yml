@@ -71,6 +71,8 @@ jobs:
       id-token: write # Trusted Publishing (OIDC)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # The PEP 561 marker, and a prompt of an agent: a wheel without its
       # prompts would import and fail only when the agent starts.
       - uses: benethos-hub/.github/actions/publish/pypi@main
@@ -91,6 +93,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: benethos-hub/.github/actions/publish/pypi@main
         with:
           dry-run: true
@@ -110,6 +114,8 @@ jobs:
       packages: write # push to ghcr.io as the GITHUB_TOKEN identity
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # arm64 is emulated on the amd64 runner. The arm64 build of the docker
       # job in ci.yml writes its layers to the cache scope buildkit, and the
       # release reads them from there.
