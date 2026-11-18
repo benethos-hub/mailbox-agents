@@ -100,7 +100,10 @@ sender. Each is named by its group, and a rule by its place too.
 - The most specific rule wins: an address before a pattern before a
   pattern for subdomains.
 - Two groups whose rules of the same kind both match leave the sender
-  unmatched. Nothing is guessed.
+  unmatched. Nothing is guessed. A pattern with letters before the `*` is
+  of the same kind as one without: `mailbox*@telco.example` in one group
+  and `*@telco.example` in another leave every sender the first covers
+  unmatched, always.
 - A pattern covers one domain. The subdomains are a rule of their own,
   `*@*.domain` for all of them (decided 2026-11-18). Such a rule is no less
   trusted than `*@domain`, since the sender is not authenticated anyway,
