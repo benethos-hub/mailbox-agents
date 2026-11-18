@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -93,6 +94,19 @@ def test_the_patterns_file(tmp_path: Path) -> None:
         load_patterns(broken)
     with pytest.raises(ConfigError, match="cannot be read"):
         load_patterns(tmp_path / "none.json")
+
+
+def test_a_phrase_is_found_in_decomposed_text(tmp_path: Path) -> None:
+    listed = tmp_path / "p.json"
+    listed.write_text('{"phrases": ["Rahmenvertrag für"]}', encoding="utf-8")
+    text = unicodedata.normalize(
+        "NFD", "Wir suchen für einen Kunden, Rahmenvertrag für 2027."
+    )
+
+    found = load_patterns(listed).phrases_in(text)
+
+    assert "für einen kunden" in found
+    assert "rahmenvertrag für" in found
 
 
 def test_the_baseline_on_the_invented_set() -> None:

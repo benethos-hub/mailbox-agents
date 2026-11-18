@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
@@ -63,7 +64,7 @@ class Patterns(BaseModel):
     @field_validator("domains", "phrases")
     @classmethod
     def _lower(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        found = tuple(v.strip().lower().lstrip("@") for v in value)
+        found = tuple(_folded(v).strip().lstrip("@") for v in value)
         if any(not v for v in found):
             raise ValueError("an empty entry")
         return found
@@ -75,8 +76,13 @@ class Patterns(BaseModel):
         return any(domain == d or domain.endswith("." + d) for d in self.domains)
 
     def phrases_in(self, text: str) -> list[str]:
-        lowered = text.lower()
+        lowered = _folded(text)
         return [p for p in (*PHRASES, *self.phrases) if p in lowered]
+
+
+def _folded(text: str) -> str:
+    """``text`` in Unicode NFC and lower case, as phrases are compared."""
+    return unicodedata.normalize("NFC", text).lower()
 
 
 def load_patterns(path: Path | None) -> Patterns:
