@@ -83,6 +83,9 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- `health` says what it measures: `last progress 42s ago` and
+  `no progress yet`, not the last pass, since the loop's progress is
+  written after each message and while it waits as well.
 - An open item of `awaiting_reply` whose sent message was deleted closes
   as `message_gone` on the tick, instead of staying due and asking for
   its keyword every round.

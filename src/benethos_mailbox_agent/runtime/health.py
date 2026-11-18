@@ -35,8 +35,8 @@ class Health:
 def check(store: Store, settings: Settings, now: datetime) -> Health:
     last = store.progress()
     if last is None:
-        return Health(False, "no pass yet")
+        return Health(False, "no progress yet")
     age = now - last
     if age > window(settings):
-        return Health(False, f"last pass {int(age.total_seconds())}s ago")
-    return Health(True, f"last pass {int(age.total_seconds())}s ago")
+        return Health(False, f"last progress {int(age.total_seconds())}s ago")
+    return Health(True, f"last progress {int(age.total_seconds())}s ago")

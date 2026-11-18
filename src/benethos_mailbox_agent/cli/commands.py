@@ -183,7 +183,7 @@ def health(args: argparse.Namespace, settings: Settings) -> int:
     name = load(args.agent).name
     path = path_for(settings.data_dir, name)
     if not path.is_file():
-        print(f"{name}: unhealthy, no pass yet")
+        print(f"{name}: unhealthy, no progress yet")
         return 1
     with Store.open(path, read_only=True) as store:
         found = check(store, settings, now())

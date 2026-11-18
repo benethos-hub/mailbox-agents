@@ -36,7 +36,7 @@ async def test_healthy_while_the_loop_makes_progress(world: Wired) -> None:
 
     world.clock.advance(seconds=2)
     late = check(world.store, found, world.clock())
-    assert (late.healthy, late.reason) == (False, "last pass 301s ago")
+    assert (late.healthy, late.reason) == (False, "last progress 301s ago")
 
 
 def sample(metrics: Metrics, name: str, **labels: str) -> float | None:
@@ -134,7 +134,7 @@ def test_health_on_the_command_line(
 ) -> None:
     configure(monkeypatch)
     assert main(["health", "--agent", "counting"]) == 1
-    assert "counting: unhealthy, no pass yet" in capsys.readouterr().out
+    assert "counting: unhealthy, no progress yet" in capsys.readouterr().out
 
     main(["run", "--agent", "counting"])
     assert main(["health", "--agent", "counting"]) == 0
