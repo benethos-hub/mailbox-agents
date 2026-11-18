@@ -17,7 +17,16 @@ from .suppliers import Suppliers
 
 __all__ = ["baseline"]
 
-INVOICE_WORDS = ("rechnung", "invoice", "faktura", "facture")
+# A credit note books like an invoice with the opposite sign (decided
+# 2026-11-18).
+INVOICE_WORDS = (
+    "rechnung",
+    "invoice",
+    "faktura",
+    "facture",
+    "gutschrift",
+    "credit note",
+)
 
 # A notice that an invoice waits at the supplier, in the subject or the
 # text: many suppliers send no file.

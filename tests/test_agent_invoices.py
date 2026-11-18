@@ -521,6 +521,16 @@ def test_a_receipt_that_carries_its_invoice_is_an_invoice_to_the_model() -> None
     assert "with no\n  invoice attached" in system
 
 
+def test_a_credit_note_is_an_invoice_to_the_model_and_the_rules() -> None:
+    """A credit note books like an invoice (decided 2026-11-18)."""
+    assert 'a credit note from a supplier, a "Gutschrift"' in agent().system
+    for message in (
+        _mail("Ihre Gutschrift Nr. 88", pdf="GS-88.pdf"),
+        _mail("Credit note CN-12"),
+    ):
+        assert agent().baseline(message).label == "invoice"
+
+
 def test_readiness_names_what_is_missing(tmp_path: Path) -> None:
     missing = readiness(
         Invoices,

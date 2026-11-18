@@ -51,7 +51,7 @@ def _mentions(supplier: Supplier, quote: str) -> bool:
 
 class Invoices(Agent):
     name = "invoices"
-    version = "2"
+    version = "3"
     description = (
         "Marks invoices from suppliers, and moves those of a listed supplier "
         "into its folder."
@@ -61,7 +61,7 @@ class Invoices(Agent):
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
     requires = Requires(settings=("invoices_folder", "invoices_suppliers_file"))
     default_keyword = "invoice"
-    prompt_version = "v2"
+    prompt_version = "v3"
 
     # -- what it reads besides its settings -----------------------------------
 

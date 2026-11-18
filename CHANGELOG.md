@@ -51,16 +51,17 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
-- The agent `invoices` asks with the prompt version `v2`: a receipt that
+- The agent `invoices` asks with the prompt version `v3`: a receipt that
   carries the invoice for its payment is an invoice, whatever it calls
-  itself. Only a payment confirmation without an invoice is a
-  `payment_receipt`. Every message is taken up anew with the new version.
+  itself, and so is a credit note. Only a payment confirmation without an
+  invoice is a `payment_receipt`. Every message is taken up anew with the
+  new version.
 - The rules of `invoices`, which the evaluation sets beside the model,
   know more notices that an invoice waits at the supplier, such as
   "Rechnung ist da", "Rechnung wurde bereitgestellt" or "your bill is
-  ready", and receipts: a receipt or "Quittung" is the near miss
-  `payment_receipt`, unless it carries its invoice. The agent's version is
-  2, so the rules run anew for every message.
+  ready", credit notes, and receipts: a receipt or "Quittung" is the near
+  miss `payment_receipt`, unless it carries its invoice. The agent's
+  version is 3, so the rules run anew for every message.
 - The agent `inquiries` asks with the prompt version `v3`: a field the
   mail does not fill is null as a whole, not its value and its quote each.
   The Claude API refused the schema of `v2`, so `inquiries` runs on Claude

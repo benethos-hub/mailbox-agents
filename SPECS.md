@@ -486,7 +486,7 @@ supplier with a folder of its own?
 | | |
 |---|---|
 | Triggers | `message.created` in the inbox |
-| Baseline | a sender on the supplier list, a PDF or XML attachment, invoice words in subject and attachment names, phrases of a notice that an invoice waits at the supplier, near-miss words in the subject, and a receipt that carries its invoice taken as one (agent version 2, 2026-11-18) |
+| Baseline | a sender on the supplier list, a PDF or XML attachment, invoice words in subject and attachment names, phrases of a notice that an invoice waits at the supplier, near-miss words in the subject, a receipt that carries its invoice taken as one, and a credit note (agent version 3, 2026-11-18) |
 | Model | label `invoice` or `other`, for `other` the near miss it is: reminder, quotation, order confirmation, payment receipt, none, and for an invoice a supplier of the list or none |
 | Supplier | a sender rule of the list first, the model's choice from the list only when no rule matches (decided 2026-11-17) |
 | Actions | `add_keyword`, `move_to_folder` |
@@ -495,9 +495,11 @@ supplier with a folder of its own?
 an invoice a supplier sent, or that tells one is ready to be fetched. The
 second kind matters: many suppliers send a notice and no file. A receipt
 that carries the invoice for its payment is an invoice too, whatever it
-calls itself. Only a confirmation of a payment with no invoice is the
-near miss `payment_receipt` (decided 2026-11-18: the owner's receipts of a
-subscription carry the invoice, and prompt `v1` left them out).
+calls itself. Only a confirmation of a payment with no invoice is the near
+miss `payment_receipt` (decided 2026-11-18: the owner's receipts of a
+subscription carry the invoice, and prompt `v1` left them out). A credit
+note, a "Gutschrift", counts as an invoice too: it books like one with the
+opposite sign (decided 2026-11-18 for now, prompt `v3`).
 
 **One folder per supplier, under one parent (decided 2026-11-17).** The
 parent is named in `MAILBOX_AGENT_INVOICES_FOLDER`. The supplier list is a
@@ -558,7 +560,7 @@ content of a mail can at worst give an invoice of an unlisted sender the
 name of a listed supplier. It moves nothing, since only an address or a
 pattern rule moves.
 
-The prompt is `prompts/system.v2.md`, version `v2`. The model is given the
+The prompt is `prompts/system.v3.md`, version `v3`. The model is given the
 sender, the subject, the names and types of the attachments and the first
 6000 characters of the text.
 
