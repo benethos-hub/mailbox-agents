@@ -21,6 +21,7 @@ from .. import logbook
 from ..contract import ActionRequest, Agent, Context, Limits, Reader, Route
 from ..errors import (
     ChangesExpiredError,
+    GatewayUnavailableError,
     MailboxAgentError,
     MailboxRefusedError,
     UnavailableError,
@@ -87,6 +88,7 @@ class Worker:
         self._gateway = gateway
         self._away = 0
         self._last_tick: datetime | None = None
+        self._waiting: set[MessageRef] = set()
 
     @property
     def accounts(self) -> list[str] | None:
@@ -117,9 +119,12 @@ class Worker:
         away: UnavailableError | None = None
         try:
             await self.process_due()
-            await self._tick()
+            if self.runner.gateway_away is None or self._only_gateway_waits():
+                await self._tick()
         except UnavailableError as exc:
             away = exc
+        if away is None:
+            away = self.runner.gateway_away
         now = self._now()
         self.store.set_cursor(state, now)
         self.store.set_last_pass(now)
@@ -172,12 +177,29 @@ class Worker:
 
     async def process_due(self) -> int:
         """Run the steps of the pending messages that are due. Answers how
-        many were taken up."""
+        many were taken up.
+
+        A gateway that is away leaves each message that needs it pending,
+        no attempt counted, and is not asked again in this pass, while the
+        messages that need no model go on."""
+        self.runner.gateway_away = None
+        self._waiting = set()
         rows = self.store.due(self._now(), BATCH)
         for row in rows:
-            await self.runner.process(row.ref, row.attempts)
+            try:
+                await self.runner.process(row.ref, row.attempts)
+            except GatewayUnavailableError as exc:
+                self.runner.gateway_away = exc
+                self._waiting.add(row.ref)
             self.store.set_last_pass(self._now())
         return len(rows)
+
+    def _only_gateway_waits(self) -> bool:
+        """Whether every message still due waits for the gateway alone. Only
+        then may the tick run without it: a reply still in the queue must
+        close its item before a deadline marks it."""
+        due = self.store.due(self._now(), len(self._waiting) + 1)
+        return {row.ref for row in due} <= self._waiting
 
     async def _tick(self) -> None:
         if not self.agent.triggers.tick:

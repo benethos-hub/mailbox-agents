@@ -443,8 +443,13 @@ def test_an_unset_list_is_a_config_error() -> None:
 async def test_a_gateway_that_is_away_leaves_the_invoice_pending(world: Wired) -> None:
     world.fake_gateway.answer(httpx.Response(503))
 
-    with pytest.raises(Exception, match="gateway"):
-        await run(world, "inv-cloudhost")
+    assert await run(world, "inv-cloudhost") == "pending"
+
+    row = world.store.message(
+        MessageRef(account_id=ACCOUNT, message_id="inv-cloudhost")
+    )
+    assert row is not None and row.attempts == 0
+    assert mail(world, "inv-cloudhost")["keywords"] == []
 
 
 # -- the report names candidates for the list ---------------------------------------

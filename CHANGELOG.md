@@ -75,3 +75,6 @@ commit that makes the change. Design decisions live in
 - A worker that waits long for its gateway or mailbox service stays
   healthy: it waits in slices of one poll interval and writes its progress
   after each.
+- A gateway that is away holds up only the messages that need it: the
+  others are taken up, and the tick marks what is due, unless a message
+  still due waits for another reason.

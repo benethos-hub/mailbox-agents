@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 from benethos_mailbox_agent.agents.awaiting_reply.agent import AwaitingReply
@@ -259,6 +260,49 @@ async def test_a_reply_to_a_sent_message_deleted_since_blocks_nothing(
     found = world.w.store.message(ref("r1"))
     assert found is not None and found.state == "skipped"
     assert world.w.store.cursor() == world.w.service.state
+
+
+async def test_a_gateway_that_is_away_holds_up_neither_tick_nor_replies(
+    world: World,
+) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    world.clock.advance(days=4)
+    world.add(sent("s2", ASK, thread="t2"), "message.sent")
+    world.add(sent("s3", ASK, thread="t3"), "message.sent")
+    world.add(received("r9", thread="t9"))
+    world.w.fake_gateway.answer(httpx.Response(503))
+
+    await world.run()
+
+    assert world.keywords("s1") == ["awaiting-reply"]
+    states = {m: world.w.store.message(ref(m)) for m in ("s2", "s3", "r9")}
+    assert {m: (row.state, row.attempts) for m, row in states.items() if row} == {
+        "s2": ("pending", 0),
+        "s3": ("pending", 0),
+        "r9": ("done", 0),
+    }
+    assert len(world.w.fake_gateway.requests) == 2
+
+
+async def test_no_tick_while_a_message_waits_for_another_reason(
+    world: World,
+) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    world.clock.advance(days=4)
+    world.add(sent("s2", ASK, thread="t2"), "message.sent")
+    world.w.fake_gateway.answer(httpx.Response(503))
+    await world.run()
+    assert world.w.store.message(ref("s2")) is not None
+    assert world.worker._only_gateway_waits()
+
+    # One due beyond the batch of this pass, such as a reply.
+    world.w.store.enqueue(ref("late"), world.clock())
+
+    assert not world.worker._only_gateway_waits()
 
 
 async def test_a_reply_in_the_thread_closes_it_and_takes_the_keyword_off(

@@ -12,11 +12,20 @@ from __future__ import annotations
 import time
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
+from typing import TypeVar
+
+from pydantic import BaseModel
 
 from .. import logbook
 from ..contract import ActionRequest, Agent, Context, Reader
-from ..errors import AnswerRefusedError, LimitReachedError, MailboxRefusedError
+from ..errors import (
+    AnswerRefusedError,
+    GatewayUnavailableError,
+    LimitReachedError,
+    MailboxRefusedError,
+)
 from ..llm.evidence import check
+from ..llm.gateway import Reply
 from ..records import Decision, MailMessage, MessageRef, StepResult
 from ..settings import Settings
 from ..store import Store
@@ -25,6 +34,8 @@ from .metrics import Metrics
 from .model import Asker, Calls, start_of_day
 
 __all__ = ["Effects", "StepRunner", "backoff"]
+
+T = TypeVar("T", bound=BaseModel)
 
 # What carries out the actions of an effect: the action executor.
 Effects = Callable[[list[ActionRequest]], Awaitable[None]]
@@ -39,6 +50,18 @@ def backoff(settings: Settings, attempts: int) -> float:
             settings.backoff_ceiling_seconds,
         )
     )
+
+
+class _Away:
+    """A gateway known to be away for the rest of a pass: every call fails
+    at once, without a request."""
+
+    def __init__(self, gateway: Asker, error: GatewayUnavailableError) -> None:
+        self.model = gateway.model
+        self._error = error
+
+    async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]:
+        raise self._error
 
 
 class StepRunner:
@@ -66,14 +89,19 @@ class StepRunner:
         self._effects = effects
         self._now = now
         self.items = StoredItems(store, now)
+        # Set by the loop when the gateway was found away in this pass.
+        self.gateway_away: GatewayUnavailableError | None = None
 
     @property
     def model_alias(self) -> str:
         return self._gateway.model
 
     def calls(self, ref: MessageRef) -> Calls:
+        gateway: Asker = self._gateway
+        if self.gateway_away is not None:
+            gateway = _Away(gateway, self.gateway_away)
         return Calls(
-            gateway=self._gateway,
+            gateway=gateway,
             store=self._store,
             ref=ref,
             limits=self.agent.limits,
