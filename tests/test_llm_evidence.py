@@ -40,7 +40,12 @@ def test_whitespace_is_made_uniform() -> None:
         ("anbei die Rechnung Nr. 4711", True),
         ("anbei\ndie   Rechnung", True),
         ("  Ihre Rechnung  ", True),
-        ("ihre rechnung", False),
+        ("ihre rechnung", True),
+        ("Rechnung Nr 4711", True),
+        ("„anbei die Rechnung“ – Nr. 4711", True),
+        ("Subject: Ihre Rechnung", True),
+        ("anbei eine Rechnung", False),
+        ("anbei Rechnung Nr. 4711", False),
         ("Rechnung Nr. 4712", False),
         ("", False),
         ("   ", False),
@@ -153,6 +158,29 @@ def test_a_passage_of_the_mail_backs_the_label(quote: str) -> None:
     label = Evidence(field=LABEL, value="invoice", quote=quote)
 
     assert check(_decision(label), parts(_invoice())).actionable
+
+
+@pytest.mark.parametrize(
+    ("quote", "found"),
+    [
+        ("We’ve updated the Terms", True),
+        ("we've updated the terms", True),
+        ("Jobs: * lint / Dockerfile lint failed", True),
+        ("Jobs lint Dockerfile lint failed", True),
+        ("We have updated the Terms", False),
+    ],
+)
+def test_marks_and_case_are_forgiven_words_are_not(quote: str, found: bool) -> None:
+    """The kinds of difference the shadow run of 2026-11-18 refused for: a
+    typographic apostrophe, the case of a word, the marks between words."""
+    content = "We've updated the Terms.\n\nJobs:\n* lint / Dockerfile-lint failed"
+
+    assert contains(content, quote) is found
+
+
+def test_letters_and_digits_count_for_the_shortest_quote() -> None:
+    assert not contains("R.-Nr.: 4711", "R.-Nr.: 4711")
+    assert contains("Rechnung 4711", "Rechnung 4711")
 
 
 def test_a_quote_does_not_span_two_parts() -> None:

@@ -70,7 +70,10 @@ commit that makes the change. Design decisions live in
   message into a folder below the trash or junk.
 - The evidence check looks for a quote only in the parts of the mail, not
   in the frame around them, brings both sides to Unicode NFC, and finds no
-  quote of fewer than eight characters besides whitespace.
+  quote of fewer than eight letters and digits. It compares word for word:
+  case, punctuation, typographic quotes and dashes do not count, and a
+  quote that starts with `Subject:` or another word of the frame is looked
+  up without it. A changed or missing word still makes a quote not found.
 - The agent `invoices` moves an invoice only when an address or a pattern
   rule of the supplier list matched its sender. A domain rule and the
   model's choice of a supplier set the keyword only.
