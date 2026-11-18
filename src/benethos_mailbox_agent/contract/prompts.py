@@ -19,5 +19,5 @@ def load_prompt(package: str, name: str, version: str) -> str:
     found = resources.files(package).joinpath("prompts", f"{name}.{version}.md")
     try:
         return found.read_text(encoding="utf-8")
-    except (FileNotFoundError, OSError):
+    except OSError:
         raise ContractError(f"{package} has no prompt {name}.{version}.md") from None

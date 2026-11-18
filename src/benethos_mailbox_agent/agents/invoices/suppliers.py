@@ -29,9 +29,9 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ...errors import ConfigError
+from ...errors import ConfigError, describe_invalid
 
 __all__ = ["READERS", "Kind", "Match", "Supplier", "Suppliers", "load_suppliers"]
 
@@ -193,11 +193,6 @@ def load_suppliers(path: Path) -> Suppliers:
     try:
         return Suppliers.model_validate(reader(text))
     except ValueError as exc:
-        if isinstance(exc, ValidationError):
-            reason = ", ".join(
-                f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}"
-                for e in exc.errors(include_input=False, include_url=False)
-            )
-        else:
-            reason = type(exc).__name__
-        raise ConfigError(f"the supplier list {path.name}: {reason}") from None
+        raise ConfigError(
+            f"the supplier list {path.name}: {describe_invalid(exc)}"
+        ) from None

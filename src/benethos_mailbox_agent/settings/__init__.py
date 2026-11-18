@@ -15,7 +15,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, SecretStr, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-from ..errors import ConfigError, register_secret
+from ..errors import ConfigError, describe_invalid, register_secret
 
 __all__ = [
     "DEFAULT_ENV_FILE",
@@ -162,9 +162,7 @@ def load_settings(env_file: Path | None = None, **overrides: Any) -> Settings:
     try:
         return Settings(_env_file=path if path.is_file() else None, **overrides)  # type: ignore[call-arg]
     except ValidationError as exc:
-        problems = ", ".join(
-            f"{PREFIX}{'.'.join(str(p) for p in e['loc']).upper() or 'SETTINGS'}: "
-            f"{e['msg']}"
-            for e in exc.errors(include_input=False, include_url=False)
+        problems = describe_invalid(
+            exc, lambda place: f"{PREFIX}{place.upper() or 'SETTINGS'}"
         )
         raise ConfigError(f"wrong settings: {problems}") from None

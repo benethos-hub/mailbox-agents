@@ -90,7 +90,9 @@ def test_the_patterns_file(tmp_path: Path) -> None:
 
     broken = tmp_path / "p.json"
     broken.write_text('{"domains": [""]}', encoding="utf-8")
-    with pytest.raises(ConfigError, match="ValidationError"):
+    with pytest.raises(
+        ConfigError, match="p.json: domains: Value error, an empty entry"
+    ):
         load_patterns(broken)
     with pytest.raises(ConfigError, match="cannot be read"):
         load_patterns(tmp_path / "none.json")

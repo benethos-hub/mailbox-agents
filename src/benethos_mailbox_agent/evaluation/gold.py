@@ -19,9 +19,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field
 
-from ..errors import ConfigError
+from ..errors import ConfigError, describe_invalid
 from ..records import MessageRef
 
 __all__ = ["GoldItem", "load_gold"]
@@ -57,14 +57,10 @@ def load_gold(path: Path) -> list[GoldItem]:
             continue
         try:
             item = GoldItem.model_validate(json.loads(text))
-        except (ValueError, ValidationError) as exc:
-            reason = type(exc).__name__
-            if isinstance(exc, ValidationError):
-                reason = ", ".join(
-                    f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}"
-                    for e in exc.errors(include_input=False, include_url=False)
-                )
-            raise ConfigError(f"{path.name} line {number}: {reason}") from None
+        except ValueError as exc:
+            raise ConfigError(
+                f"{path.name} line {number}: {describe_invalid(exc)}"
+            ) from None
         if item.ref in seen:
             raise ConfigError(f"{path.name} line {number}: the message is there twice")
         seen.add(item.ref)

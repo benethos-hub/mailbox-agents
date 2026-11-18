@@ -17,9 +17,9 @@ import re
 import unicodedata
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
-from ...errors import ConfigError
+from ...errors import ConfigError, describe_invalid
 
 __all__ = ["DATE", "PHRASES", "RATE", "Patterns", "load_patterns"]
 
@@ -95,5 +95,7 @@ def load_patterns(path: Path | None) -> Patterns:
         raise ConfigError(
             f"the patterns {path.name} cannot be read ({type(exc).__name__})"
         ) from None
-    except (ValueError, ValidationError) as exc:
-        raise ConfigError(f"the patterns {path.name}: {type(exc).__name__}") from None
+    except ValueError as exc:
+        raise ConfigError(
+            f"the patterns {path.name}: {describe_invalid(exc)}"
+        ) from None
