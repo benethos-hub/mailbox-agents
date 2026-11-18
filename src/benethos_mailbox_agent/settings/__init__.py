@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     # --- invoices, docs/specs/agents/invoices.md --------------------------------------
     invoices_folder: str | None = None
     invoices_suppliers_file: Path | None = None
+    invoices_folders: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    invoices_subfolder: str | None = None
+    invoices_inbox_folder: str | None = None
 
     # --- awaiting_reply, docs/specs/agents/awaiting_reply.md --------------------------
     reply_days: int = Field(default=3, ge=1)
@@ -94,9 +97,9 @@ class Settings(BaseSettings):
     # --- sorting, docs/specs/agents/sorting.md ----------------------------------------
     sorting_file: Path | None = None
 
-    @field_validator("accounts", mode="before")
+    @field_validator("accounts", "invoices_folders", mode="before")
     @classmethod
-    def _split_accounts(cls, value: Any) -> Any:
+    def _split_list(cls, value: Any) -> Any:
         """``a,b`` in the environment, a list when built in code."""
         if isinstance(value, str):
             return [part.strip() for part in value.split(",") if part.strip()]

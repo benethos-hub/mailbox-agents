@@ -192,6 +192,13 @@ class Agent(ABC):
         default."""
         return []
 
+    def folders_needed(self) -> tuple[str, ...]:
+        """The folders the agent's configuration names and expects to be
+        there, which ``status`` looks up in the mailbox service. A missing
+        one does not stop the start: another agent may make it later.
+        None by default."""
+        return ()
+
     def may_create(self, path: str) -> bool:
         """Whether the runtime may make the folder at ``path`` for this
         agent: one its configuration names, such as a folder of its list or

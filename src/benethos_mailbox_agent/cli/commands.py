@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ..contract import Agent, discover, load
-from ..errors import ConfigError
+from ..errors import ConfigError, MailboxAgentError
 from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
@@ -23,7 +23,7 @@ from ..runtime.readiness import MAILBOX_SETTINGS, readiness, start
 from ..settings import DEFAULT_ENV_FILE, Settings
 from ..store import STATES, Store, path_for
 from .report import report as make_report
-from .session import now, session, upstreams
+from .session import mailbox_for, now, session, upstreams
 
 __all__ = [
     "backfill",
@@ -118,6 +118,34 @@ async def _backfill(name: str, days: int, settings: Settings) -> int:
 # -- status and paths -------------------------------------------------------------
 
 
+def _folders(agent: Agent, settings: Settings) -> list[str]:
+    """What ``status`` says of the folders an agent expects: each one
+    missing in an account it works on, or why they were not looked up."""
+    agent.prepare()
+    needed = agent.folders_needed()
+    if not needed:
+        return []
+    if not settings.accounts:
+        return ["folders not checked: no account is named"]
+    try:
+        return asyncio.run(_missing(needed, settings))
+    except MailboxAgentError as exc:
+        return [f"folders not checked: {exc.message}"]
+
+
+async def _missing(needed: tuple[str, ...], settings: Settings) -> list[str]:
+    lines = []
+    async with mailbox_for(settings) as mailbox:
+        for account in settings.accounts:
+            there = {f.path for f in (await mailbox.folders(account)).values()}
+            lines += [
+                f"folder missing in {account}: {path}"
+                for path in needed
+                if path not in there
+            ]
+    return lines
+
+
 def status(args: argparse.Namespace, settings: Settings) -> int:
     for cls in discover().values():
         found = readiness(cls, settings)
@@ -128,6 +156,9 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
         else:
             state = f"not ready: {found.problem}"
         print(f"{found.name} {found.version}: {state}")
+        if found.ready:
+            for line in _folders(cls(settings), settings):
+                print(f"  {line}")
         path = path_for(settings.data_dir, cls.name)
         if path.is_file():
             with Store.open(path, read_only=True) as store:

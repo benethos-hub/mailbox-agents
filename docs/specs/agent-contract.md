@@ -23,6 +23,7 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `observe(message, context)` | for an event routed to `observe`: the actions it calls for, no model |
 | `tick(now, context)` | for agents with deadlines: what is due |
 | `prepare()` | reads what the agent needs beyond its settings, such as a list in a file |
+| `folders_needed()` | the folders its configuration names and expects to be there, which `status` looks up. None by default |
 | `may_create(path)` | whether the runtime may make the folder at `path` for it: one its configuration names. Code only, no folder by default |
 | `summarize(shown)` | for `report`: lines about the messages shown, each given as sender, decision and its actions with whether each was carried out |
 
@@ -77,4 +78,6 @@ after a refused move or folder the rest are not taken, so a keyword that
 says a message was moved never stands without the move.
 
 `status` reports for each agent whether it is ready and which required
-setting is missing, without starting it.
+setting is missing, without starting it. For a ready agent that names
+folders it expects, it looks them up in the mailbox service, in each
+account the settings name, and names each one missing.

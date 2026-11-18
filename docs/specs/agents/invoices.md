@@ -107,13 +107,28 @@ or sender rules.
 
 | Setting | Meaning | Unset |
 |---|---|---|
-| `MAILBOX_AGENT_INVOICES_FOLDERS` | the folders it looks in, separated by commas. `Parent/*` stands for every folder directly below `Parent` | the inbox alone |
-| `MAILBOX_AGENT_INVOICES_SUBFOLDER` | where an invoice goes, as a pattern. `{folder}` is the folder the message lies in, such as `{folder}/Rechnungen` | an invoice is marked and stays |
-| `MAILBOX_AGENT_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox | it is marked and stays in the inbox |
+| `MAILBOX_AGENT_INVOICES_FOLDERS` | the folders it looks in, separated by commas. `Parent/*` stands for every folder directly below `Parent`, `*` for every folder at the top without a role | the inbox alone |
+| `MAILBOX_AGENT_INVOICES_SUBFOLDER` | where an invoice goes, as a pattern that starts with `{folder}/`, the folder the message lies in, such as `{folder}/Rechnungen` | an invoice is marked and stays |
+| `MAILBOX_AGENT_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there, it is not made | it is marked and stays in the inbox |
 
-The inbox is always looked in. A folder is named by its path. A message in
-a folder below a named one, such as the subfolder itself, is not looked at,
-so an invoice is not asked about twice.
+The inbox is always looked in. A folder is named by its path, case
+counting. A message in a folder below a named one, such as the subfolder
+itself, is not looked at, so an invoice is not asked about twice.
+
+**`*` takes in the owner's own folders (decided 2026-11-18).** It covers
+every folder at the top that has no role, the owner's own among them, so
+the folders of [sorting](sorting.md) may lie at the top. The inbox, sent
+mail, drafts, the trash, junk, the archive and a folder of all mail have a
+role and are not taken in. A folder named by its path is looked in whatever
+its role, but the trash, junk and spam.
+
+`Parent/*` and `*` are matched against the path of the folder a message
+lies in, not resolved once at the start, so a folder `sorting` makes later
+is looked in at once. At the start the settings are checked: a wrong one
+stops it. `status` looks up in the mailbox service the folders that should
+be there, those named, the parents of `Parent/*` and the inbox folder, and
+names each one missing in an account the agent works on. A missing one does
+not stop the start, as `sorting` may make it later.
 
 `MAILBOX_AGENT_INVOICES_FOLDER` and `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`
 retire, with the supplier list and its example.

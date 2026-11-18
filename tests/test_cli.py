@@ -178,3 +178,49 @@ def test_a_service_that_is_away_is_a_1(
 
     assert main(["run", "--agent", "counting"]) == 1
     assert "mailbox service" in capsys.readouterr().err
+
+
+def test_status_names_a_folder_that_is_missing(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDER", "Invoices")
+    live = Path(__file__).resolve().parent.parent / "containers" / "live"
+    monkeypatch.setenv(f"{PREFIX}INVOICES_SUPPLIERS_FILE", str(live / "suppliers.json"))
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*,Missing/*")
+
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert "  folder missing in acc1: Missing\n" in out
+    assert "folder missing in acc1: Invoices\n" not in out
+
+
+def test_status_says_why_folders_were_not_checked(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDER", "Invoices")
+    live = Path(__file__).resolve().parent.parent / "containers" / "live"
+    monkeypatch.setenv(f"{PREFIX}INVOICES_SUPPLIERS_FILE", str(live / "suppliers.json"))
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
+
+    assert main(["status"]) == 0
+    assert "  folders not checked: no account is named" in capsys.readouterr().out
+
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
+    service.down = True
+
+    assert main(["status"]) == 0
+    assert "  folders not checked: the mailbox service" in capsys.readouterr().out

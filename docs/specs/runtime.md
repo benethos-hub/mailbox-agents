@@ -64,7 +64,7 @@ changed until the evaluation was run again.
 | `report --agent <name> [--limit N] [--state S] [--offline]` | [runtime](runtime.md) |
 | `eval --agent <name> --gold <file> [--reports DIR]` | [evaluation](evaluation.md) |
 | `health --agent <name>` | exit 0 while the loop makes progress, [operation](operation.md) |
-| `status` | for each agent whether it is ready, which setting it misses, its counts and its last pass |
+| `status` | for each agent whether it is ready, which setting it misses, a folder it expects that is missing, its counts and its last pass |
 | `paths` | the settings file, the data folder and each state file |
 
 `--env-file` names the settings file for every command. An error to

@@ -32,6 +32,7 @@ from ...errors import ConfigError
 from ...records import LABEL, Decision, Event, Evidence, MailMessage
 from ...settings import PREFIX
 from .baseline import baseline
+from .folders import Places
 from .schema import Answer, answer_schema, parts, render
 from .suppliers import Kind, Supplier, Suppliers, load_suppliers
 
@@ -67,8 +68,22 @@ class Invoices(Agent):
     # -- what it reads besides its settings -----------------------------------
 
     def prepare(self) -> None:
-        """Read the supplier list now, so a wrong one stops the start."""
+        """Read the supplier list and the folders now, so a wrong one stops
+        the start."""
         _ = self.suppliers
+        _ = self.places
+
+    @cached_property
+    def places(self) -> Places:
+        found = self.settings
+        return Places.read(
+            found.invoices_folders,
+            found.invoices_subfolder,
+            found.invoices_inbox_folder,
+        )
+
+    def folders_needed(self) -> tuple[str, ...]:
+        return self.places.needed()
 
     @cached_property
     def suppliers(self) -> Suppliers:
