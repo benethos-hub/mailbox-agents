@@ -72,3 +72,6 @@ litellm_settings:
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
+  # The database keeps the keys and what each spent, never a prompt or an
+  # answer.
+  store_prompts_in_spend_logs: false

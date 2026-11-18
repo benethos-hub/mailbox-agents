@@ -53,7 +53,8 @@ What it makes stays in `secrets/` beside it, never versioned:
 | `agent.env` | the settings the agents and `live/smoke.py` read |
 | `service-token` | the token of the user `agents` |
 | `service-admin`, `stalwart-admin` | the administrators' passwords |
-| `gateway.env` | the gateway's master key, and the Claude API key if any |
+| `gateway.env` | the gateway's master key, the address of its database, and the Claude API key if any |
+| `gateway-db.env` | the password of the gateway's database |
 | `anthropic_api_key` | the Claude API key, when given |
 | `master_key` | the service's master key, a test key readable by all |
 | `tls/` | the test CA, and the mail server's certificate and key |
@@ -179,7 +180,11 @@ On `127.0.0.1` only:
 | 38080 | Stalwart's HTTP: JMAP and its management |
 | 38993 | Stalwart's IMAP over TLS |
 | 38465 | Stalwart's SMTP submission over TLS |
-| 38400 | the model gateway, with the master key in `secrets/gateway.env` |
+| 38400 | the model gateway, with the master key in `secrets/gateway.env`, and its web interface at `/ui/`: the user `admin`, the master key its password |
+
+The gateway keeps its keys and what each spent in a database of its
+own, `gateway-db`, which the web interface needs to sign in. It keeps no
+prompt and no answer.
 
 ## Use it
 

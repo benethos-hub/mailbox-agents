@@ -74,8 +74,13 @@ stalwart_admin=$(rand)
 mailbox_password=$(rand)
 service_password="$(rand)Aa1!"
 gateway_key="sk-live-$(rand)"
+gateway_db_password=$(rand)
+printf 'POSTGRES_USER=litellm\nPOSTGRES_PASSWORD=%s\nPOSTGRES_DB=litellm\n' \
+    "$gateway_db_password" > "$secrets/gateway-db.env"
 {
     printf 'LITELLM_MASTER_KEY=%s\n' "$gateway_key"
+    printf 'DATABASE_URL=postgresql://litellm:%s@gateway-db:5432/litellm\n' \
+        "$gateway_db_password"
     if [ -n "$anthropic_key" ]; then
         printf 'ANTHROPIC_API_KEY=%s\n' "$anthropic_key"
     fi

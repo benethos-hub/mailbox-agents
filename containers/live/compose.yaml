@@ -54,16 +54,22 @@ services:
       - ./secrets/master_key:/run/secrets/master_key:ro
       - ./secrets/tls/ca.pem:/run/secrets/ca.pem:ro
 
-  # The model gateway: LiteLLM, its aliases in litellm.yaml, its master key
-  # and the Claude API key in secrets/gateway.env, made by setup.sh.
+  # The model gateway: LiteLLM, its aliases in litellm.yaml, its master key,
+  # the Claude API key and the address of its database in
+  # secrets/gateway.env, made by setup.sh. The image with the database
+  # client built in: the web interface signs in only with a database.
   gateway:
-    image: ghcr.io/berriai/litellm:v1.108.10@sha256:297bf657b0e7af37cee6b9a48ce6882b6d5504c2e77554cdafcb1a0c18ba1fc6
+    image: ghcr.io/berriai/litellm-database:v1.108.10@sha256:ff0a4cb6aa43898d8ae5f3912b85bcb0b06340452bda1844a9ca1b1a4c393b5b
     restart: unless-stopped
     command: ["--config", "/etc/litellm/config.yaml", "--port", "4000"]
     env_file: ./secrets/gateway.env
+    depends_on:
+      gateway-db:
+        condition: service_healthy
     networks:
       - live
       - models
+      - gateway-db
     ports:
       - "127.0.0.1:38400:4000"
     volumes:
@@ -75,6 +81,24 @@ services:
       timeout: 5s
       start_period: 60s
       retries: 3
+
+  # The gateway's database: its keys and what each spent, for its web
+  # interface. No prompt and no answer, litellm.yaml says so. Reached by
+  # the gateway alone, on a network with no way out.
+  gateway-db:
+    image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    restart: unless-stopped
+    env_file: ./secrets/gateway-db.env
+    networks:
+      - gateway-db
+    volumes:
+      - gateway-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      retries: 10
 
   # Local models under llama.cpp, one router per kind of hardware. Each
   # serves the models of its presets file, one at a time, and loads a model
@@ -129,8 +153,12 @@ networks:
   # Shared by the gateway and the llama services only, with no way out.
   models:
     internal: true
+  # Shared by the gateway and its database only, with no way out.
+  gateway-db:
+    internal: true
 
 volumes:
+  gateway-db:
   stalwart-etc:
   stalwart-data:
   service-data:
