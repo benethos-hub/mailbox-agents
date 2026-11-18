@@ -35,7 +35,7 @@ from ...contract import (
 from ...errors import ConfigError
 from ...records import Decision, Event, FolderRef, MailMessage
 from ...settings import PREFIX
-from .groups import NONE, Group, Groups, load_groups
+from .groups import NONE, Group, Groups, Match, load_groups
 
 __all__ = ["NONE", "Sorting"]
 
@@ -115,8 +115,7 @@ class Sorting(Agent):
         return message.in_role("inbox") and not message.has_keyword(self.keyword)
 
     def baseline(self, message: MailMessage) -> Decision:
-        sender = message.sender.email if message.sender else None
-        found = self.groups.match(sender)
+        found = self._match(message)
         if found is None:
             return Decision(label=NONE, source="baseline", details={"match": "none"})
         group = found.group
@@ -141,8 +140,7 @@ class Sorting(Agent):
         self, decision: Decision, message: MailMessage, context: Context
     ) -> list[ActionRequest]:
         # The group as the list says now, not as it said at the decision.
-        sender = message.sender.email if message.sender else None
-        found = self.groups.match(sender)
+        found = self._match(message)
         group = found.group if found is not None else None
         if group is None:
             return []
@@ -190,6 +188,11 @@ class Sorting(Agent):
                 for (sender, groups), count in alike.most_common()
             ]
         return lines
+
+    def _match(self, message: MailMessage) -> Match | None:
+        """The groups the sender of ``message`` belongs to, as the list
+        says now."""
+        return self.groups.match(message.sender.email if message.sender else None)
 
     def _move(self, group: Group, message: MailMessage) -> list[ActionRequest]:
         """The folders from the top, the move, and with it the keyword. A
