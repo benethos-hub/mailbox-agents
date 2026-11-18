@@ -88,7 +88,8 @@ live/             # run by hand, outside testpaths: smoke, sorting and
 containers/
   images/mailbox-agents/Dockerfile
   production/     # the published image, one service per agent, each
-                  # behind a profile of its name
+                  # behind a profile of its name, its example lists
+                  # copies of config/, held equal by tests/test_examples.py
   development/    # built from the checkout, against the test account
   live/           # a mail server and a mailbox service of their own, with
                   # a test account of invented mail

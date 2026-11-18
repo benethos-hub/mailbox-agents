@@ -99,18 +99,22 @@ def _layer(module: str) -> str:
     return parts[1] if len(parts) > 1 else ""
 
 
-def _imports(path: Path) -> list[tuple[str, int]]:
-    """Every module of this package that ``path`` imports, with its line."""
+def _from(path: Path, node: ast.ImportFrom) -> str:
+    """The module ``node`` in ``path`` imports from, a relative one resolved."""
+    if not node.level:
+        return node.module or ""
     relative = path.relative_to(SOURCE).with_suffix("").parts
     base = [PACKAGE, *relative][:-1]
+    anchor = base[: len(base) - (node.level - 1)]
+    return ".".join([*anchor, *([node.module] if node.module else [])])
+
+
+def _imports(path: Path) -> list[tuple[str, int]]:
+    """Every module of this package that ``path`` imports, with its line."""
     found: list[tuple[str, int]] = []
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         if isinstance(node, ast.ImportFrom):
-            if node.level:
-                anchor = base[: len(base) - (node.level - 1)]
-                module = ".".join([*anchor, *([node.module] if node.module else [])])
-            else:
-                module = node.module or ""
+            module = _from(path, node)
             if module != PACKAGE and not module.startswith(f"{PACKAGE}."):
                 continue
             if module == PACKAGE:
@@ -244,6 +248,52 @@ def test_no_agent_compares_the_stage(path: Path) -> None:
                 assert not (isinstance(side, ast.Attribute) and side.attr == "stage"), (
                     f"{path.name} compares the stage on line {node.lineno}"
                 )
+
+
+def _names_from_settings(path: Path) -> set[str]:
+    """The names ``path`` takes from the layer settings: what it imports
+    from there, and ``settings`` itself when it imports the layer whole."""
+    found: set[str] = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.ImportFrom):
+            module = _from(path, node)
+            if module == PACKAGE:
+                found |= {a.name for a in node.names if a.name == "settings"}
+            elif module.startswith(f"{PACKAGE}.") and _layer(module) == "settings":
+                found |= {alias.name for alias in node.names}
+        elif isinstance(node, ast.Import):
+            found |= {
+                "settings"
+                for alias in node.names
+                if alias.name.startswith(f"{PACKAGE}.")
+                and _layer(alias.name) == "settings"
+            }
+    return found
+
+
+@pytest.mark.parametrize(
+    "path", AGENT_MODULES, ids=[p.relative_to(SOURCE).as_posix() for p in AGENT_MODULES]
+)
+def test_an_agent_takes_prefix_alone_from_the_settings(path: Path) -> None:
+    """An agent is handed its settings and names a setting in what it says
+    by ``PREFIX``. It reads nothing else of the layer settings, such as the
+    loading of the settings or a secret."""
+    assert _names_from_settings(path) <= {"PREFIX"}
+
+
+def test_the_check_finds_more_than_prefix_taken_from_the_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "agents" / "probe").mkdir(parents=True)
+    probe = tmp_path / "agents" / "probe" / "agent.py"
+    probe.write_text(
+        "from ...settings import PREFIX, load_settings\n"
+        "import benethos_mailbox_agents.settings\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setitem(globals(), "SOURCE", tmp_path)
+
+    assert _names_from_settings(probe) == {"PREFIX", "load_settings", "settings"}
 
 
 @pytest.mark.parametrize(

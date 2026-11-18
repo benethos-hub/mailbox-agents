@@ -1,4 +1,5 @@
-"""Every example list in the repository parses with the loader it is for."""
+"""Every example list in the repository parses with the loader it is for,
+and the copies the production setup carries are the same as their sources."""
 
 from __future__ import annotations
 
@@ -34,3 +35,22 @@ def test_an_example_parses(path: Path) -> None:
 
 def test_every_example_is_found() -> None:
     assert len(EXAMPLES) >= 5
+
+
+PRODUCTION = sorted(
+    (ROOT / "containers" / "production" / "agents").rglob("*.example.json")
+)
+CONFIG = ROOT / "config" / "benethos-mailbox-agents"
+
+
+@pytest.mark.parametrize(
+    "path", PRODUCTION, ids=[p.relative_to(ROOT).as_posix() for p in PRODUCTION]
+)
+def test_a_production_example_is_the_one_under_config(path: Path) -> None:
+    """containers/production/agents/<name>/ carries a copy of the example of
+    config/, byte for byte, so the two never come to differ."""
+    assert path.read_bytes() == (CONFIG / path.name).read_bytes()
+
+
+def test_every_production_example_is_found() -> None:
+    assert len(PRODUCTION) >= 2
