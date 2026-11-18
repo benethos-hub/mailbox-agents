@@ -291,8 +291,7 @@ class Store:
 
     def message(self, ref: MessageRef) -> MessageRow | None:
         row = self._one(
-            "SELECT account_id, message_id, state, attempts, next_attempt, created, "
-            "updated FROM messages WHERE account_id = ? AND message_id = ?",
+            _MESSAGE_SQL + " WHERE account_id = ? AND message_id = ?",
             ref.account_id,
             ref.message_id,
         )
@@ -301,8 +300,7 @@ class Store:
     def due(self, now: datetime, limit: int) -> list[MessageRow]:
         """The ``pending`` messages whose next attempt has come, oldest first."""
         rows = self._all(
-            "SELECT account_id, message_id, state, attempts, next_attempt, created, "
-            "updated FROM messages WHERE state = 'pending' AND next_attempt <= ? "
+            _MESSAGE_SQL + " WHERE state = 'pending' AND next_attempt <= ? "
             "ORDER BY created LIMIT ?",
             _text(now),
             limit,
@@ -311,14 +309,10 @@ class Store:
 
     def messages(self, state: str | None = None) -> list[MessageRow]:
         """Every message, or those in ``state``, newest first."""
-        sql = (
-            "SELECT account_id, message_id, state, attempts, next_attempt, created, "
-            "updated FROM messages"
-        )
         rows = (
-            self._all(sql + " WHERE state = ? ORDER BY created DESC", state)
+            self._all(_MESSAGE_SQL + " WHERE state = ? ORDER BY created DESC", state)
             if state
-            else self._all(sql + " ORDER BY created DESC")
+            else self._all(_MESSAGE_SQL + " ORDER BY created DESC")
         )
         return [_message_row(row) for row in rows]
 
@@ -385,8 +379,7 @@ class Store:
         """The latest result of ``step`` for this message under this prompt
         version and model alias, the key of idempotency."""
         row = self._one(
-            "SELECT step, prompt_version, model, result, tokens_in, tokens_out, "
-            "duration_ms, at FROM steps WHERE account_id = ? AND message_id = ? "
+            _STEP_SQL + " WHERE account_id = ? AND message_id = ? "
             "AND step = ? AND prompt_version = ? AND model_alias = ? "
             "ORDER BY id DESC LIMIT 1",
             ref.account_id,
@@ -400,9 +393,7 @@ class Store:
     def steps(self, ref: MessageRef) -> list[StepResult]:
         """Every step of a message, in the order they ran."""
         rows = self._all(
-            "SELECT step, prompt_version, model, result, tokens_in, tokens_out, "
-            "duration_ms, at FROM steps WHERE account_id = ? AND message_id = ? "
-            "ORDER BY id",
+            _STEP_SQL + " WHERE account_id = ? AND message_id = ? ORDER BY id",
             ref.account_id,
             ref.message_id,
         )
@@ -453,31 +444,16 @@ class Store:
 
     def actions(self, ref: MessageRef | None = None) -> list[ActionRow]:
         """The actions of a message, or of all, in the order they ran."""
-        sql = (
-            "SELECT account_id, message_id, action, argument, before, stage, "
-            "executed, at FROM actions"
-        )
         rows = (
             self._all(
-                sql + " WHERE account_id = ? AND message_id = ? ORDER BY id",
+                _ACTION_SQL + " WHERE account_id = ? AND message_id = ? ORDER BY id",
                 ref.account_id,
                 ref.message_id,
             )
             if ref
-            else self._all(sql + " ORDER BY id")
+            else self._all(_ACTION_SQL + " ORDER BY id")
         )
-        return [
-            ActionRow(
-                ref=MessageRef(account_id=row[0], message_id=row[1]),
-                action=row[2],
-                argument=row[3],
-                before=json.loads(row[4]),
-                stage=row[5],
-                executed=bool(row[6]),
-                at=datetime.fromisoformat(row[7]),
-            )
-            for row in rows
-        ]
+        return [_action(row) for row in rows]
 
     # -- open items --------------------------------------------------------------
 
@@ -598,6 +574,20 @@ class Store:
         return int(self._one("SELECT COUNT(*) FROM calls")[0])
 
 
+# The columns each kind of row is read with, in the order of its reader
+# below.
+_MESSAGE_SQL = (
+    "SELECT account_id, message_id, state, attempts, next_attempt, created, "
+    "updated FROM messages"
+)
+_STEP_SQL = (
+    "SELECT step, prompt_version, model, result, tokens_in, tokens_out, "
+    "duration_ms, at FROM steps"
+)
+_ACTION_SQL = (
+    "SELECT account_id, message_id, action, argument, before, stage, "
+    "executed, at FROM actions"
+)
 _ITEM_SQL = (
     "SELECT account_id, message_id, thread_id, opened, due, keyword_set, closed, "
     "reason FROM open_items"
@@ -624,6 +614,18 @@ def _step(row: Any) -> StepResult:
         tokens_in=row[4],
         tokens_out=row[5],
         duration_ms=row[6],
+        at=datetime.fromisoformat(row[7]),
+    )
+
+
+def _action(row: Any) -> ActionRow:
+    return ActionRow(
+        ref=MessageRef(account_id=row[0], message_id=row[1]),
+        action=row[2],
+        argument=row[3],
+        before=json.loads(row[4]),
+        stage=row[5],
+        executed=bool(row[6]),
         at=datetime.fromisoformat(row[7]),
     )
 
