@@ -141,6 +141,10 @@ commit that makes the change. Design decisions live in
   `sorting` asks for its keyword in every stage, so in `shadow` and
   `keyword` and for a held group the state file and `report` show the
   keyword as recorded and not set.
+- `status` names a folder an agent expects whose name is there in another
+  case only as `folder in another case in <account>: <path>`, no longer as
+  missing: the runtime neither moves into it nor makes it. It prepares
+  each agent once, so it reads the `sorting` list once.
 
 ### Removed
 

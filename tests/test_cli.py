@@ -13,6 +13,8 @@ import httpx
 import pytest
 
 from benethos_mailbox_agents import __version__
+from benethos_mailbox_agents.agents.sorting import agent as sorting_agent
+from benethos_mailbox_agents.agents.sorting.groups import Groups
 from benethos_mailbox_agents.cli import PROG, main, session
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.settings import PREFIX
@@ -222,6 +224,54 @@ def test_status_names_a_folder_that_is_missing(
     out = capsys.readouterr().out
     assert "  folder missing in acc1: Missing\n" in out
     assert "folder missing in acc1: Invoices\n" not in out
+
+
+def test_status_names_a_folder_there_in_another_case(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "invoices/*")
+
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert "  folder in another case in acc1: invoices\n" in out
+    assert "folder missing in acc1: invoices" not in out
+
+
+def test_status_reads_the_sorting_list_once(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    listed = tmp_path / "sorting.json"
+    listed.write_text(
+        '{"groups": [{"name": "A", "folder": "A", "senders": ["*@a.example"]}]}',
+        encoding="utf-8",
+    )
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
+    monkeypatch.setenv(f"{PREFIX}SORTING_FILE", str(listed))
+    reads: list[Path] = []
+    real = sorting_agent.load_groups
+
+    def counted(path: Path) -> Groups:
+        reads.append(path)
+        return real(path)
+
+    monkeypatch.setattr(sorting_agent, "load_groups", counted)
+
+    assert main(["status"]) == 0
+
+    assert "sorting 1: ready" in capsys.readouterr().out
+    assert reads == [listed]
 
 
 def test_status_says_why_folders_were_not_checked(

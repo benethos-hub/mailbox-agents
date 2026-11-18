@@ -73,7 +73,9 @@ stops it. `status` looks up in the mailbox service the folders that should
 be there, those named, the parents of `Parent/*` and the inbox folder, and
 names each one missing in each account the settings name, or says the
 folders were not checked when no account is named. A missing one does
-not stop the start, as `sorting` may make it later.
+not stop the start, as `sorting` may make it later. One whose name is
+there in another case only is named as such: the runtime neither moves
+into it nor makes it.
 
 `backfill` takes up the messages of the last days in the inbox and in every
 folder it looks in, account by account, each folder by its id.

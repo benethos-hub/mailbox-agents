@@ -118,9 +118,9 @@ async def _backfill(name: str, days: int, settings: Settings) -> int:
 
 
 def _folders(agent: Agent, settings: Settings) -> list[str]:
-    """What ``status`` says of the folders an agent expects: each one
-    missing in an account it works on, or why they were not looked up."""
-    agent.prepare()
+    """What ``status`` says of the folders a prepared agent expects: each
+    one missing in an account it works on, or there in another case only,
+    or why they were not looked up."""
     needed = agent.folders_needed()
     if not needed:
         return []
@@ -133,15 +133,21 @@ def _folders(agent: Agent, settings: Settings) -> list[str]:
 
 
 async def _missing(needed: tuple[str, ...], settings: Settings) -> list[str]:
+    """A line for each folder of ``needed`` that is not there. One whose
+    name is there in another case is said so: the executor neither moves
+    into it nor makes it, as the service would make a second folder."""
     lines = []
     async with mailbox_for(settings) as mailbox:
         for account in settings.accounts:
             there = {f.path for f in (await mailbox.folders(account)).values()}
-            lines += [
-                f"folder missing in {account}: {path}"
-                for path in needed
-                if path not in there
-            ]
+            folded = {path.casefold() for path in there}
+            for path in needed:
+                if path in there:
+                    continue
+                if path.casefold() in folded:
+                    lines.append(f"folder in another case in {account}: {path}")
+                else:
+                    lines.append(f"folder missing in {account}: {path}")
     return lines
 
 
@@ -155,8 +161,8 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
         else:
             state = f"not ready: {found.problem}"
         print(f"{found.name} {found.version}: {state}")
-        if found.ready:
-            for line in _folders(cls(settings), settings):
+        if found.agent is not None:
+            for line in _folders(found.agent, settings):
                 print(f"  {line}")
         path = path_for(settings.data_dir, cls.name)
         if path.is_file():

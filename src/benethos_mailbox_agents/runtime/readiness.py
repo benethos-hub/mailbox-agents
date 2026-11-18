@@ -38,10 +38,15 @@ def required(agent: type[Agent]) -> tuple[str, ...]:
 
 @dataclass(frozen=True)
 class Readiness:
+    """Whether an agent could start. ``agent`` is the agent built and
+    prepared, when it is ready, so a caller asks it without preparing a
+    second one."""
+
     name: str
     version: str
     missing: tuple[str, ...]
     problem: str | None
+    agent: Agent | None = None
 
     @property
     def ready(self) -> bool:
@@ -50,15 +55,17 @@ class Readiness:
 
 def readiness(agent: type[Agent], settings: Settings) -> Readiness:
     """Whether ``agent`` could start with ``settings``: the settings it
-    misses, or what its preparation found wrong."""
+    misses, or what its preparation found wrong, or else the agent
+    prepared."""
     missing = tuple(settings.missing(required(agent)))
-    problem = None
-    if not missing:
-        try:
-            agent(settings).prepare()
-        except (ConfigError, ContractError) as exc:
-            problem = exc.message
-    return Readiness(agent.name, agent.version, missing, problem)
+    if missing:
+        return Readiness(agent.name, agent.version, missing, None)
+    try:
+        prepared = agent(settings)
+        prepared.prepare()
+    except (ConfigError, ContractError) as exc:
+        return Readiness(agent.name, agent.version, missing, exc.message)
+    return Readiness(agent.name, agent.version, missing, None, prepared)
 
 
 def start(cls: type[Agent], settings: Settings) -> Agent:
