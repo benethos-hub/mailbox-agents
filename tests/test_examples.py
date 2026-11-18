@@ -8,6 +8,7 @@ import pytest
 
 from benethos_mailbox_agent.agents.inquiries.patterns import load_patterns
 from benethos_mailbox_agent.agents.invoices.suppliers import load_suppliers
+from benethos_mailbox_agent.agents.sorting.groups import load_groups
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = sorted(
@@ -17,7 +18,11 @@ EXAMPLES = sorted(
         ROOT / "containers" / "live" / "suppliers.json",
     ]
 )
-LOADERS = {"suppliers": load_suppliers, "inquiries": load_patterns}
+LOADERS = {
+    "suppliers": load_suppliers,
+    "inquiries": load_patterns,
+    "sorting": load_groups,
+}
 
 
 @pytest.mark.parametrize(

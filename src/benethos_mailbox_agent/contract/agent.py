@@ -30,6 +30,7 @@ __all__ = [
     "Limits",
     "Requires",
     "Route",
+    "Shown",
     "Trigger",
 ]
 
@@ -115,6 +116,17 @@ class ActionRequest:
     held: bool = False
 
 
+@dataclass(frozen=True)
+class Shown:
+    """One message of a report, as an agent's summary sees it: its
+    sender's address, fetched for the report, its decision, and its
+    actions, each as its name and whether it was carried out."""
+
+    sender: str | None
+    decision: Decision
+    actions: tuple[tuple[str, bool], ...] = ()
+
+
 class Agent(ABC):
     """Base class of every agent. See docs/specs/agent-contract.md."""
 
@@ -174,9 +186,10 @@ class Agent(ABC):
         """For agents with deadlines: the actions that are due."""
         return []
 
-    def summarize(self, decided: list[tuple[str | None, Decision]]) -> list[str]:
-        """For ``report``: lines about the messages shown, each given as its
-        sender's address and its decision. Nothing by default."""
+    def summarize(self, shown: list[Shown]) -> list[str]:
+        """For ``report``: lines about the messages shown, each with its
+        sender's address, its decision and its actions. Nothing by
+        default."""
         return []
 
     def may_create(self, path: str) -> bool:

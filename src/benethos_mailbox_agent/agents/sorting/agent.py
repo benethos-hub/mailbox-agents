@@ -15,6 +15,7 @@ is then, so a sender added since reaches older mail through
 
 from __future__ import annotations
 
+from collections import Counter
 from functools import cached_property
 
 from ...contract import (
@@ -25,6 +26,7 @@ from ...contract import (
     Limits,
     Requires,
     Route,
+    Shown,
     Trigger,
 )
 from ...errors import ConfigError
@@ -36,6 +38,24 @@ __all__ = ["NONE", "Sorting"]
 
 # The label of a message whose sender is in no group, or in two alike.
 NONE = "none"
+
+# The senders in no group a report names at most, as candidates.
+CANDIDATES = 10
+
+
+def _plural(count: int, word: str) -> str:
+    return f"{count} {word}{'' if count == 1 else 's'}"
+
+
+def _fate(item: Shown) -> str:
+    """What became of a message of a group: moved, held, recorded, or not
+    moved, when its move was refused or not asked for."""
+    moves = [done for action, done in item.actions if action == "move_to_folder"]
+    if not moves:
+        return "not moved"
+    if any(moves):
+        return "moved"
+    return "held" if item.decision.details.get("hold") == "yes" else "recorded"
 
 
 class Sorting(Agent):
@@ -116,6 +136,49 @@ class Sorting(Agent):
         if group is None:
             return []
         return self._move(group, message)
+
+    def summarize(self, shown: list[Shown]) -> list[str]:
+        """Per group what became of its messages, the senders in no group
+        that wrote most often, as candidates for the list, and the senders
+        left alone because two groups name them alike."""
+        lines: list[str] = []
+        fates: dict[str, Counter[str]] = {}
+        for item in shown:
+            if item.decision.label != NONE:
+                fates.setdefault(item.decision.label, Counter())[_fate(item)] += 1
+        if fates:
+            lines.append("groups:")
+            for name in sorted(fates):
+                counted = fates[name]
+                said = ", ".join(
+                    f"{counted[fate]} {fate}"
+                    for fate in ("moved", "recorded", "held", "not moved")
+                    if counted[fate]
+                )
+                lines.append(f"  {name}: {said}")
+        unknown = Counter(
+            item.sender.lower()
+            for item in shown
+            if item.sender and item.decision.details.get("match") == "none"
+        )
+        if unknown:
+            lines.append("senders in no group, candidates for the list:")
+            lines += [
+                f"  {sender} ({_plural(count, 'message')})"
+                for sender, count in unknown.most_common(CANDIDATES)
+            ]
+        alike = Counter(
+            (item.sender.lower(), item.decision.details.get("groups", ""))
+            for item in shown
+            if item.sender and item.decision.details.get("match") == "ambiguous"
+        )
+        if alike:
+            lines.append("left alone, two groups name the sender alike:")
+            lines += [
+                f"  {sender}: {groups} ({_plural(count, 'message')})"
+                for (sender, groups), count in alike.most_common()
+            ]
+        return lines
 
     def _move(self, group: Group, message: MailMessage) -> list[ActionRequest]:
         """The folders from the top, the move, and with it the keyword. A

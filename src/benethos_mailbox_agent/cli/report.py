@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ..contract import Agent, Reader
+from ..contract import Agent, Reader, Shown
 from ..errors import MailboxRefusedError
 from ..logbook import escaped
 from ..records import Decision, MailMessage, MessageRef
@@ -122,17 +122,18 @@ def render(entries: list[Entry]) -> list[str]:
 
 def summary(agent: Agent, entries: list[Entry]) -> list[str]:
     """What the agent has to say about the messages shown."""
-    decided = [
-        (
-            entry.message.sender.email
+    shown = [
+        Shown(
+            sender=entry.message.sender.email
             if entry.message is not None and entry.message.sender is not None
             else None,
-            entry.decision,
+            decision=entry.decision,
+            actions=tuple((a.action, a.executed) for a in entry.actions),
         )
         for entry in entries
         if entry.decision is not None
     ]
-    return [escaped(line) for line in agent.summarize(decided)]
+    return [escaped(line) for line in agent.summarize(shown)]
 
 
 async def report(

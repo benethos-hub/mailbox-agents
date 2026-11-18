@@ -24,6 +24,7 @@ from ...contract import (
     Limits,
     Requires,
     Route,
+    Shown,
     Trigger,
 )
 from ...contract.prompts import load_prompt
@@ -186,16 +187,16 @@ class Invoices(Agent):
             )
         return requests
 
-    def summarize(self, decided: list[tuple[str | None, Decision]]) -> list[str]:
+    def summarize(self, shown: list[Shown]) -> list[str]:
         """The senders of invoices no supplier of the list was found for,
         with how many each sent: candidates for the list."""
         counted = Counter(
-            sender.lower()
-            for sender, decision in decided
-            if sender
-            and decision.label == "invoice"
-            and decision.actionable
-            and "supplier" not in decision.fields
+            item.sender.lower()
+            for item in shown
+            if item.sender
+            and item.decision.label == "invoice"
+            and item.decision.actionable
+            and "supplier" not in item.decision.fields
         )
         if not counted:
             return []

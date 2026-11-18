@@ -106,6 +106,28 @@ services:
       start_period: 120s
       retries: 3
 
+  # Asks no model: needs the mailbox service alone.
+  sorting:
+    <<: *agent
+    profiles: ["sorting"]
+    command: ["worker", "--agent", "sorting"]
+    env_file: ./agents/sorting/.env
+    environment:
+      MAILBOX_AGENT_SERVICE_TOKEN_FILE: /run/secrets/service_token
+      MAILBOX_AGENT_SORTING_FILE: /config/sorting.json
+    volumes:
+      - sorting-data:/data
+      - ./agents/sorting:/config:ro
+      - ./secrets/sorting:/run/secrets:ro
+    ports:
+      - "127.0.0.1:${SORTING_METRICS_PORT:-9474}:9464"
+    healthcheck:
+      test: ["CMD", "benethos-mailbox-agent", "health", "--agent", "sorting"]
+      interval: 60s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
   # Changes nothing and asks no model: a deployment checked end to end
   # before an agent that may change a message is started.
   counting:
@@ -131,4 +153,5 @@ volumes:
   invoices-data:
   awaiting-reply-data:
   inquiries-data:
+  sorting-data:
   counting-data:

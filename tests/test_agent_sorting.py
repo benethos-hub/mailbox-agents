@@ -276,3 +276,68 @@ def test_a_wrong_list_stops_the_start(tmp_path: Path) -> None:
     found = readiness(Sorting, values)
 
     assert found.problem is not None and "*@a.example" in found.problem
+
+
+# -- the report -----------------------------------------------------------------
+
+
+def test_summarize_per_group_candidates_and_alike(tmp_path: Path) -> None:
+    from benethos_mailbox_agent.contract import Shown
+    from benethos_mailbox_agent.records import Decision
+
+    def group(name: str, **details: str) -> Decision:
+        return Decision(
+            label=name, source="baseline", details={"match": "group", **details}
+        )
+
+    none = Decision(label="none", source="baseline", details={"match": "none"})
+    alike = Decision(
+        label="none",
+        source="baseline",
+        details={"match": "ambiguous", "groups": "TelcoA,TelcoB"},
+    )
+    moved = (("create_folder", True), ("move_to_folder", True))
+    recorded = (("move_to_folder", False),)
+
+    lines = agent(tmp_path).summarize(
+        [
+            Shown("a@cloudhost.example", group("CloudHost"), moved),
+            Shown("b@cloudhost.example", group("CloudHost"), recorded),
+            Shown("c@cloudhost.example", group("CloudHost"), ()),
+            Shown("s@bank-two.example", group("Bank", hold="yes"), recorded),
+            Shown("x@elsewhere.example", none),
+            Shown("X@Elsewhere.example", none),
+            Shown("y@other.example", none),
+            Shown(None, none),
+            Shown("billing@telco.example", alike),
+        ]
+    )
+
+    assert lines == [
+        "groups:",
+        "  Bank: 1 held",
+        "  CloudHost: 1 moved, 1 recorded, 1 not moved",
+        "senders in no group, candidates for the list:",
+        "  x@elsewhere.example (2 messages)",
+        "  y@other.example (1 message)",
+        "left alone, two groups name the sender alike:",
+        "  billing@telco.example: TelcoA,TelcoB (1 message)",
+    ]
+    assert agent(tmp_path).summarize([]) == []
+
+
+async def test_the_report_ends_with_the_groups(world: Wired, tmp_path: Path) -> None:
+    from benethos_mailbox_agent.cli.report import collect, render, summary
+
+    for message_id in ("hosting", "unknown"):
+        await run(world, message_id, agent(tmp_path))
+
+    entries = await collect(world.store, world.mailbox, limit=10)
+    lines = render(entries) + summary(agent(tmp_path), entries)
+
+    assert lines[-4:] == [
+        "groups:",
+        "  Hosting: 1 moved",
+        "senders in no group, candidates for the list:",
+        "  someone@elsewhere.example (1 message)",
+    ]

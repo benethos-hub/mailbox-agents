@@ -616,6 +616,7 @@ async def test_a_gateway_that_is_away_leaves_the_invoice_pending(world: Wired) -
 
 
 def test_summarize_names_unlisted_senders_of_invoices() -> None:
+    from benethos_mailbox_agent.contract import Shown
     from benethos_mailbox_agent.records import Decision
 
     invoice = Decision(label="invoice", source="model")
@@ -625,13 +626,13 @@ def test_summarize_names_unlisted_senders_of_invoices() -> None:
 
     lines = agent().summarize(
         [
-            ("accounts@paperworks.example", invoice),
-            ("Accounts@Paperworks.example", invoice),
-            ("billing@new.example", invoice),
-            ("rechnung@telco.example", listed),
-            ("x@refused.example", refused),
-            ("y@other.example", other),
-            (None, invoice),
+            Shown("accounts@paperworks.example", invoice),
+            Shown("Accounts@Paperworks.example", invoice),
+            Shown("billing@new.example", invoice),
+            Shown("rechnung@telco.example", listed),
+            Shown("x@refused.example", refused),
+            Shown("y@other.example", other),
+            Shown(None, invoice),
         ]
     )
 
@@ -640,7 +641,7 @@ def test_summarize_names_unlisted_senders_of_invoices() -> None:
         "  accounts@paperworks.example (2 invoices)",
         "  billing@new.example (1 invoice)",
     ]
-    assert agent().summarize([("y@other.example", other)]) == []
+    assert agent().summarize([Shown("y@other.example", other)]) == []
 
 
 async def test_the_report_ends_with_the_candidates(world: Wired) -> None:

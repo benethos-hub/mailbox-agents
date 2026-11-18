@@ -24,7 +24,7 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `tick(now, context)` | for agents with deadlines: what is due |
 | `prepare()` | reads what the agent needs beyond its settings, such as a list in a file |
 | `may_create(path)` | whether the runtime may make the folder at `path` for it: one its configuration names. Code only, no folder by default |
-| `summarize(decided)` | for `report`: lines about the messages shown, given as sender and decision |
+| `summarize(shown)` | for `report`: lines about the messages shown, each given as sender, decision and its actions with whether each was carried out |
 
 An event routed to `decide` makes the message `pending` and runs the steps
 of [runtime](runtime.md) once per message, prompt version and model. An event routed to

@@ -87,7 +87,9 @@ details, each quote and whether it was found, the label of the baseline,
 and each action with its stage and whether it was carried out or would
 have been. It ends with what the agent has to say about the messages shown: for
 `invoices`, the senders of invoices no supplier was found for, with how many
-each sent, as candidates for the supplier list. It opens the state file
+each sent, as candidates for the supplier list. For `sorting`, per group
+how many messages were moved, recorded, held or not moved, the senders in
+no group that wrote most often, and those two groups name alike. It opens the state file
 read-only, so it runs beside the agent.
 `--offline` reads the state file alone, without subject and sender. What
 it prints goes to stdout for the person who asked and never to the log.

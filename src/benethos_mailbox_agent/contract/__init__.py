@@ -12,6 +12,7 @@ from .agent import (
     Limits,
     Requires,
     Route,
+    Shown,
     Trigger,
 )
 from .context import Context, Items, Model, Reader
@@ -30,6 +31,7 @@ __all__ = [
     "Reader",
     "Requires",
     "Route",
+    "Shown",
     "Trigger",
     "discover",
     "load",
