@@ -2,11 +2,11 @@
 
 It offers what the agents need of the service and nothing else: the change
 feed, the messages of the last days for a backfill, a message, a thread,
-the folders, a keyword set or taken off, and a move. There is no way here
-to send, delete, trash or create a folder, so the runtime cannot do any of
-it whatever an agent asks. Every answer is
-turned into a record of :mod:`records`, and every failure into an error of
-:mod:`errors`. See docs/specs/mailbox-service.md.
+the folders, a keyword set or taken off, a move, and a folder made. There
+is no way here to send, delete or trash, so the runtime cannot do any of it
+whatever an agent asks. Which folder may be made is the runtime's to
+decide. Every answer is turned into a record of :mod:`records`, and every
+failure into an error of :mod:`errors`. See docs/specs/mailbox-service.md.
 """
 
 from __future__ import annotations
@@ -252,7 +252,29 @@ class Mailbox:
             )
         return Thread(id=found.id, messages=tuple(messages))
 
-    # -- the three actions -------------------------------------------------------------
+    # -- the actions -------------------------------------------------------------------
+
+    async def create_folder(self, account_id: str, path: str) -> FolderRef:
+        """Make the folder at ``path``, below a parent that exists. Answers
+        it with its path. Its parent missing is a refusal, as is a name the
+        service already knows in the same case. Another case is not
+        refused by the service (measured 2026-11-18), the caller compares."""
+        parent_path, _, name = path.rpartition("/")
+        parent_id: str | None = None
+        if parent_path:
+            parent = await self.folder_at(account_id, parent_path)
+            if parent is None:
+                raise MailboxRefusedError(
+                    "the parent folder does not exist",
+                    status=404,
+                    reason="parent_missing",
+                )
+            parent_id = parent.id
+        made = await _call(self._client.create_folder(account_id, name, parent_id))
+        known = await self.folders(account_id, fresh=True)
+        if made.id in known:
+            return known[made.id]
+        return FolderRef(id=made.id, name=made.name, role=made.role, path=path)
 
     async def add_keyword(self, ref: MessageRef, keyword: str) -> None:
         await _call(

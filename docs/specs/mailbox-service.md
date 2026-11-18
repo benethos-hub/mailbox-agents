@@ -10,11 +10,13 @@ Operation names below are the service's `operationId`s.
 | The conversation a message belongs to | `get_thread` |
 | Set or remove a keyword, move to a folder | `update_message` |
 | The folders of an account | `list_folders` |
+| Make a folder, below a parent or at the top | `create_folder` |
 | The messages received since a day, for `backfill` | `list_all_messages`, once for the inbox and once for sent mail |
 
 `sources/mailbox.py` offers these and nothing else: no send, no delete, no
-trash, no folder creation. A move sets the message's folders to the one
-target. A message without a text body is read with an empty text
+trash. Which folder an agent may make is the runtime's to decide
+([agent contract](agent-contract.md)). A move sets the message's folders to
+the one target. A message without a text body is read with an empty text
 **(to verify: whether the service always converts an HTML-only message)**.
 `list_all_messages` without a folder lists the inbox alone (measured
 2026-11-17 against 0.7.5), so a backfill names each folder role it wants.

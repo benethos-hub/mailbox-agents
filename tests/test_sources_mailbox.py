@@ -157,6 +157,40 @@ async def test_the_three_actions(service: FakeService, mailbox: Mailbox) -> None
     assert service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inv-mo"]
 
 
+async def test_a_folder_is_made_at_the_top_and_below_another(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    top = await mailbox.create_folder(ACCOUNT, "Providers")
+    below = await mailbox.create_folder(ACCOUNT, "Providers/CloudHost")
+
+    assert service.made() == [
+        {"name": "Providers"},
+        {"name": "CloudHost", "parent_id": top.id},
+    ]
+    assert (top.path, below.path) == ("Providers", "Providers/CloudHost")
+    found = await mailbox.folder_at(ACCOUNT, "Providers/CloudHost")
+    assert found is not None and found.id == below.id
+
+
+async def test_a_folder_below_a_missing_one_is_refused(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    with pytest.raises(MailboxRefusedError) as raised:
+        await mailbox.create_folder(ACCOUNT, "Missing/CloudHost")
+
+    assert raised.value.reason == "parent_missing"
+    assert service.made() == []
+
+
+async def test_a_folder_that_exists_is_refused_by_the_service(
+    mailbox: Mailbox,
+) -> None:
+    with pytest.raises(MailboxRefusedError) as raised:
+        await mailbox.create_folder(ACCOUNT, "Invoices")
+
+    assert (raised.value.status, raised.value.reason) == (409, "conflict")
+
+
 async def test_a_refusal_carries_status_and_code(mailbox: Mailbox) -> None:
     with pytest.raises(MailboxRefusedError) as raised:
         await mailbox.message(REF)

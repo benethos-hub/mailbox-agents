@@ -141,6 +141,14 @@ class FakeService:
             if r.method == "PATCH"
         ]
 
+    def made(self) -> list[dict[str, Any]]:
+        """The folders asked to be made, as the bodies sent."""
+        return [
+            json.loads(r.content)
+            for r in self.requests
+            if r.method == "POST" and _kind(_parts(r)) == "folders"
+        ]
+
     # -- answering ---------------------------------------------------------------
 
     def transport(self) -> httpx.MockTransport:
@@ -152,9 +160,9 @@ class FakeService:
             return _error(503, "unavailable")
         if self.refusal:
             return _error(*self.refusal)
-        if self.write_refusal and request.method == "PATCH":
+        if self.write_refusal and request.method in ("PATCH", "POST"):
             return _error(*self.write_refusal)
-        parts = [unquote(p) for p in request.url.path.split("/")[2:]]
+        parts = _parts(request)
         route: Callable[[httpx.Request, list[str]], httpx.Response] | None = {
             ("GET", "changes"): self._changes,
             ("GET", "messages"): self._list,
@@ -162,6 +170,7 @@ class FakeService:
             ("GET", "message"): self._message,
             ("GET", "thread"): self._thread,
             ("PATCH", "message"): self._update,
+            ("POST", "folders"): self._create_folder,
         }.get((request.method, _kind(parts)))
         if route is None:
             return _error(404, "not_found", "no such path")
@@ -211,6 +220,25 @@ class FakeService:
     def _folders(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
         return httpx.Response(200, json=self.folders.get(parts[1], []))
 
+    def _create_folder(
+        self, request: httpx.Request, parts: list[str]
+    ) -> httpx.Response:
+        """As the service at IMAP: a name refused only in the same case
+        below the same parent (measured 2026-11-18)."""
+        body = json.loads(request.content)
+        known = self.folders.setdefault(parts[1], [])
+        name, parent = body["name"], body.get("parent_id")
+        if any(f["name"] == name and f.get("parent_id") == parent for f in known):
+            return _error(409, "conflict", "the folder exists")
+        made = {
+            "id": f"{parent}/{name}" if parent else name,
+            "name": name,
+            "role": None,
+            "parent_id": parent,
+        }
+        known.append(made)
+        return httpx.Response(201, json=made)
+
     def _message(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
         found = self.messages.get((parts[1], parts[3]))
         if found is None:
@@ -259,6 +287,11 @@ class FakeService:
         if "folder_ids" in body:
             found["folder_ids"] = list(body["folder_ids"])
         return httpx.Response(200, json=found)
+
+
+def _parts(request: httpx.Request) -> list[str]:
+    """The path of ``request`` below /v1, each part unquoted."""
+    return [unquote(p) for p in request.url.path.split("/")[2:]]
 
 
 def _kind(parts: list[str]) -> str:
