@@ -87,9 +87,9 @@ def run(args: argparse.Namespace, settings: Settings) -> int:
 
 async def _run(name: str, settings: Settings) -> int:
     async with session(load(name), settings) as found:
-        wait = await found.worker.run_pass()
+        await found.worker.run_pass()
         print(f"{found.agent.name}: {_counts(found.store)}")
-        return 0 if wait <= settings.poll_seconds else 1
+        return 1 if found.worker.away else 0
 
 
 def backfill(args: argparse.Namespace, settings: Settings) -> int:

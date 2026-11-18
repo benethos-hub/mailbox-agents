@@ -80,3 +80,5 @@ commit that makes the change. Design decisions live in
   still due waits for another reason.
 - `health` answers 1 for an agent without a state file yet, not 2, which
   Docker keeps for itself.
+- `run` answers 1 whenever the pass found the mailbox service or the
+  gateway away, also with a backoff ceiling below the poll interval.

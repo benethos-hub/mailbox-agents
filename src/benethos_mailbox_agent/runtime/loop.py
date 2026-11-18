@@ -91,6 +91,12 @@ class Worker:
         self._waiting: set[MessageRef] = set()
 
     @property
+    def away(self) -> bool:
+        """Whether the last pass found the mailbox service or the gateway
+        away."""
+        return self._away > 0
+
+    @property
     def accounts(self) -> list[str] | None:
         return self.settings.accounts or None
 

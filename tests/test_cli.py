@@ -10,6 +10,7 @@ from collections.abc import Iterator
 from importlib.metadata import version
 from pathlib import Path
 
+import httpx
 import pytest
 
 from benethos_mailbox_agent import __version__, errors
@@ -167,6 +168,25 @@ def test_a_configuration_to_correct_is_a_2(
 ) -> None:
     assert main(argv) == code
     assert said in capsys.readouterr().err
+
+
+def test_a_service_away_during_the_pass_is_a_1(
+    service: FakeService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}POLL_SECONDS", "60")
+    monkeypatch.setenv(f"{PREFIX}BACKOFF_CEILING_SECONDS", "10")
+    assert main(["run", "--agent", "counting"]) == 0
+    service.add(wire_message("m1"))
+
+    def fetch_away(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and "/messages/" in request.url.path:
+            return httpx.Response(503, json={"error": "unavailable"})
+        return service.handle(request)
+
+    monkeypatch.setitem(session.TRANSPORTS, "service", httpx.MockTransport(fetch_away))
+
+    assert main(["run", "--agent", "counting"]) == 1
 
 
 def test_a_service_that_is_away_is_a_1(
