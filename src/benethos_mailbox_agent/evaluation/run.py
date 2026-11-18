@@ -61,7 +61,7 @@ async def evaluate(
         try:
             decision = await agent.decide(message, context)
             if decision.source == "model":
-                decision = check(decision, calls.content)
+                decision = check(decision, calls.evidence)
         except AnswerRefusedError as exc:
             decision, failure = None, f"answer:{exc.reason}"
         except LimitReachedError:

@@ -29,7 +29,7 @@ from ...contract import (
 )
 from ...contract.prompts import load_prompt
 from ...records import LABEL, Decision, Event, Evidence, MailMessage, OpenItem
-from .schema import Answer, render
+from .schema import Answer, parts, render
 from .text import add_working_days, asks, automatic
 
 __all__ = ["AwaitingReply"]
@@ -89,7 +89,10 @@ class AwaitingReply(Agent):
             # What a received message does is a rule: it may close an item.
             return Decision(label=INCOMING, source="baseline")
         answer = await context.model.ask(
-            system=self.system, content=render(message), schema=Answer
+            system=self.system,
+            content=render(message),
+            evidence=parts(message),
+            schema=Answer,
         )
         label = EXPECTS if answer.expects_reply else NO_REPLY
         return Decision(

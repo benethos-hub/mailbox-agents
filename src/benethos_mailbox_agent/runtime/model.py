@@ -3,14 +3,14 @@
 :class:`Calls` is the :class:`~benethos_mailbox_agent.contract.Model` the
 runtime hands an agent for one message. It refuses a call past the agent's
 limits, records each call as a step ``model`` with the model the gateway
-reported, its tokens and its duration, keeps the content it sent for the
-evidence check, and keeps request and answer only while
+reported, its tokens and its duration, keeps the parts of the mail it sent
+for the evidence check, and keeps request and answer only while
 PROMPT_RETENTION_DAYS says so.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Protocol, TypeVar
 
@@ -64,6 +64,7 @@ class Calls:
         self._retention_days = retention_days
         self._now = now
         self.contents: list[str] = []
+        self.parts: list[str] = []
         self.models: list[str] = []
         self.count = 0
         self.tokens_in = 0
@@ -72,11 +73,23 @@ class Calls:
 
     @property
     def content(self) -> str:
-        """Everything the model was given for this message, the text the
-        evidence check looks in."""
+        """Everything the model was given for this message."""
         return "\n".join(self.contents)
 
-    async def ask(self, *, system: str, content: str, schema: type[T]) -> T:
+    @property
+    def evidence(self) -> tuple[str, ...]:
+        """The parts of the mail the model was given, the frame left out:
+        what the evidence check looks in."""
+        return tuple(self.parts)
+
+    async def ask(
+        self,
+        *,
+        system: str,
+        content: str,
+        schema: type[T],
+        evidence: Sequence[str],
+    ) -> T:
         if self.count >= self._limits.model_calls_per_message:
             raise LimitReachedError(
                 "the agent asked for more model calls per message than it may",
@@ -89,6 +102,7 @@ class Calls:
             )
         self.count += 1
         self.contents.append(content)
+        self.parts.extend(evidence)
         try:
             reply = await self._gateway.ask(
                 system=system, content=content, schema=schema

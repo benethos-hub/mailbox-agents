@@ -29,7 +29,7 @@ from ...contract.prompts import load_prompt
 from ...errors import ConfigError
 from ...records import LABEL, Decision, Event, Evidence, MailMessage
 from .baseline import baseline
-from .schema import Answer, answer_schema, render
+from .schema import Answer, answer_schema, parts, render
 from .suppliers import Suppliers, load_suppliers
 
 __all__ = ["Invoices"]
@@ -90,7 +90,10 @@ class Invoices(Agent):
 
     async def decide(self, message: MailMessage, context: Context) -> Decision:
         answer = await context.model.ask(
-            system=self.system, content=render(message), schema=self.schema
+            system=self.system,
+            content=render(message),
+            evidence=parts(message),
+            schema=self.schema,
         )
         label, quote, near_miss = answer.label, answer.quote, answer.near_miss
         evidence = [Evidence(field=LABEL, value=label, quote=quote)]

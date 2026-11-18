@@ -78,3 +78,16 @@ def render(message: MailMessage) -> str:
         lines.append(f"From: {named}")
     lines.append(f"Subject: {message.subject or ''}")
     return "\n".join(lines) + "\n\n" + message.text[:MAX_TEXT]
+
+
+def parts(message: MailMessage) -> list[str]:
+    """The parts of the mail :func:`render` gives the model, without its
+    frame: what a quote is looked up in."""
+    return [_named(message), message.subject or "", message.text[:MAX_TEXT]]
+
+
+def _named(message: MailMessage) -> str:
+    sender = message.sender
+    if sender is None:
+        return ""
+    return f"{sender.name} <{sender.email}>" if sender.name else sender.email

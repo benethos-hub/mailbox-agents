@@ -61,3 +61,17 @@ def render(message: MailMessage) -> str:
         )
         lines.append(f"Attachments: {files}")
     return "\n".join(lines) + "\n\n" + message.text[:MAX_TEXT]
+
+
+def parts(message: MailMessage) -> list[str]:
+    """The parts of the mail :func:`render` gives the model, without its
+    frame: what a quote is looked up in."""
+    files = [a.filename for a in message.attachments if a.filename]
+    return [_named(message), message.subject or "", *files, message.text[:MAX_TEXT]]
+
+
+def _named(message: MailMessage) -> str:
+    sender = message.sender
+    if sender is None:
+        return ""
+    return f"{sender.name} <{sender.email}>" if sender.name else sender.email

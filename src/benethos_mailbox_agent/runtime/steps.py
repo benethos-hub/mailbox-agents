@@ -186,7 +186,7 @@ class StepRunner:
         started = time.monotonic()
         decided = await self.agent.decide(message, self.context(calls))
         if decided.source == "model":
-            decided = check(decided, calls.content)
+            decided = check(decided, calls.evidence)
             for item in decided.evidence:
                 if not item.found:
                     logbook.evidence_missing(

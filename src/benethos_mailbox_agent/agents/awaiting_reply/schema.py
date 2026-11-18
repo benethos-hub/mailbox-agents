@@ -27,3 +27,10 @@ def render(message: MailMessage) -> str:
     to = ", ".join(a.email for a in (*message.to, *message.cc)) or "(none)"
     text = own_text(message.text)
     return f"To: {to}\nSubject: {message.subject or ''}\n\n{text[-MAX_TEXT:]}"
+
+
+def parts(message: MailMessage) -> list[str]:
+    """The parts of the mail :func:`render` gives the model, without its
+    frame: what a quote is looked up in."""
+    to = ", ".join(a.email for a in (*message.to, *message.cc))
+    return [to, message.subject or "", own_text(message.text)[-MAX_TEXT:]]

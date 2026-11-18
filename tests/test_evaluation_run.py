@@ -28,11 +28,13 @@ def gold(message_id: str, label: str) -> GoldItem:
 async def test_the_model_beside_the_rules(tmp_path: Path) -> None:
     async with wired(tmp_path) as world:
         world.service.add(wire_message("m1", subject="Your invoice", text="Attached."))
-        world.service.add(wire_message("m2", subject="A bill", text="Pay me."))
+        world.service.add(
+            wire_message("m2", subject="A bill", text="Please pay me now.")
+        )
         world.service.add(wire_message("m3", subject="Hello", text="Hi."))
         world.fake_gateway.answer(
             {"label": "match", "quote": "Your invoice"},
-            {"label": "match", "quote": "Pay me."},
+            {"label": "match", "quote": "Please pay me now."},
             {"label": "match", "quote": "not in the mail"},
         )
         items = [

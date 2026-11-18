@@ -25,7 +25,7 @@ from ...contract.prompts import load_prompt
 from ...records import LABEL, Decision, Event, Evidence, MailMessage
 from .baseline import baseline
 from .patterns import Patterns, load_patterns
-from .schema import FIELDS, Inquiry, render
+from .schema import FIELDS, Inquiry, parts, render
 
 __all__ = ["Inquiries"]
 
@@ -65,7 +65,10 @@ class Inquiries(Agent):
 
     async def decide(self, message: MailMessage, context: Context) -> Decision:
         answer = await context.model.ask(
-            system=self.system, content=render(message), schema=Inquiry
+            system=self.system,
+            content=render(message),
+            evidence=parts(message),
+            schema=Inquiry,
         )
         evidence = [Evidence(field=LABEL, value=answer.label, quote=answer.quote)]
         fields: dict[str, str] = {}

@@ -8,7 +8,7 @@ it cannot take an action past the runtime. See SPECS.md sections 7 and 11.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol, TypeVar
@@ -27,11 +27,19 @@ class Model(Protocol):
     """One model call with a schema, as the runtime offers it to an agent.
 
     The runtime counts the calls against the agent's limits, records model,
-    tokens and duration, and keeps ``content`` for the evidence check. The
+    tokens and duration, and keeps ``evidence``, the parts of the mail in
+    ``content`` without the frame around them, for the evidence check. The
     answer is validated against ``schema`` before it is returned.
     """
 
-    async def ask(self, *, system: str, content: str, schema: type[T]) -> T: ...
+    async def ask(
+        self,
+        *,
+        system: str,
+        content: str,
+        schema: type[T],
+        evidence: Sequence[str],
+    ) -> T: ...
 
 
 class Reader(Protocol):

@@ -261,7 +261,7 @@ async def test_the_fields_have_an_evaluation_of_their_own(world: Wired) -> None:
             role=("Python-Entwickler", "Unterstützung als Python-Entwickler"),
             duration=("sechs Monate", "für 6 Monate"),
             location=("Berlin", "Einsatzort Berlin"),
-            intermediary=("Jana", "Jana"),
+            intermediary=("Jana", "Viele Grüße\nJana"),
         ),
         said(
             "inquiry",

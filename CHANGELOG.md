@@ -47,3 +47,6 @@ commit that makes the change. Design decisions live in
 
 - The runtime leaves a message in the trash or junk alone, and moves no
   message into a folder below the trash or junk.
+- The evidence check looks for a quote only in the parts of the mail, not
+  in the frame around them, brings both sides to Unicode NFC, and finds no
+  quote of fewer than eight characters besides whitespace.

@@ -82,7 +82,10 @@ class Echo(Agent):
 
     async def decide(self, message: MailMessage, context: Context) -> Decision:
         answer = await context.model.ask(
-            system="Say whether it matches.", content=render(message), schema=EchoAnswer
+            system="Say whether it matches.",
+            content=render(message),
+            evidence=[message.subject or "", message.text],
+            schema=EchoAnswer,
         )
         return Decision(
             label=answer.label,

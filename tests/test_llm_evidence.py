@@ -2,18 +2,32 @@
 
 from __future__ import annotations
 
+import unicodedata
+
 import pytest
 
+from benethos_mailbox_agent.agents.invoices.schema import parts, render
 from benethos_mailbox_agent.llm.evidence import check, contains, normalize
-from benethos_mailbox_agent.records import LABEL, Decision, Evidence
+from benethos_mailbox_agent.records import (
+    LABEL,
+    Address,
+    Attachment,
+    Decision,
+    Evidence,
+    MailMessage,
+    MessageRef,
+)
 
 NBSP = chr(0xA0)
 
-CONTENT = (
-    "Subject: Ihre Rechnung\n\n"
+TEXT = (
     "Sehr geehrte Damen und Herren,\n\n"
     f"anbei  die\tRechnung{NBSP}Nr. 4711 vom 01.11.2026."
 )
+CONTENT = f"Subject: Ihre Rechnung\n\n{TEXT}"
+
+# The same mail as the parts the model was given, without the frame.
+PARTS = ("CloudHost <billing@cloudhost.example>", "Ihre Rechnung", TEXT)
 
 
 def test_whitespace_is_made_uniform() -> None:
@@ -30,6 +44,8 @@ def test_whitespace_is_made_uniform() -> None:
         ("Rechnung Nr. 4712", False),
         ("", False),
         ("   ", False),
+        ("Nr. 4711", False),
+        ("Rechnung Nr. 4711", True),
     ],
 )
 def test_a_quote_is_looked_up(quote: str, found: bool) -> None:
@@ -44,10 +60,10 @@ def test_a_found_label_and_field_stay() -> None:
     decided = check(
         _decision(
             Evidence(field=LABEL, value="invoice", quote="Ihre Rechnung"),
-            Evidence(field="number", value="4711", quote="Nr. 4711"),
+            Evidence(field="number", value="4711", quote="Rechnung Nr. 4711"),
             number="4711",
         ),
-        CONTENT,
+        PARTS,
     )
 
     assert decided.actionable
@@ -59,10 +75,10 @@ def test_a_field_whose_quote_is_not_found_is_dropped() -> None:
     decided = check(
         _decision(
             Evidence(field=LABEL, value="invoice", quote="Ihre Rechnung"),
-            Evidence(field="number", value="9999", quote="Nr. 9999"),
+            Evidence(field="number", value="9999", quote="Rechnung Nr. 9999"),
             number="9999",
         ),
-        CONTENT,
+        PARTS,
     )
 
     assert decided.actionable
@@ -73,7 +89,7 @@ def test_a_field_whose_quote_is_not_found_is_dropped() -> None:
 def test_a_field_without_a_quote_is_dropped() -> None:
     label = Evidence(field=LABEL, value="invoice", quote="Ihre Rechnung")
 
-    decided = check(_decision(label, date="x"), CONTENT)
+    decided = check(_decision(label, date="x"), PARTS)
 
     assert decided.fields == {}
 
@@ -81,7 +97,7 @@ def test_a_field_without_a_quote_is_dropped() -> None:
 def test_a_label_whose_quote_is_not_found_is_refused() -> None:
     decided = check(
         _decision(Evidence(field=LABEL, value="invoice", quote="Your invoice")),
-        CONTENT,
+        PARTS,
     )
 
     assert decided.refused == "evidence"
@@ -89,7 +105,7 @@ def test_a_label_whose_quote_is_not_found_is_refused() -> None:
 
 
 def test_a_label_without_any_quote_is_refused() -> None:
-    assert check(_decision(), CONTENT).refused == "evidence"
+    assert check(_decision(), PARTS).refused == "evidence"
 
 
 def test_an_earlier_refusal_is_kept() -> None:
@@ -97,4 +113,48 @@ def test_an_earlier_refusal_is_kept() -> None:
         Evidence(field=LABEL, value="invoice", quote="Ihre Rechnung")
     ).model_copy(update={"refused": "limit"})
 
-    assert check(decided, CONTENT).refused == "limit"
+    assert check(decided, PARTS).refused == "limit"
+
+
+def _invoice() -> MailMessage:
+    return MailMessage(
+        ref=MessageRef(account_id="acc1", message_id="m1"),
+        subject="Ihre Rechnung R-1",
+        sender=Address(email="billing@cloudhost.example", name="CloudHost"),
+        text="Sehr geehrte Kundin, anbei Ihre Rechnung.",
+        attachments=(
+            Attachment(filename="R-1.pdf", content_type="application/pdf", size=1),
+        ),
+    )
+
+
+@pytest.mark.parametrize("quote", ["Subject:", "From:", "Attachments:", ":", "e"])
+def test_the_frame_and_a_short_quote_back_nothing(quote: str) -> None:
+    message = _invoice()
+    label = Evidence(field=LABEL, value="invoice", quote=quote)
+
+    assert quote in render(message)
+    assert check(_decision(label), parts(message)).refused == "evidence"
+
+
+@pytest.mark.parametrize(
+    "quote", ["anbei Ihre Rechnung.", "Ihre Rechnung R-1", "CloudHost <billing@"]
+)
+def test_a_passage_of_the_mail_backs_the_label(quote: str) -> None:
+    label = Evidence(field=LABEL, value="invoice", quote=quote)
+
+    assert check(_decision(label), parts(_invoice())).actionable
+
+
+def test_a_quote_does_not_span_two_parts() -> None:
+    label = Evidence(field=LABEL, value="invoice", quote="Rechnung Sehr geehrte")
+
+    assert check(_decision(label), PARTS).refused == "evidence"
+
+
+def test_decomposed_text_and_a_composed_quote_match() -> None:
+    text = unicodedata.normalize("NFD", "Rechnung für Müller")
+
+    assert text != "Rechnung für Müller"
+    assert contains(text, "Rechnung für Müller")
+    assert contains("Rechnung für Müller", text)

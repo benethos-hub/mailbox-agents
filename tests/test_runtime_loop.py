@@ -66,8 +66,8 @@ async def test_a_new_message_is_decided_and_marked(world: Wired) -> None:
     run = worker(world)
     await run.run_pass()
     world.service.add(wire_message("m1", subject="Your invoice"))
-    world.service.add(wire_message("m2", subject="Lunch?"))
-    world.fake_gateway.answer(MATCH, {"label": "other", "quote": "Lunch?"})
+    world.service.add(wire_message("m2", subject="Lunch tomorrow?"))
+    world.fake_gateway.answer(MATCH, {"label": "other", "quote": "Lunch tomorrow?"})
 
     await run.run_pass()
 
