@@ -293,9 +293,9 @@ class Worker:
         days = self.settings.prompt_retention_days
         self.store.purge_calls(now - timedelta(days=days))
 
-    def _wait_after(self, error: BaseException) -> float:
+    def _wait_after(self, error: MailboxAgentError) -> float:
         self._away += 1
-        self.metrics.step_failed(getattr(error, "code", type(error).__name__))
+        self.metrics.step_failed(error.code)
         wait = backoff(self.settings, self._away)
         record(worker.UpstreamAway(agent=self.agent.name, error=error, wait=wait))
         return wait
