@@ -21,7 +21,7 @@ that carries the invoice for its payment is an invoice too, whatever it
 calls itself. Only a confirmation of a payment with no invoice is the near
 miss `payment_receipt` (decided 2026-11-18: the owner's receipts of a
 subscription carry the invoice, and prompt `v1` left them out). A credit
-note, a "Gutschrift", counts as an invoice too: it books like one with the
+note (German `Gutschrift`) counts as an invoice too: it books like one with the
 opposite sign (decided 2026-11-18 for now, prompt `v3`).
 
 **The folder says whose invoice it is (decided 2026-11-18).** `invoices`
@@ -58,7 +58,8 @@ lies in, not resolved once at the start, so a folder `sorting` makes later
 is looked in at once. At the start the settings are checked: a wrong one
 stops it. `status` looks up in the mailbox service the folders that should
 be there, those named, the parents of `Parent/*` and the inbox folder, and
-names each one missing in an account the agent works on. A missing one does
+names each one missing in each account the settings name, or says the
+folders were not checked when no account is named. A missing one does
 not stop the start, as `sorting` may make it later.
 
 `backfill` takes up the messages of the last days in the inbox and in every
@@ -74,10 +75,10 @@ that still names them starts, as an unknown setting is ignored.
 |---|---|
 | lies in no folder it looks in | nothing, `skipped` |
 | is no invoice | nothing |
-| is an invoice in a named folder | the keyword, and a move to the subfolder, made when missing, each folder of the path as an action of its own |
-| is an invoice in a named folder, no subfolder pattern set | the keyword. It stays |
-| is an invoice in the inbox | the keyword and an open item. It stays, unless an inbox folder is set, which must be there |
-| was marked in the inbox and now lies in a named folder | a move to the subfolder, no model call. The open item closes as `filed` |
+| is an invoice in a folder it looks in | the keyword, and a move to the subfolder, made when missing, each folder of the path as an action of its own |
+| is an invoice in a folder it looks in, no subfolder pattern set | the keyword. It stays |
+| is an invoice in the inbox | the keyword and an open item, and it stays. With an inbox folder set, which must be there, the keyword and a move into that folder, and no open item |
+| was marked in the inbox and now lies in a folder it looks in | a move to the subfolder, no model call. The open item closes as `filed` |
 | was marked in the inbox and now lies in a folder it does not look in | nothing. The open item closes as `moved_elsewhere` |
 
 Where the message lies is looked up again when the agent acts. In
@@ -103,14 +104,17 @@ read and is not part of this version.
 
 ## Beside `sorting`
 
-Whichever agent comes first, the end is the same:
+Without an inbox folder, whichever agent comes first, the end is the same:
 
 - `invoices` first: the message is marked in the inbox and gets an open
   item. `sorting` moves it. The move reaches `invoices` as an update of the
-  message, it finds the open item, sees the message in a named folder and
+  message, it finds the open item, sees the message in a folder it looks in and
   moves it on.
-- `sorting` first: `invoices` finds the message in the named folder and
-  moves it on after its decision.
+- `sorting` first: `invoices` finds the message in the folder it looks in
+  and moves it on after its decision.
+
+With an inbox folder set, an invoice `invoices` takes up first goes into
+that folder, and `sorting` leaves it there.
 
 The open item and the look at an updated message are what
 [awaiting reply](awaiting_reply.md) uses already. An open item of an
@@ -139,7 +143,7 @@ Only an address or a pattern rule moved. That list and its rules are now
 the business of [sorting](sorting.md), which moves by the sender before
 `invoices` asks its question.
 
-The gold set there is serves: its labels stay. The invented gold sets
+The existing gold set still serves: its labels stay. The invented gold sets
 dropped their supplier field. In a gold file that still names one, the
 supplier counts as missing, as the agent no longer answers it: drop the
 field. The agent version is 4, and it starts in `shadow`.
@@ -156,14 +160,14 @@ Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
 
 ## Order of the build
 
-Steps S1 to S7 of [sorting](sorting.md) came first: this plan needs the
+Steps S1 to S7 of [sorting](sorting.md) came first: this version needed the
 action `create_folder` and the measurements. Each step is one commit.
 
 | Step | Content | Done when |
 |---|---|---|
 | I1 | The two measurements above | done 2026-11-18 |
 | I2 | The three settings, checked at the start, `status` names a folder that is missing | done 2026-11-18 |
-| I3 | `admit` by folder, the supplier taken out of schema, baseline and decision, prompt `v4` | done 2026-11-18 |
+| I3 | `admit` by folder, the supplier taken out of the schema, the baseline and the decision, prompt `v4` | done 2026-11-18 |
 | I4 | The open item and the look at an updated message | done 2026-11-18 |
 | I5 | `report` and the evaluation without the supplier, the old settings and the supplier list removed | done 2026-11-18 |
 | I6 | Evaluation of `v4` on the gold set, then `shadow` on the test account beside `sorting` | done 2026-11-18, below |

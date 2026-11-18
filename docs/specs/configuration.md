@@ -16,7 +16,7 @@ may be given as a file with the suffix `_FILE`.
 | `ACCOUNTS` | the accounts to work on, comma separated, all the user may read when unset |
 | `STAGE` | `shadow`, `keyword` or `full`, `shadow` when unset |
 | `KEYWORD` | the keyword the agent sets, the agent's own default when unset |
-| `POLL_SECONDS`, `TICK_SECONDS` | how often the feed is read and the clock asked |
+| `POLL_SECONDS`, `TICK_SECONDS` | how often the feed is read and the clock asked, `60` and `900` when unset |
 | `MAX_ATTEMPTS` | refused answers before a message is `failed`, `5` when unset |
 | `BACKOFF_CEILING_SECONDS` | the longest wait between two attempts, `3600` when unset |
 | `BACKFILL_DAYS` | the window `backfill` runs over after an expired feed state, `7` when unset |
@@ -29,7 +29,6 @@ may be given as a file with the suffix `_FILE`.
 from. A secret given directly wins over its file.
 
 Settings of one agent, such as `INVOICES_FOLDERS`, `INVOICES_SUBFOLDER`,
-`REPLY_DAYS`, `INQUIRIES_PATTERNS_FILE` and `SORTING_FILE`, are named in its
-section. The
-`.env` file is `config/benethos-mailbox-agents/.env` below the working
+`REPLY_DAYS`, `INQUIRIES_PATTERNS_FILE` and `SORTING_FILE`, are named in
+the agent's spec under [agents/](agents/). The `.env` file is `config/benethos-mailbox-agents/.env` below the working
 directory unless the command line names another.

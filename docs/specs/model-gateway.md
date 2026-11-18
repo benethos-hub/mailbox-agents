@@ -1,7 +1,8 @@
 # The model gateway
 
-The agents speak the OpenAI chat completions and embeddings API to a
-gateway, with httpx. No model SDK and no agent framework is a dependency:
+The agents speak the OpenAI chat completions API to a gateway, with
+httpx, and the embeddings API once phase 5 needs it
+([roadmap](roadmap.md)). No model SDK and no agent framework is a dependency:
 a call with a schema, a validation and a retry are little code, and every
 request stays visible, storable and mockable.
 

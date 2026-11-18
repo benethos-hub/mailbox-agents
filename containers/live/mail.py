@@ -55,7 +55,7 @@ def messages(me: str) -> Iterator[tuple[str, str, EmailMessage]]:
     """Folder, flags and message of every invented message."""
     inbox, sent, seen = "inbox", "sent", r"(\Seen)"
 
-    # --- invoices: listed suppliers, an unlisted one, a notice without file
+    # --- invoices: with and without a PDF, filed by their provider
     yield (
         inbox,
         "",

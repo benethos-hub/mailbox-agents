@@ -25,7 +25,7 @@
   `mailbox_agents_model_call_seconds` and `mailbox_agents_actions_total` by
   action and whether it was carried out.
 - **Cost:** read at the gateway, per key.
-- **Logs:** stderr, through `logbook/` only. [docs/LOGGING.md](docs/LOGGING.md)
+- **Logs:** stderr, through `logbook/` only. [docs/LOGGING.md](../LOGGING.md)
   holds the levels, the shape of a line, what never goes into one and the
   catalogue of every activity. A line is one sentence, such as
   `invoices set message m1 to done`, after an ISO time with the offset,

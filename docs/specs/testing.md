@@ -5,8 +5,10 @@
   when a credential is missing.
 - Coverage floor 80 %.
 - `ruff`, `mypy`, `uv lock --check`.
-- A test holds the layer order of [architecture](architecture.md), and one holds the tables of
-  this document to the code where they can be compared.
+- A test holds the layer order of [architecture](architecture.md), and
+  others hold the tables of [configuration](configuration.md),
+  [state](state.md) and [agent contract](agent-contract.md) to the code
+  where they can be compared.
 - Async tests run with pytest-asyncio.
 - Live checks are scripts in `live/`, run by hand against a test account.
   `containers/live/` holds it (decided 2026-11-17): a mail server of our
@@ -16,7 +18,7 @@
   `live/smoke.py` reads it through the package without writing to it.
   `live/sorting.py` runs `sorting` on it in `shadow` and in `full`, makes
   its folders, moves the mail and puts it back. `live/invoices.py` runs
-  `invoices` in `shadow` beside it, in both orders.
+  `invoices` in `shadow` beside `sorting` in `full`, in both orders.
   The model gateway belongs to it (decided 2026-11-17): LiteLLM with Claude
   through the owner's API key, and local models under llama.cpp, one
   service on the graphics card and one on the CPU. `live/gold.py` turns

@@ -83,13 +83,13 @@ does not allow is recorded as what would have been done, and so is an
 action the agent asks to be `held`, whatever the stage: for a group of
 [sorting](agents/sorting.md) whose folder would lend a forged mail trust.
 A folder recorded and not made counts as there for the folder and the move
-below it in the same effect, so a stage that records only records all
-three.
+below it in the same effect, so a stage that records only records the
+folders and the move alike.
 
 **A message is moved at most once by one agent (decided 2026-11-18).** A
 move of a message the agent has moved before is refused, so a message the
 owner moved back, into the inbox or anywhere, stays where the owner put it,
-also when `backfill --again` takes it up anew. A move only recorded in
+also when `backfill` takes it up anew. A move only recorded in
 `shadow` or `keyword` does not count. A message moved by hand never wanders
 back in a later pass. The actions of one message are taken in order, and
 after a refused move or folder the rest are not taken, so a keyword that

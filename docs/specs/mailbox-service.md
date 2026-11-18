@@ -71,6 +71,7 @@ Rights. Each agent has a user of its own in the service:
 | `invoices` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
 | `awaiting_reply` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
 | `inquiries` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
+| `sorting` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
 
 `mail.write` also allows moving a message to the trash and creating a
 folder. The service cannot refuse those to an agent that may move mail, so

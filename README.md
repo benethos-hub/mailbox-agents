@@ -2,13 +2,15 @@
 
 Small agents that work on a mailbox continuously. Each one looks at mail as
 it arrives or leaves, decides one narrow question about it and takes one
-reversible action: a keyword, or a move to a folder. The first three sort
-invoices, track sent mail that still waits for a reply and recognise
-project inquiries.
+reversible action: a keyword, or a move to a folder. The first ones sort
+invoices, track sent mail that still waits for a reply, recognise project
+inquiries and file the mail of listed senders into folders.
 
-> **Status: nothing usable yet.** The design is written down in
+> **Status: built, run on a test account of invented mail only.** The
+> design is written down in
 > [SPECS.md](https://github.com/benethos-hub/mailbox-agents/blob/main/SPECS.md),
-> the code is being built. Do not point it at a mailbox you care about.
+> and no agent acts on a real mailbox yet. Do not point it at a mailbox you
+> care about.
 
 ## How it works
 

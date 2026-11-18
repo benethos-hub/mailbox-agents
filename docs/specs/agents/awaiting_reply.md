@@ -15,8 +15,8 @@ A sent message that expects a reply becomes an open item. It closes when:
 - a later message from another sender appears in its thread, automatic
   answers not counted. The service exposes no header, so an automatic
   answer is told by a sender such as `noreply` or `mailer-daemon` and a
-  subject such as "Automatische Antwort" or "Out of Office" (decided
-  2026-11-17),
+  subject such as `automatische antwort` or `out of office`, matched
+  without case (decided 2026-11-17),
 - a person takes the keyword off, which the agent learns from the feed where
   the provider reports flag changes (`message.updated`, routed to
   `observe`). Its own keyword set or taken off closes nothing,
@@ -31,7 +31,7 @@ A sent message that expects a reply becomes an open item. It closes when:
 A sent message whose thread already holds a later answer from someone
 else opens no item. So a reply taken up before the message it answers,
 by a backfill or a backoff, is not missed.
-Taking a message up again, as `backfill --again` does, opens no item it
+Taking a message up again, as `backfill` does, opens no item it
 had before: an item a reply or a person closed stays closed.
 
 An item past its deadline gets the keyword on the tick. The message stays

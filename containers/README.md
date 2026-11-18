@@ -15,7 +15,8 @@ containers/
     README.md             #   how to set it up and update it
   development/            # for development, built from this checkout:
     compose.yaml          #   against the test account of live/
-  live/                   # a mail server and a mailbox service of their own,
+  live/                   # a mail server, a mailbox service and a model
+                          # gateway of their own,
                           # with a test account of invented mail: the place
                           # the live checks and development run against
 ```
@@ -24,7 +25,7 @@ containers/
 |---|---|---|---|---|
 | `production/` | running the agents, without a clone of the repository | from the GitHub container registry, the version named in `.env` | metrics on 9470 to 9474, 127.0.0.1 | `benethos-mailbox-agents` |
 | `development/` | trying a change in a container | built from this checkout | metrics on 9480 to 9482, 127.0.0.1 | `benethos-mailbox-agents-dev` |
-| `live/` | the test account | Stalwart and the published mailbox service | 38080, 38081, 38465, 38993, 127.0.0.1 | `mailbox-agents-live` |
+| `live/` | the test account | Stalwart, the published mailbox service, LiteLLM with its database, llama.cpp | 38080, 38081, 38400, 38465, 38993, 127.0.0.1 | `mailbox-agents-live` |
 
 Each folder has its own volumes, so a trial in `development/` never
 reaches the state of an installation in `production/`, and nothing in
@@ -40,9 +41,10 @@ docker compose exec counting benethos-mailbox-agents report --agent counting
 docker compose down -v                      # stop, and forget the volumes
 ```
 
-An agent that asks a model needs the gateway: `GATEWAY_URL`,
-`GATEWAY_KEY` and `MODEL`, each with the prefix `MAILBOX_AGENTS_`, in an
-`.env` beside `development/compose.yaml`, which is not versioned.
+An agent that asks a model reaches the gateway by its name on the live
+network: `MAILBOX_AGENTS_GATEWAY_URL=http://gateway:4000/v1` in an `.env`
+beside `development/compose.yaml`, which is not versioned. The key and the
+model come from `agent.env`, and the `.env` may override them.
 
 ## The image
 

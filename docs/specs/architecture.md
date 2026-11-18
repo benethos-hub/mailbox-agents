@@ -71,14 +71,16 @@ src/benethos_mailbox_agents/
     <name>/       # one package per agent
       agent.py    # one Agent subclass, no side effects at import, always
       schema.py   # for an agent that asks a model: what it must answer
-      baseline.py # for an agent that asks a model: the question by rules
+      baseline.py # for an agent that asks a model, where its rules need
+                  # a module of their own: the question by rules
       prompts/    # for an agent that asks a model: its system prompts as
                   # Markdown, each with a version
       ...         # modules of its own, such as sorting/groups.py,
                   # inquiries/patterns.py, awaiting_reply/text.py
 tests/            # offline: REST and gateway through httpx.MockTransport
-live/             # run by hand, outside testpaths: smoke against a test
-                  # account, the evaluation against the gold set
+live/             # run by hand, outside testpaths: smoke, sorting and
+                  # invoices against the test account, gold files from
+                  # its labels
 containers/
   images/mailbox-agents/Dockerfile
   production/     # the published image, one service per agent, each

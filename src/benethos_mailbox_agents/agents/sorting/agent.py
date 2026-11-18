@@ -10,7 +10,7 @@ the move the agent sets its keyword, so a message it sorted is known as
 such also to a person and to a state file made anew (decided 2026-11-18).
 The group is looked up again when the agent acts, against the list as it
 is then, so a sender added since reaches older mail through
-``backfill --again``. See docs/specs/agents/sorting.md.
+``backfill``. See docs/specs/agents/sorting.md.
 """
 
 from __future__ import annotations

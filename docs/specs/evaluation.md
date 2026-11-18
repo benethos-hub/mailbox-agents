@@ -28,7 +28,7 @@ agent runs over it and the scoring counts where it agrees.
   `admit` first, which in operation skips a message, such as one outside
   the inbox. So the numbers measure what rules and model decide. A gold
   set holds only mail that `admit` lets through (decided 2026-11-18).
-- **A run is manual.** `benethos-mailbox-agents eval --agent <name>` needs a
+- **A run is manual.** `benethos-mailbox-agents eval --agent <name> --gold <file>` needs a
   mailbox service and a model, which a public CI has not. It is a live
   check, outside `testpaths`, and never a gate.
 - **A report is versioned.** Each run writes one file,

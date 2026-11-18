@@ -74,11 +74,12 @@ src/benethos_mailbox_agents/
                   # read-only mailbox, action executor, readiness, health,
                   # metrics
   evaluation/     # the gold format, the scoring, the report
-  agents/<name>/  # one package per agent: agent.py always, schema.py,
-                  # baseline.py and prompts/ for one that asks a model,
-                  # and modules of its own
+  agents/<name>/  # one package per agent: agent.py always, schema.py
+                  # and prompts/ for one that asks a model, baseline.py
+                  # where its rules need a module, and modules of its own
 tests/            # offline: REST and gateway through httpx.MockTransport
-live/             # run by hand, outside testpaths: a mail server of its own
+live/             # run by hand, outside testpaths: checks against the
+                  # test account of containers/live/
 containers/       # images/, production/, development/, and live/: a mail
                   # server and a mailbox service of their own for live/
 config/           # .env.example and *.example.json versioned, .env local

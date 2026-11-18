@@ -30,17 +30,18 @@ authorities.
    providers are still to verify.
 3. **Folder-narrowed grants and moves.** [mailbox service](mailbox-service.md), to verify. It decides
    whether the grant of `invoices` can be narrowed to the inbox and the
-   parent folder of [invoices](agents/invoices.md).
+   folders `INVOICES_FOLDERS` names, with the subfolders below them
+   ([invoices](agents/invoices.md)).
 4. **Automatic answers.** The service exposes no header of a message
    (measured 2026-11-17 against 0.7.5), so `Auto-Submitted` cannot be read.
    `awaiting_reply` uses a heuristic on sender and subject (decided
    2026-11-17) and the evaluation counts what it misses.
 
-Answered, all on 2026-11-17:
+Answered on 2026-11-17, with what changed since:
 
 - **Licence.** MIT.
 - **What `invoices` covers.** [invoices](agents/invoices.md): invoices and invoice notices
-  from suppliers. Since version 4 an invoice moves into the subfolder of
+  from suppliers. Since version 4 (2026-11-18) an invoice moves into the subfolder of
   the folder it lies in, and [sorting](agents/sorting.md) files mail by
   its sender before.
 - **Order of the agents.** `invoices`, `awaiting_reply`, `inquiries`.

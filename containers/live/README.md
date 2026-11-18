@@ -19,20 +19,21 @@ sh containers/live/setup.sh
 ```
 
 The script makes everything anew each time. It removes the volumes of an
-earlier run, then:
+earlier run, then, not in this order:
 
-1. makes a test CA and a certificate for `mail.agents.test`,
-2. starts Stalwart in its bootstrap mode, sets host name and domain
+- makes a test CA and a certificate for `mail.agents.test`,
+- starts Stalwart in its bootstrap mode, sets host name and domain
    without ACME and DKIM, restarts it out of that mode, installs the
-   certificate and creates the account,
-3. appends the invented mail of `mail.py` over IMAP: invoices of listed
-   and unlisted suppliers, an invoice notice without a file, near misses,
-   sent mail that waits for a reply and some that does not, a reply, an
-   automatic answer and a project inquiry,
-4. makes the mailbox service's keys and administrator, signs in to its UI
+  certificate and creates the account,
+- appends the invented mail of `mail.py` over IMAP: invoices with and
+  without a PDF, a receipt that carries its invoice, near misses (a
+  reminder, a quotation, an order confirmation, a payment receipt), a
+  project inquiry, a newsletter, sent mail that waits for a reply and some
+  that does not, a reply and an automatic answer,
+- makes the mailbox service's keys and administrator, signs in to its UI
    once for the first token, connects the account, and creates the user
    `agents` with `mail.read` and `mail.write` on it and that user's token,
-5. starts the gateway with a master key of its own, and a local model when
+- starts the gateway with a master key of its own, and a local model when
    the agents are to use one (below).
 
 ### Which model the agents use
@@ -61,8 +62,8 @@ What it makes stays in `secrets/` beside it, never versioned:
 
 The script writes them readable by their owner only, except the CA
 certificate and the service's master key, which a container reads as
-another user. On a Windows drive under WSL, such as `/mnt/d`, the file
-system keeps no Unix rights, and every file shows as readable by all.
+another user. On a Windows drive mounted under WSL, the file system
+keeps no Unix rights, and every file shows as readable by all.
 Keep the checkout on the Linux file system where that matters.
 
 ## Local models
@@ -130,8 +131,14 @@ with 12 GB and a 12th generation Core i9 with 24 threads: `invoices` and
 seconds include the way over the internet. The labels agreed with the
 gold set, out of 11 messages for `invoices` and `inquiries` and 3 for
 `awaiting_reply`. The fields are the right values of `invoices` against
-all it should have filled or did fill. The seconds are per message, the
-first message of a run waiting for a local model to load:
+all it should have filled or did fill. The `invoices` column and the
+fields are of its prompt `v1`, which still asked for the supplier. Prompt
+`v4` was measured on 2026-11-18 with `mail-classifier` and
+`mail-classifier-gpu` alone, 11 of 11 each, see
+[docs/specs/agents/invoices.md](../../docs/specs/agents/invoices.md). The
+test account has had a twelfth message for `invoices` and `inquiries`
+since, a receipt that carries its invoice. The seconds are per message,
+the first message of a run waiting for a local model to load:
 
 | Model | Size | invoices | inquiries | awaiting_reply | Fields | Seconds, invoices / inquiries |
 |---|---|---|---|---|---|---|
@@ -150,8 +157,8 @@ What decided:
 
 - `ministral-3-8b` words its quotes anew, so the evidence check refuses
   nine answers of `inquiries` out of eleven.
-- `gemma-4-e4b` named a listed supplier where the gold set has none, the
-  one kind of mistake that moves mail into a wrong folder.
+- `gemma-4-e4b` named a supplier where the gold set had none, with
+  prompt `v1` of `invoices`, which still filed mail by its supplier.
 - On the card, `qwen3.5-9b` agrees on every label, and llama.cpp worked
   2.4 s on an inquiry with it, for about half the electricity of the
   largest model, `qwen3.6-35b-a3b`. That one took 4.1 s and fills the card,
@@ -201,7 +208,7 @@ about 570.
 | `claude/haiku-5-5` | 0.10 | 0.50 | 0.50 |
 | `claude/opus-5-5` | 4.00 | 20.00 | 18.64 |
 
-Eleven invented messages show a model that fails outright, not which of
+A dozen invented messages show a model that fails outright, not which of
 the good ones is best. That takes the evaluation on real mail of
 [docs/specs/evaluation.md](../../docs/specs/evaluation.md).
 

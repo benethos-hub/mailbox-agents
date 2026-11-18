@@ -1,6 +1,6 @@
 # Specification — Mailbox Agents
 
-> **Status: 2026-11-18. The runtime and the agents `invoices`,
+> **Status: 2026-11-18. The runtime and the agents `counting`, `invoices`,
 > `awaiting_reply`, `inquiries` and `sorting` are built and run against a
 > test account of invented mail. `invoices` version 3 ran in `shadow` on its
 > owner's real account, read-only, and changed nothing. Version 4, which
@@ -17,8 +17,9 @@
 
 A set of small agents that work on a mailbox continuously: each one looks at
 mail as it arrives or leaves, decides one narrow question about it, and takes
-one reversible action. The first three sort invoices, track sent mail that
-is still waiting for a reply, and recognise project inquiries.
+one reversible action. The first ones sort invoices, track sent mail that
+is still waiting for a reply, recognise project inquiries and file the mail
+of listed senders into folders.
 
 The agents reach mail only through the REST API of a mailbox service, with
 its Python client `benethos-mailbox-client`. They reach a language model only
@@ -117,4 +118,4 @@ on one runtime, and each process runs one of them.
 | `invoices` | is this an invoice? It moves one into the subfolder of the folder it lies in | built, version 4, prompt `v4` | [invoices.md](docs/specs/agents/invoices.md) |
 | `awaiting_reply` | does this sent message wait for an answer? | built | [awaiting_reply.md](docs/specs/agents/awaiting_reply.md) |
 | `inquiries` | is this a project inquiry, and what does it say? | built, prompt `v3` | [inquiries.md](docs/specs/agents/inquiries.md) |
-| `sorting` | is the sender one of a listed group, and which folder is the group's? | built, no model. `invoices` moves an invoice on within the folder it lies in | [sorting.md](docs/specs/agents/sorting.md) |
+| `sorting` | is the sender one of a listed group, and which folder is the group's? | built, no model. `invoices` then files an invoice within the folder `sorting` put it in | [sorting.md](docs/specs/agents/sorting.md) |

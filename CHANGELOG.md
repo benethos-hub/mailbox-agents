@@ -22,15 +22,13 @@ commit that makes the change. Design decisions live in
   wrong, missing or invented, and a report file of numbers only.
 - The command `health`, and metrics in the Prometheus text format on
   `MAILBOX_AGENTS_METRICS_PORT` while `worker` runs.
-- The container image, one for every agent, and compose files for
+- The container image, one for all agents, and compose files for
   operation, one service per agent behind a profile of its name, and for
   development against a test account of invented mail.
 - The agent `invoices`: marks invoices and invoice notices from suppliers
-  with the keyword `agent-invoice`, and moves those of a listed supplier into
-  its folder under `MAILBOX_AGENTS_INVOICES_FOLDER`. The supplier comes from
-  a sender rule of the JSON list in `MAILBOX_AGENTS_INVOICES_SUPPLIERS_FILE`,
-  or from the model's choice among the listed suppliers when no rule
-  matches.
+  with the keyword `agent-invoice`, in the inbox and in the folders
+  `MAILBOX_AGENTS_INVOICES_FOLDERS` names, and moves one into the subfolder
+  `MAILBOX_AGENTS_INVOICES_SUBFOLDER` names below the folder it lies in.
 - The agent `awaiting_reply`: opens an item for each sent message the
   model finds asking for an answer, closes it on a reply in its thread or
   when the keyword is taken off, and sets the keyword `agent-awaiting-reply` on
@@ -48,7 +46,6 @@ commit that makes the change. Design decisions live in
   code such as `due` or `invoice` after a colon.
 - `docs/LOGGING.md`: the levels, the shape of a line, what never goes
   into one, and the catalogue of every line the agents write.
-
 - The agent `sorting`: moves mail of listed senders from the inbox into
   the folder of their group, makes a missing folder first, and sets the
   keyword `agent-sorted` with the move. No model. The groups are a JSON
@@ -75,14 +72,15 @@ commit that makes the change. Design decisions live in
   with `Parent/*` for the folders below one and `*` for every folder at the
   top without a role, and moves an invoice into the subfolder
   `MAILBOX_AGENTS_INVOICES_SUBFOLDER` names below the folder it lies in,
-  `{folder}/Rechnungen`, made when missing. An invoice in the inbox is
+  such as `{folder}/Rechnungen`, made when missing, and marks it only when
+  that setting is unset. An invoice in the inbox is
   marked and stays, unless `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` names a
   folder. The rules no longer take a listed sender with a file for an
   invoice. `status` names a folder an agent expects that is missing.
 - `backfill` takes up the messages of the folders an agent looks in besides
   the inbox and sent mail, for `invoices` those it looks in.
 - An agent moves a message at most once. A message its owner moved back,
-  into the inbox or anywhere, stays there, also when `backfill --again`
+  into the inbox or anywhere, stays there, also when `backfill`
   takes it up anew. After a refused move the rest of the message's
   actions are not taken.
 - The specification is split: `SPECS.md` is its table of contents, with
@@ -111,19 +109,14 @@ commit that makes the change. Design decisions live in
   which a level of its own can silence. On a terminal the line is in
   colour unless `NO_COLOR` is set. A library writes at `WARNING` and
   above only, through the same redaction.
-- The runtime leaves a message in the trash or junk alone, and moves no
-  message into a folder below the trash or junk.
+- The runtime leaves a message in the trash, junk or spam alone, and moves
+  no message into a folder below the trash, junk or spam.
 - The evidence check looks for a quote only in the parts of the mail, not
   in the frame around them, brings both sides to Unicode NFC, and finds no
   quote of fewer than eight letters and digits. It compares word for word:
   case, punctuation, typographic quotes and dashes do not count, and a
   quote that starts with `Subject:` or another word of the frame is looked
   up without it. A changed or missing word still makes a quote not found.
-- The agent `invoices` moves an invoice only when an address or a pattern
-  rule of the supplier list matched its sender. A domain rule and the
-  model's choice of a supplier set the keyword only.
-- The agent `invoices` takes the model's choice of a supplier only with a
-  quote that names the supplier or a domain of its sender rules.
 - `report` writes a control character or line separator from a mail or a
   model as its escape, so a subject cannot move the cursor or fake a line.
 - The gateway is reached over https, or over http to this machine. http to
@@ -170,12 +163,9 @@ commit that makes the change. Design decisions live in
   an item is recorded once per stage, a refused keyword is offered again,
   and after `shadow` the stage `keyword` sets it. The state file gets
   migration 2.
-- `invoices` applies the sender rules again when it acts, so a supplier
-  added to the list reaches an invoice decided before on
-  `backfill --again`, without a new model call.
 - `awaiting_reply` opens no item for a sent message whose thread already
   holds a later answer, as after a backfill that took up the reply first.
-- `backfill --again` no longer opens an `awaiting_reply` item again that a
+- `backfill` no longer opens an `awaiting_reply` item again that a
   reply or a person closed.
 - Keywords are compared without case, since the mailbox service may
   answer them in lower case. A `MAILBOX_AGENTS_KEYWORD` with capitals no

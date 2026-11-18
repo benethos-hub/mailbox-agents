@@ -5,7 +5,7 @@
 > day and revised after a review against the code. Its purpose: the mail of
 > providers such as a shop, a hoster or a bank goes into a folder of its
 > own, and one folder may take several, such as all banks. The name is a
-> working name. What is decided is marked so, the rest is the proposal.
+> working name. A decision is marked with its date.
 
 **Question:** is the sender of this message in the inbox one of a listed
 group, and which folder is the group's?
@@ -15,7 +15,7 @@ group, and which folder is the group's?
 | Triggers | `message.created` in the inbox, and `backfill` for older mail |
 | Baseline | the sender rules of the list. They are the whole agent |
 | Model | none |
-| Actions | `move_to_folder`, the new `create_folder`, and `add_keyword` with the move |
+| Actions | `move_to_folder`, `create_folder`, and `add_keyword` with the move |
 | Keyword | `agent-sorted`, set with each move, see section 3 |
 
 ## 1. Two stages, two agents (decided 2026-11-18)
@@ -27,7 +27,7 @@ agent does both.
 
 Each agent works without the other. `sorting` knows nothing of invoices.
 `invoices` knows nothing of groups: it is told at its start which folders
-it looks in ([invoices.md](invoices.md), the plan at its end).
+it looks in ([invoices](invoices.md#settings)).
 
 The two never compete for a message:
 
@@ -35,17 +35,20 @@ The two never compete for a message:
 |---|---|---|
 | `sorting` | the inbox | the folder of the sender's group |
 | `invoices` | a folder it was told to look in, other than the inbox | the subfolder below that folder |
+| `invoices`, with an inbox folder set | the inbox | the inbox folder |
 
 So no rule about who runs first and no waiting time is needed, and both run
-on one account.
+on one account, as long as `invoices` has no inbox folder. With one set, an
+invoice `invoices` takes up first goes into that folder, and `sorting`
+leaves it there.
 
 ```
 Inbox
-Hosting/
-  Rechnungen/
-Amazon/
-  Rechnungen/
 Bank/
+CloudHost/
+  Rechnungen/
+Telco/
+  Rechnungen/
 ```
 
 ## 2. The list
@@ -57,9 +60,10 @@ of it is versioned as `sorting.example.json`.
 {
   "groups": [
     {"name": "Bank", "folder": "Bank",
-     "senders": ["*@bank-one.example", "service@bank-two.example"]},
+     "senders": ["*@bank-one.example", "service@bank-two.example"],
+     "hold": true},
     {"name": "CloudHost", "folder": "CloudHost",
-     "senders": ["*@cloudhost.example"], "hold": true}
+     "senders": ["*@cloudhost.example"]}
   ]
 }
 ```
@@ -67,7 +71,7 @@ of it is versioned as `sorting.example.json`.
 | Field | Meaning | Rule |
 |---|---|---|
 | `name` | what `report` and the decision call the group | unique, case aside, no space at its ends |
-| `folder` | where its mail goes, `/` between the names | unique, case aside. No name empty, `.` or `..` |
+| `folder` | where its mail goes, `/` between the names | unique, case aside. No name empty, `.` or `..`, nor with a space at its ends |
 | `senders` | who belongs to it | at least one. A rule belongs to one group |
 | `hold` | section 5 | optional, `false` when left out |
 
@@ -122,7 +126,7 @@ write `*@domain` or `*@*.domain`.
 | is in the inbox, one group matches, the folder exists | a move to the folder | `done`, label the group |
 | the same, the folder is missing | `create_folder`, then the move | `done`, label the group |
 | the same, the group is held | the move is recorded, not made | `done`, label the group |
-| is in the trash, junk or spam | the runtime refuses, as for every agent | `skipped` |
+| is in the trash, junk or spam | nothing, as it is not in the inbox. The runtime would refuse a move of it anyway | `skipped` |
 
 A message already in another folder is the owner's choice and stays.
 
@@ -136,7 +140,8 @@ sets it, so a move by `sorting` and a move by `invoices` stay told apart.
 The keyword is asked for only in `full` and for a group not held, after the
 move, and the runtime takes nothing after a refused move, so it never
 stands without the move. The name has no `$` in front, as IMAP registers
-such keywords with meanings (`$Junk`, `$label1`), and a prefix that no mail
+such keywords with meanings (`$Junk`, `$label1`), and it carries the
+prefix `agent-` of the [agent contract](../agent-contract.md), which no mail
 client or other tool is known to use. `MAILBOX_AGENTS_KEYWORD` names
 another.
 
@@ -154,21 +159,22 @@ folder and the move below it in the same effect, so both are recorded.
 ### What is stored
 
 - The decision: the label is the name of the group or `none`, its source is
-  `rules`, its details name the kind of rule. No quote and no sender is
-  stored.
+  `baseline`, its details say whether one group, none or two alike matched,
+  the kind of rule, and whether the group is held. No quote and no sender
+  is stored.
 - No model step. The decision is stored under an empty model alias.
 - The group is looked up again when the agent acts, against the list as it
   is then. So a sender added to the list reaches older mail through
-  `backfill --again`.
+  `backfill`.
 
-## 4. The new action `create_folder` (decided 2026-11-18)
+## 4. The action `create_folder` (decided 2026-11-18)
 
 Given a list, the agent may make the folders of the list itself.
 
 | | |
 |---|---|
 | What | makes one folder that is missing. A folder below a missing one is made after it, each as an action of its own |
-| Which | only a folder the agent was configured with: for `sorting` a folder of the list or one above it, for `invoices` the subfolder its pattern gives below a folder it looks in |
+| Which | only a folder the agent was configured with: for `sorting` a folder of the list or one above it, for `invoices` the subfolder its pattern gives below a folder it looks in, and each folder between the two |
 | Never | the trash, junk or spam, nor below them. Nor a folder that exists, under any case |
 | When | in the stage `full`, right before the first move that needs it |
 | Recorded | like every action: the path, the stage, whether it was made |
@@ -183,14 +189,9 @@ the executor refuses any other. A method rather than a set of paths,
 because `invoices` knows its subfolders only from the folder a message
 lies in.
 
-What changes with the build, each in the commit that builds it:
-
-- [agent contract](../agent-contract.md): the action in the table of
-  actions, the declared folders.
-- [safety](../safety.md): the lock of the runtime, which stops folder
-  creation today.
-- [mailbox service](../mailbox-service.md): `sources/mailbox.py` offers no
-  folder creation today.
+The [agent contract](../agent-contract.md), [safety](../safety.md) and
+[mailbox service](../mailbox-service.md) describe the action, the folders
+an agent declares, and folder creation in `sources/mailbox.py`.
 
 ## 5. The sender is not proof
 
@@ -228,7 +229,8 @@ New mail as it arrives, and older mail only through `backfill --days N`, in
 
 ## 8. Report
 
-- Per group: how many messages were moved, recorded, or held.
+- Per group: how many messages were moved, recorded, held, or not moved,
+  when the move was refused.
 - The senders in no group that wrote most often, as candidates for the
   list.
 - The messages left alone because two groups matched.
@@ -237,10 +239,10 @@ New mail as it arrives, and older mail only through `backfill --days N`, in
 
 `sorting` asks no model. Its rules are the whole decision, and the tests on
 invented mail cover them. A gold set is optional. Where one is kept, its
-label is the name of the group or `none`, in the format there is, and the
-scoring there is serves.
+label is the name of the group or `none`, in the existing gold format, and
+the existing scoring serves.
 
-## 10. Tests to write, all on invented mail
+## 10. Tests, all on invented mail
 
 1. Each row of the table in section 3.
 2. Each row of the stage table.

@@ -60,8 +60,8 @@ A line holds the time, the level, the source and the message:
 ```
 
 - **agent**: the agent's name, such as `invoices`.
-- **did what**: the verb: started, read, set, failed, carried out,
-  recorded.
+- **did what**: the verb, such as started, read, set, failed, carried
+  out, recorded.
 - **to which**: a message by its id, never by its subject or sender. A
   step by its name, an action by its name, a count with its noun.
 - **why**: the error by its class and code, such as
@@ -107,8 +107,8 @@ written as if there were no redaction.
 3. **The line is built only when it is written.** `record` asks the
    logger first, so a `DEBUG` line costs nothing at `INFO`.
 4. **An activity is one line.** `record` writes each control character
-   and line separator of the message as its escape, such as `\n` or
-   ` `, so no value from an upstream starts a line of its own.
+   and each line and paragraph separator of the message as its escape,
+   such as `\n` or `\u2028`, so no value from an upstream starts a line of its own.
 5. **After the fact.** A line says what happened, so it is written once
    the state file holds it. A refusal is written where it is refused.
 6. **Every new activity gets a row** in the table of section 6 and a line

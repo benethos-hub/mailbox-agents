@@ -1,7 +1,8 @@
 # In operation
 
 The published image, one container per agent, each started by its profile.
-This folder is all it needs, no clone of the repository.
+This folder is all it needs, no clone of the repository. No image is
+published yet, so `pull` fails until the first release.
 
 ## Set it up
 
@@ -9,8 +10,10 @@ This folder is all it needs, no clone of the repository.
 2. For each agent you run, copy `agents/<name>/.env.example` to
    `agents/<name>/.env` and fill it in. `sorting` also needs
    `agents/sorting/sorting.json`, its groups, made after
-   `sorting.example.json`. `sorting` asks no model and has no
-   `gateway_key`.
+   `sorting.example.json`, and `inquiries` needs
+   `agents/inquiries/inquiries.json`, its sender domains and phrases, made
+   after `inquiries.example.json`. `sorting` and `counting` ask no model
+   and have no `gateway_key`.
 3. Put the agent's secrets into `secrets/<name>/`, one file each,
    readable by the container's user (uid 10001) and nobody else:
 
@@ -18,7 +21,7 @@ This folder is all it needs, no clone of the repository.
    mkdir -p secrets/invoices
    printf '%s' "<token of the agent's user>" > secrets/invoices/service_token
    printf '%s' "<the agent's gateway key>" > secrets/invoices/gateway_key
-   sudo chown -R 10001 secrets/invoices && chmod 400 secrets/invoices/*
+   chmod 400 secrets/invoices/* && sudo chown -R 10001 secrets/invoices
    ```
 
    Each agent has a user of its own in the mailbox service, with
@@ -54,7 +57,7 @@ an update you may want to undo.
 
 | What | Where |
 |---|---|
-| the state file of an agent | the volume `<agent>-data`, `/data/<agent>.db` |
+| the state file of an agent | the volume `<agent>-data`, `awaiting-reply-data` for `awaiting_reply`, `/data/<agent>.db` |
 | its settings | `agents/<agent>/.env` |
 | its token and key | `secrets/<agent>/`, mounted read-only at `/run/secrets` |
 | its metrics | `127.0.0.1:947x/metrics`, the port in `.env` |
