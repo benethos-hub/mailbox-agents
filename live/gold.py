@@ -23,7 +23,9 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from benethos_mailbox_agents.settings import Settings, load_settings
+from common import live_settings  # beside this script, not a package
+
+from benethos_mailbox_agents.settings import Settings
 from benethos_mailbox_agents.sources.mailbox import connect
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,8 +69,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="The gold files of the test account.")
     parser.add_argument("--env-file", type=Path, default=LIVE / "secrets" / "agent.env")
     args = parser.parse_args()
-    if not args.env_file.is_file():
-        sys.exit(f"gold: no settings at {args.env_file}, run containers/live/setup.sh")
-    for path in asyncio.run(write(load_settings(args.env_file))):
+    for path in asyncio.run(write(live_settings(args.env_file, "gold"))):
         count = len(path.read_text(encoding="utf-8").splitlines())
         print(f"gold: {path.relative_to(ROOT)} ({count} messages)")

@@ -27,11 +27,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
+from common import live_settings  # beside this script, not a package
+
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
 from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.model import NoModel
-from benethos_mailbox_agents.settings import Settings, load_settings
+from benethos_mailbox_agents.settings import Settings
 from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
 from benethos_mailbox_agents.store import ActionRow, Store
 
@@ -211,11 +213,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="The live check of sorting.")
     parser.add_argument("--env-file", type=Path, default=ENV)
     args = parser.parse_args()
-    if not args.env_file.is_file():
-        sys.exit(
-            f"sorting: no settings at {args.env_file}, run containers/live/setup.sh"
-        )
-    found = load_settings(args.env_file)
-    if not found.accounts:
-        sys.exit("sorting: the settings name no account, the check needs the test one")
+    found = live_settings(args.env_file, "sorting")
     sys.exit(asyncio.run(run(found)))

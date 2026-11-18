@@ -181,3 +181,7 @@ commit that makes the change. Design decisions live in
   `held` for a held group, instead of the group's name, which may name a
   person. A wrong sorting list names a wrong rule by its group and its
   place, such as `group 'Bank', sender 2`, no longer by the rule itself.
+- The live checks in `live/` read their settings from their file alone. A
+  `MAILBOX_AGENTS_` variable exported in the shell no longer points them
+  at another account, a mailbox service not on this machine stops them
+  with exit code 2, and each prints its account before it starts.

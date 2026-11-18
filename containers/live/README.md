@@ -239,7 +239,9 @@ uv run benethos-mailbox-agents --env-file containers/live/secrets/agent.env run 
 ```
 
 `agent.env` sets the stage `shadow`. An agent that may change a message
-does so only in this account.
+does so only in this account. The scripts in `live/` read `agent.env`
+alone, not the variables of the shell, stop with exit code 2 when the
+mailbox service is not on this machine, and print the account first.
 
 `live/sorting.py` writes to the account: it runs `sorting` with
 `sorting.json` beside this file in `shadow`, then in `full`, and puts every
