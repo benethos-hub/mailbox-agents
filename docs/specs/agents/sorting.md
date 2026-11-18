@@ -1,7 +1,8 @@
 # The agent `sorting` (planned)
 
-> **Status: planned on 2026-11-18, not built. The concept was revised the
-> same day after a review against the code.** Its purpose: the mail of
+> **Status: built on 2026-11-18, steps S1 to S7, and run in `shadow` and in
+> `full` on the test account. Not run on a real mailbox.** Planned the same
+> day and revised after a review against the code. Its purpose: the mail of
 > providers such as a shop, a hoster or a bank goes into a folder of its
 > own, and one folder may take several, such as all banks. The name is a
 > working name. What is decided is marked so, the rest is the proposal.
@@ -278,7 +279,7 @@ Each step is one commit with the gates green and the specs it touches.
 | S4 | The list: reading, validating, matching, in `agents/sorting/` | tests 3 and 4. `invoices` keeps its own list until I5 |
 | S5 | `agents/sorting/`: select, admit, baseline, decide without a model, effect | tests 1, 2, 6, 7, 8 |
 | S6 | `report` for `sorting`, the setting, the example list | section 8 shown on invented mail |
-| S7 | Live: `sorting` in `shadow` and in `full` on the test account | `live/smoke.py` extended, folders made and mail moved |
+| S7 | Live: `sorting` in `shadow` and in `full` on the test account | `live/sorting.py`, folders made, mail moved and put back. Not `live/smoke.py`, which writes nothing |
 | S8 | [invoices](invoices.md) rebuilt, its own steps I1 to I6 | see there |
 
 A run on the owner's account is the owner's decision, in `shadow` first.

@@ -225,12 +225,19 @@ prompt and no answer.
 
 ```
 uv run python live/smoke.py
+uv run python live/sorting.py
 uv run benethos-mailbox-agent --env-file containers/live/secrets/agent.env status
 uv run benethos-mailbox-agent --env-file containers/live/secrets/agent.env run --agent counting
 ```
 
 `agent.env` sets the stage `shadow`. An agent that may change a message
 does so only in this account.
+
+`live/sorting.py` writes to the account: it runs `sorting` with
+`sorting.json` beside this file in `shadow`, then in `full`, and puts every
+message back where it was. The folders it made, `Providers` and two below
+it, stay, as no agent may delete a folder. `setup.sh` makes the account
+anew without them.
 
 ## Take it down
 

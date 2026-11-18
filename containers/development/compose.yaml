@@ -87,6 +87,26 @@ services:
       start_period: 30s
       retries: 3
 
+  # Asks no model. Writes to the test account in the stage full only.
+  sorting:
+    <<: *agent
+    profiles: ["sorting"]
+    command: ["worker", "--agent", "sorting"]
+    environment:
+      <<: *environment
+      MAILBOX_AGENT_SORTING_FILE: /config/sorting.json
+    volumes:
+      - sorting-data:/data
+      - ../live/sorting.json:/config/sorting.json:ro
+    ports:
+      - "127.0.0.1:${SORTING_METRICS_PORT:-9482}:9464"
+    healthcheck:
+      test: ["CMD", "benethos-mailbox-agent", "health", "--agent", "sorting"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
 networks:
   live:
     name: mailbox-agent-live_live
@@ -95,3 +115,4 @@ networks:
 volumes:
   counting-data:
   invoices-data:
+  sorting-data:

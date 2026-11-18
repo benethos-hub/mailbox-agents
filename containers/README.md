@@ -23,7 +23,7 @@ containers/
 | Folder | For | Image | Ports | Compose project |
 |---|---|---|---|---|
 | `production/` | running the agents, without a clone of the repository | from the GitHub container registry, the version named in `.env` | metrics on 9470 to 9474, 127.0.0.1 | `benethos-mailbox-agent` |
-| `development/` | trying a change in a container | built from this checkout | metrics on 9480 and 9481, 127.0.0.1 | `benethos-mailbox-agent-dev` |
+| `development/` | trying a change in a container | built from this checkout | metrics on 9480 to 9482, 127.0.0.1 | `benethos-mailbox-agent-dev` |
 | `live/` | the test account | Stalwart and the published mailbox service | 38080, 38081, 38465, 38993, 127.0.0.1 | `mailbox-agent-live` |
 
 Each folder has its own volumes, so a trial in `development/` never

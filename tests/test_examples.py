@@ -16,6 +16,7 @@ EXAMPLES = sorted(
         *(ROOT / "config").rglob("*.example.json"),
         *(ROOT / "containers").rglob("*.example.json"),
         ROOT / "containers" / "live" / "suppliers.json",
+        ROOT / "containers" / "live" / "sorting.json",
     ]
 )
 LOADERS = {
