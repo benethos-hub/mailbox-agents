@@ -39,7 +39,7 @@ earlier run, then:
 
 | Situation | Model | Alias in `agent.env` |
 |---|---|---|
-| a Claude API key is there | Claude | `mail-classifier` |
+| a Claude API key is there | Claude Haiku 5.5 | `mail-classifier` |
 | no key, or `LIVE_LOCAL=gpu`, and NVIDIA's CDI spec on the host | local, on the graphics card | `mail-classifier-gpu` |
 | no key and no CDI spec, or `LIVE_LOCAL=cpu` | local, on the CPU | `mail-classifier-cpu` |
 
@@ -116,18 +116,19 @@ docker compose -f containers/live/compose.yaml --profile gpu up -d llama-gpu
 
 ```
 uv run python live/gold.py
-MAILBOX_AGENT_MODEL=gpu/qwen3.5-9b uv run benethos-mailbox-agent \
+MAILBOX_AGENT_MODEL=claude/haiku-5-5 uv run benethos-mailbox-agent \
     --env-file containers/live/secrets/agent.env \
     eval --agent invoices --gold containers/live/secrets/gold-invoices.jsonl \
     --reports containers/live/secrets/reports
 ```
 
-Measured on 2026-11-17 with llama.cpp build 12464, an RTX 4070 with
-12 GB and a 12th generation Core i9 with 24 threads. The labels agreed
-with the gold set, out of 11 messages for `invoices` and `inquiries` and
-3 for `awaiting_reply`. The fields are the right values of `invoices`
-against all it should have filled or did fill. The seconds are per
-message:
+The local models were measured on 2026-11-17 with llama.cpp build 12464,
+an RTX 4070 with 12 GB and a 12th generation Core i9 with 24 threads.
+Claude was measured on 2026-11-18 through the Claude API, its seconds
+include the way over the internet. The labels agreed with the gold set,
+out of 11 messages for `invoices` and `inquiries` and 3 for
+`awaiting_reply`. The fields are the right values of `invoices` against
+all it should have filled or did fill. The seconds are per message:
 
 | Model | Size | invoices | inquiries | awaiting_reply | Fields | Seconds, invoices / inquiries |
 |---|---|---|---|---|---|---|
@@ -139,6 +140,8 @@ message:
 | `gpu/qwen3.5-9b` | 5.7 GB | 11 | 11 | 3 | 6 of 8 | 1.0 / 5.3 |
 | `gpu/gemma-4-12b` | 7.0 GB | 11 | 11 | 3 | 6 of 7 | 1.4 / 7.4 |
 | `gpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 11 | 3 | 6 of 7 | 1.7 / 7.7 |
+| `claude/haiku-5-5` | hosted | 11 | refused | 3 | 6 of 7 | 1.1 / - |
+| `claude/opus-5-5` | hosted | 11 | refused | 3 | 6 of 7 | 1.8 / - |
 
 What decided:
 
@@ -152,6 +155,15 @@ What decided:
 - On the CPU, `qwen3.5-4b` agrees on every label like the 35B model, in an
   eighth of its memory. The 35B model stays at hand as
   `cpu/qwen3.6-35b-a3b`, for a server with 32 GB or more.
+
+- The Claude API refuses the schema of `inquiries`, for Haiku and Opus
+  alike: its fourteen fields hold 28 values that may be null, and the
+  API compiles at most 16 parameters with union types. Every answer of
+  `inquiries` is refused as `request`. The local models take the schema.
+- Haiku and Opus agree on every label and field of `invoices` and
+  `awaiting_reply`. Haiku answers faster, and for a fraction of Opus's
+  price per token. Both read about 1200 tokens of an invoice and write
+  about 120 (Haiku) or 75 (Opus). So `mail-classifier` is Haiku.
 
 Eleven invented messages show a model that fails outright, not which of
 the good ones is best. That takes the evaluation on real mail of SPECS.md

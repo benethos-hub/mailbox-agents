@@ -20,8 +20,19 @@ x-cpu: &cpu
 
 model_list:
   # Claude through the Claude API, with the key in secrets/anthropic_api_key
-  # or ANTHROPIC_API_KEY. Opus 5.5 takes no sampling setting, so none is set.
+  # or ANTHROPIC_API_KEY. Neither Haiku 5.5 nor Opus 5.5 takes a sampling
+  # setting, so none is set. The agents use Haiku, chosen by the comparison
+  # in README.md.
   - model_name: mail-classifier
+    litellm_params: &haiku
+      model: anthropic/claude-haiku-5-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 4096
+
+  # Each Claude model by its own name, for comparing them in evaluation runs.
+  - model_name: claude/haiku-5-5
+    litellm_params: *haiku
+  - model_name: claude/opus-5-5
     litellm_params:
       model: anthropic/claude-opus-5-5
       api_key: os.environ/ANTHROPIC_API_KEY
