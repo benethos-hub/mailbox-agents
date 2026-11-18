@@ -31,6 +31,7 @@ from benethos_mailbox_agent.agents.invoices.suppliers import (
 )
 from benethos_mailbox_agent.errors import ConfigError
 from benethos_mailbox_agent.evaluation.gold import load_gold
+from benethos_mailbox_agent.llm.gateway import strict_schema
 from benethos_mailbox_agent.records import MailMessage, MessageRef
 from benethos_mailbox_agent.runtime.loop import Worker
 from benethos_mailbox_agent.runtime.readiness import readiness, start
@@ -572,7 +573,41 @@ async def test_the_report_ends_with_the_candidates(world: Wired) -> None:
 
 
 LONG = "x" * (MAX_ANSWER_TEXT + 1)
-EMPTY = {"value": None, "quote": None}
+EMPTY = None
+
+# The Claude API compiles a schema of structured output with at most this
+# many parameters whose type is a union, nullable ones among them, and
+# refuses the request otherwise.
+UNION_PARAMETERS = 16
+
+
+def _unions(node: Any, defs: dict[str, Any]) -> int:
+    """How many properties of ``node``, at any depth, are a union. A
+    definition counts at each place it is used, as the API unfolds it."""
+    if isinstance(node, list):
+        return sum(_unions(item, defs) for item in node)
+    if not isinstance(node, dict):
+        return 0
+    if "$ref" in node:
+        return _unions(defs[node["$ref"].rpartition("/")[2]], defs)
+    found = sum(
+        1
+        for value in node.get("properties", {}).values()
+        if "anyOf" in value or isinstance(value.get("type"), list)
+    )
+    return found + sum(
+        _unions(value, defs) for key, value in node.items() if key != "$defs"
+    )
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [answer_schema(("CloudHost", "Telco")), AwaitingAnswer, InquiryAnswer],
+    ids=["invoices", "awaiting_reply", "inquiries"],
+)
+def test_each_schema_fits_the_claude_api(schema: type[BaseModel]) -> None:
+    found = strict_schema(schema)
+    assert _unions(found, found.get("$defs", {})) <= UNION_PARAMETERS
 
 
 @pytest.mark.parametrize(

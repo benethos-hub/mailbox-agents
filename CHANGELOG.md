@@ -51,6 +51,10 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- The agent `inquiries` asks with the prompt version `v3`: a field the
+  mail does not fill is null as a whole, not its value and its quote each.
+  The Claude API refused the schema of `v2`, so `inquiries` runs on Claude
+  now. Every inquiry is taken up anew with the new version.
 - Every log line is one sentence in the past tense, such as
   `invoices set message m1 to done`, instead of key-value pairs. It
   starts with the time in ISO 8601 with milliseconds and the offset, the

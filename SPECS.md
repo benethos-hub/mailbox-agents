@@ -634,10 +634,14 @@ skills, desired skills, deadline to apply.
 
 Every field comes with a quote from the message (section 11). What a
 message does not say stays empty. The fields come in the same call as the
-label (built 2026-11-17, prompt `system.v2.md`, version `v2`), each as a
-value and a quote, in the schema as `role`, `start`, `end`, `duration`,
-`workload`, `location`, `remote_share`, `contract_form`, `intermediary`,
-`end_client`, `rate`, `required_skills`, `desired_skills` and `deadline`.
+label (built 2026-11-17, prompt `system.v3.md`, version `v3` since
+2026-11-18), each either null or a value with its quote, in the schema as
+`role`, `start`, `end`, `duration`, `workload`, `location`,
+`remote_share`, `contract_form`, `intermediary`, `end_client`, `rate`,
+`required_skills`, `desired_skills` and `deadline`. A field is null as a
+whole, not its value and quote each: the Claude API compiles a schema with
+at most 16 parameters whose type is a union, and refused the 28 of `v2`.
+A test holds every agent's schema to that limit.
 A message labelled `other` keeps none. The evaluation counts each field
 right, wrong, missing, invented or rightly empty.
 

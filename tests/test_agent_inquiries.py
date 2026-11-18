@@ -28,11 +28,12 @@ MESSAGES = {m["id"]: m for m in invented("invented-inquiries.json")}
 
 
 def said(label: str, quote: str, **fields: tuple[str, str]) -> dict[str, Any]:
-    """An answer of the model: the label, and each field as value and quote."""
+    """An answer of the model: the label, and each field as value and quote,
+    or null."""
     found: dict[str, Any] = {"label": label, "quote": quote}
     for name in FIELDS:
-        value, passage = fields.get(name, (None, None))
-        found[name] = {"value": value, "quote": passage}
+        given = fields.get(name)
+        found[name] = None if given is None else {"value": given[0], "quote": given[1]}
     return found
 
 
@@ -238,7 +239,7 @@ async def test_each_field_with_its_quote(world: Wired) -> None:
     assert await run(world, "inq-staffing") == "done"
 
     ref = MessageRef(account_id=ACCOUNT, message_id="inq-staffing")
-    found = world.store.step(ref, "decision", "v2", "alias")
+    found = world.store.step(ref, "decision", "v3", "alias")
     assert found is not None
     assert found.result["fields"] == {
         "role": "Python-Entwickler",
@@ -257,7 +258,7 @@ async def test_another_message_has_no_fields(world: Wired) -> None:
     await run(world, "job-digest")
 
     ref = MessageRef(account_id=ACCOUNT, message_id="job-digest")
-    found = world.store.step(ref, "decision", "v2", "alias")
+    found = world.store.step(ref, "decision", "v3", "alias")
     assert found is not None and found.result["fields"] == {}
 
 

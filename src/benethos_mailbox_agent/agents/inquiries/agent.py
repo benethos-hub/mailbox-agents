@@ -38,7 +38,7 @@ class Inquiries(Agent):
     actions = frozenset({Action.ADD_KEYWORD})
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
     default_keyword = "inquiry"
-    prompt_version = "v2"
+    prompt_version = "v3"
 
     def prepare(self) -> None:
         _ = self.patterns
@@ -75,7 +75,7 @@ class Inquiries(Agent):
         if answer.label == "inquiry":
             for name in FIELDS:
                 found = getattr(answer, name)
-                if found.value and found.value.strip() and found.quote:
+                if found is not None and found.value.strip() and found.quote:
                     fields[name] = found.value.strip()
                     evidence.append(
                         Evidence(field=name, value=fields[name], quote=found.quote)

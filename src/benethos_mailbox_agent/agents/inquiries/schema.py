@@ -60,27 +60,29 @@ class Quoted(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    value: Short | None
-    quote: Short | None
+    value: Short
+    quote: Short
 
 
 class Inquiry(Label):
-    """The label and, for an inquiry, its fields."""
+    """The label and, for an inquiry, its fields. A field the mail does not
+    fill is null as a whole: one union per field keeps the schema within
+    the 16 parameters with union types the Claude API compiles."""
 
-    role: Quoted
-    start: Quoted
-    end: Quoted
-    duration: Quoted
-    workload: Quoted
-    location: Quoted
-    remote_share: Quoted
-    contract_form: Quoted
-    intermediary: Quoted
-    end_client: Quoted
-    rate: Quoted
-    required_skills: Quoted
-    desired_skills: Quoted
-    deadline: Quoted
+    role: Quoted | None
+    start: Quoted | None
+    end: Quoted | None
+    duration: Quoted | None
+    workload: Quoted | None
+    location: Quoted | None
+    remote_share: Quoted | None
+    contract_form: Quoted | None
+    intermediary: Quoted | None
+    end_client: Quoted | None
+    rate: Quoted | None
+    required_skills: Quoted | None
+    desired_skills: Quoted | None
+    deadline: Quoted | None
 
 
 def render(message: MailMessage) -> str:
