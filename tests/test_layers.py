@@ -69,7 +69,8 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
 # its interface to the rest of the package.
 CONFINED: dict[str, frozenset[str]] = {
     "logging": frozenset({"logbook/output.py"}),
-    "sqlite3": frozenset({"store/store.py"}),
+    # A step of the schema is handed the connection to run its statements on.
+    "sqlite3": frozenset({"store/store.py", "store/migrations/migration.py"}),
     "benethos_mailbox_client": frozenset({"sources/mailbox.py"}),
     "httpx": frozenset({"sources/mailbox.py", "llm/gateway.py"}),
     "prometheus_client": frozenset({"runtime/metrics.py"}),

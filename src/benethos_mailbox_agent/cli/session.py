@@ -14,6 +14,7 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
+from .. import logbook
 from ..contract import Agent
 from ..llm.gateway import Gateway
 from ..runtime.loop import Worker
@@ -92,6 +93,9 @@ async def session(cls: type[Agent], settings: Settings) -> AsyncIterator[Session
     async with AsyncExitStack() as stack:
         mailbox, gateway = await stack.enter_async_context(upstreams(agent, settings))
         store = stack.enter_context(Store.open(path_for(settings.data_dir, agent.name)))
+        if store.migrated is not None:
+            found = store.migrated
+            logbook.migrated(agent.name, found.before, found.after, found.notes)
         worker = Worker(
             agent=agent, store=store, mailbox=mailbox, gateway=gateway, now=now
         )

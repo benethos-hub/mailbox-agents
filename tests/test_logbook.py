@@ -56,6 +56,7 @@ def test_every_line_function_writes_one_line(stream: io.StringIO) -> None:
     logbook.started("a", "1", "shadow")
     logbook.stopped("a", "signal")
     logbook.metrics_serving("a", 9464)
+    logbook.migrated("a", 1, 2, ("schema 2: x",))
     logbook.feed_read("a", 3, 1)
     logbook.feed_expired("a")
     logbook.backfill_done("a", 4, 7)
@@ -71,7 +72,7 @@ def test_every_line_function_writes_one_line(stream: io.StringIO) -> None:
     logbook.action_done("a", "m1", "add_keyword", "shadow", False, "due")
     logbook.action_refused("a", "m1", "move_to_folder", error)
 
-    assert len(stream.getvalue().splitlines()) == 17
+    assert len(stream.getvalue().splitlines()) == 18
 
 
 def test_no_other_module_imports_logging() -> None:

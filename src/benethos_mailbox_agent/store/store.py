@@ -23,10 +23,11 @@ from typing import IO, Any
 
 from ..errors import ConfigError
 from ..records import MessageRef, OpenItem, Step, StepResult
-from .migrations import MIGRATIONS
+from .migrations import MIGRATIONS, SCHEMA_VERSION
 
 __all__ = [
     "STATES",
+    "Migrated",
     "ActionRow",
     "MessageRow",
     "Store",
@@ -39,6 +40,17 @@ STATES = ("pending", "skipped", "decided", "done", "failed")
 def path_for(data_dir: Path, agent: str) -> Path:
     """Where the state file of ``agent`` lives."""
     return data_dir / f"{agent}.db"
+
+
+@dataclass(frozen=True)
+class Migrated:
+    """What opening a state file did to its schema, for the caller to log:
+    from ``before`` to ``after``, 0 for a new file, with the notes of the
+    steps that had any."""
+
+    before: int
+    after: int
+    notes: tuple[str, ...] = ()
 
 
 def _lock(path: Path) -> IO[bytes]:
@@ -115,6 +127,8 @@ class Store:
         self._db = connection
         self.read_only = read_only
         self._lock = lock
+        # What the last migrate did to the file, None when it was current.
+        self.migrated: Migrated | None = None
 
     # -- opening ----------------------------------------------------------------
 
@@ -177,23 +191,28 @@ class Store:
         return found
 
     def _check_version(self) -> None:
-        if self.version > len(MIGRATIONS):
+        if self.version > SCHEMA_VERSION:
             raise ConfigError(
                 f"the state file is at schema version {self.version}, "
-                f"this program knows {len(MIGRATIONS)}"
+                f"this program knows {SCHEMA_VERSION}"
             )
 
     def migrate(self) -> int:
-        """Run the migrations the file lacks, each in a transaction of its
-        own. Answers the version reached."""
+        """Run the steps the file lacks, each in a transaction of its own
+        with its version, and keep what they did in ``migrated``. Answers
+        the version reached. The store logs nothing: the caller does."""
         self._check_version()
-        for number in range(self.version + 1, len(MIGRATIONS) + 1):
+        before = self.version
+        notes: list[str] = []
+        for step in MIGRATIONS.pending(before):
             with self._transaction():
-                self._db.executescript(
-                    "BEGIN;"
-                    + MIGRATIONS[number - 1]
-                    + f"PRAGMA user_version = {number};COMMIT;"
-                )
+                self._db.execute("BEGIN IMMEDIATE")
+                said = step.apply(self._db)
+                self._db.execute(f"PRAGMA user_version = {step.version}")
+                self._db.execute("COMMIT")
+            notes += [f"schema {step.version}: {note}" for note in said]
+        if self.version > before:
+            self.migrated = Migrated(before, self.version, tuple(notes))
         return self.version
 
     @contextmanager

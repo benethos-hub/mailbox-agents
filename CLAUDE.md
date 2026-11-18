@@ -121,7 +121,12 @@ uv lock --check
 - **A prompt has a version.** Changing a prompt changes its version, and
   the step runner treats it as new work.
 - **A migration is never changed once released.** A change of the schema is
-  a new numbered migration.
+  a new migration: a class `VNNNN<Subject>` of `Migration` in a module
+  `vNNNN_<subject>.py` in `store/migrations/versions/` with the next
+  number, added to `MIGRATIONS` in `store/migrations/__init__.py`. Its
+  docstring says what it does and why. Each statement stands alone, a step
+  in Python is the method `before`. A release freezes its new migrations:
+  the fingerprint of each goes into `RELEASED` in `tests/test_store.py`.
 - **SPECS.md moves with the code.** A change that departs from it changes
   it in the same commit. Every user-facing change gets an entry under
   `[Unreleased]` in `CHANGELOG.md` in the same commit.

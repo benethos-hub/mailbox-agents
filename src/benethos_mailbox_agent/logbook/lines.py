@@ -19,6 +19,7 @@ __all__ = [
     "feed_read",
     "message_state",
     "metrics_serving",
+    "migrated",
     "pass_done",
     "pass_failed",
     "started",
@@ -46,6 +47,19 @@ def started(agent: str, version: str, stage: str) -> None:
 
 def stopped(agent: str, reason: str) -> None:
     LOGGER.info("agent=%s stopped reason=%s", agent, reason)
+
+
+def migrated(agent: str, before: int, after: int, notes: tuple[str, ...]) -> None:
+    """The state file was made, or brought from schema ``before`` to
+    ``after``. The notes are the steps' own, words of code."""
+    said = "made the state file" if before == 0 else f"migrated from {before}"
+    LOGGER.info(
+        "agent=%s %s to schema %d%s",
+        agent,
+        said,
+        after,
+        f": {'; '.join(notes)}" if notes else "",
+    )
 
 
 def metrics_serving(agent: str, port: int) -> None:

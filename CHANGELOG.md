@@ -101,3 +101,5 @@ commit that makes the change. Design decisions live in
   longer closes every `awaiting_reply` item at once.
 - `status` says `last progress:` instead of `last pass:`, since the time
   is the loop's last sign of progress, not its last complete pass.
+- The commands that open a state file to write log when they made it or
+  brought its schema forward.
