@@ -51,7 +51,7 @@ def _mentions(supplier: Supplier, quote: str) -> bool:
 
 class Invoices(Agent):
     name = "invoices"
-    version = "1"
+    version = "2"
     description = (
         "Marks invoices from suppliers, and moves those of a listed supplier "
         "into its folder."

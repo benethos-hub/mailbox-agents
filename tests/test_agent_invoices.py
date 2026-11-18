@@ -419,14 +419,86 @@ def test_the_baseline_on_the_invented_set() -> None:
         "inv-telco-notice": ("invoice", {"supplier": "Telco"}),
         "inv-telco-random-sender": ("invoice", {"supplier": "Telco"}),
         "inv-unlisted": ("invoice", {}),
-        # A miss of the rules, kept so the evaluation shows it.
-        "inv-platform": ("other", {}),
+        # A receipt that carries its invoice (decided 2026-11-18).
+        "inv-platform": ("invoice", {}),
         "near-reminder": ("other", {"near_miss": "reminder"}),
         "near-quote": ("other", {"near_miss": "quotation"}),
         "near-order": ("other", {"near_miss": "order_confirmation"}),
         "near-receipt": ("other", {"near_miss": "payment_receipt"}),
         "plain": ("other", {}),
     }
+
+
+def _mail(subject: str, text: str = "", pdf: str | None = None) -> MailMessage:
+    return MailMessage.model_validate(
+        {
+            "ref": {"account_id": ACCOUNT, "message_id": "m1"},
+            "subject": subject,
+            "sender": {"email": "billing@unlisted.example"},
+            "text": text,
+            "attachments": (
+                [{"filename": pdf, "content_type": "application/pdf", "size": 1}]
+                if pdf
+                else []
+            ),
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        # A receipt that carries its invoice, by the file's name or the text.
+        (_mail("Your receipt #2210", pdf="Invoice-2210.pdf"), ("invoice", {})),
+        (
+            _mail("Zahlungsbestätigung", "Die Rechnung liegt bei.", pdf="Beleg.pdf"),
+            ("invoice", {}),
+        ),
+        # A receipt alone is the near miss.
+        (
+            _mail("Your receipt #2210", "Thanks for your payment."),
+            ("other", {"near_miss": "payment_receipt"}),
+        ),
+        (
+            _mail("Quittung Nr. 7", pdf="Quittung-7.pdf"),
+            ("other", {"near_miss": "payment_receipt"}),
+        ),
+        # A reminder stays a reminder, its invoice attached or not.
+        (
+            _mail("Mahnung", pdf="Rechnung-1.pdf"),
+            ("other", {"near_miss": "reminder"}),
+        ),
+    ],
+    ids=[
+        "receipt-invoice-file",
+        "receipt-invoice-text",
+        "receipt",
+        "quittung",
+        "reminder",
+    ],
+)
+def test_the_rules_tell_a_receipt_with_its_invoice(
+    message: MailMessage, expected: tuple[str, dict[str, str]]
+) -> None:
+    found = agent().baseline(message)
+
+    assert (found.label, found.fields) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Ihre Rechnung ist da und liegt im Kundencenter.",
+        "Ihre Rechnung wurde bereitgestellt.",
+        "Die Monatsrechnung für Oktober finden Sie online.",
+        "Your bill is ready to view.",
+        "Your statement is available in your account.",
+    ],
+)
+def test_the_rules_take_a_notice_that_an_invoice_waits(text: str) -> None:
+    found = agent().baseline(_mail("Neuigkeiten zu Ihrem Konto", text))
+
+    assert found.label == "invoice"
 
 
 def test_the_content_names_sender_subject_and_files() -> None:

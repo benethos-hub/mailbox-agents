@@ -486,7 +486,7 @@ supplier with a folder of its own?
 | | |
 |---|---|
 | Triggers | `message.created` in the inbox |
-| Baseline | a sender on the supplier list, a PDF or XML attachment, invoice words in subject and attachment names |
+| Baseline | a sender on the supplier list, a PDF or XML attachment, invoice words in subject and attachment names, phrases of a notice that an invoice waits at the supplier, near-miss words in the subject, and a receipt that carries its invoice taken as one (agent version 2, 2026-11-18) |
 | Model | label `invoice` or `other`, for `other` the near miss it is: reminder, quotation, order confirmation, payment receipt, none, and for an invoice a supplier of the list or none |
 | Supplier | a sender rule of the list first, the model's choice from the list only when no rule matches (decided 2026-11-17) |
 | Actions | `add_keyword`, `move_to_folder` |
