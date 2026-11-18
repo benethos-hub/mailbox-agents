@@ -690,6 +690,11 @@ agent runs over it and the scoring counts where it agrees.
   2026-11-17). Tokens and time per message.
 - **Always against the baseline.** Every report shows the rules alone
   beside the model, so what the model adds is a number.
+- **The judgement, not the filter.** The evaluation runs the baseline and
+  the model on every message of the gold set and does not ask the agent's
+  `admit` first, which in operation skips a message, such as one outside
+  the inbox. So the numbers measure what rules and model decide. A gold
+  set holds only mail that `admit` lets through (decided 2026-11-18).
 - **A run is manual.** `benethos-mailbox-agent eval --agent <name>` needs a
   mailbox service and a model, which a public CI has not. It is a live
   check, outside `testpaths`, and never a gate.
