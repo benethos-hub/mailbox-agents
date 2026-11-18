@@ -7,7 +7,8 @@ from datetime import UTC, datetime
 import pytest
 
 from benethos_mailbox_agents.cli import main
-from benethos_mailbox_agents.cli.report import Entry, render
+from benethos_mailbox_agents.cli.report import Entry, render, summary
+from benethos_mailbox_agents.contract import Action, Shown
 from benethos_mailbox_agents.records import (
     LABEL,
     Address,
@@ -65,6 +66,30 @@ def test_render_one_entry() -> None:
         "  action: move_to_folder Invoices/Hosting (full: done)",
         "",
     ]
+
+
+def test_the_summary_sees_known_actions_and_leaves_out_others() -> None:
+    seen: list[Shown] = []
+
+    class Listening:
+        def summarize(self, shown: list[Shown]) -> list[str]:
+            seen.extend(shown)
+            return []
+
+    entry = Entry(
+        row=MessageRow(REF, "done", 0, NOW, NOW, NOW),
+        message=None,
+        decision=Decision(label="invoice", source="model"),
+        model="m",
+        baseline=None,
+        actions=[
+            ActionRow(REF, "move_to_folder", "Invoices", {}, "full", True, NOW),
+            ActionRow(REF, "paint_it_red", "", {}, "full", True, NOW),
+        ],
+    )
+
+    assert summary(Listening(), [entry]) == []  # type: ignore[arg-type]
+    assert [item.actions for item in seen] == [((Action.MOVE_TO_FOLDER, True),)]
 
 
 def test_render_a_refused_decision_and_a_message_gone() -> None:

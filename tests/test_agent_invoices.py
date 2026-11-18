@@ -23,6 +23,7 @@ from benethos_mailbox_agents.agents.invoices.schema import (
     Answer,
     render,
 )
+from benethos_mailbox_agents.contract import Action
 from benethos_mailbox_agents.errors import ConfigError, MailboxUnavailableError
 from benethos_mailbox_agents.evaluation.gold import load_gold
 from benethos_mailbox_agents.llm.gateway import strict_schema
@@ -575,9 +576,9 @@ def test_summarize_counts_invoices_left_where_they_lay() -> None:
     invoice = Decision(label="invoice", source="model")
     refused = invoice.model_copy(update={"refused": "evidence"})
     other = Decision(label="other", source="model")
-    marked = (("add_keyword", True),)
-    moved = (("add_keyword", True), ("move_to_folder", True))
-    recorded = (("add_keyword", False), ("move_to_folder", False))
+    marked = ((Action.ADD_KEYWORD, True),)
+    moved = ((Action.ADD_KEYWORD, True), (Action.MOVE_TO_FOLDER, True))
+    recorded = ((Action.ADD_KEYWORD, False), (Action.MOVE_TO_FOLDER, False))
 
     lines = agent().summarize(
         [

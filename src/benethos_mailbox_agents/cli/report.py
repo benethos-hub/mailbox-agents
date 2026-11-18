@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ..contract import Agent, Reader, Shown
+from ..contract import Action, Agent, Reader, Shown
 from ..errors import MailboxRefusedError
 from ..logbook import escaped
 from ..records import Decision, MailMessage, MessageRef
@@ -120,6 +120,13 @@ def render(entries: list[Entry]) -> list[str]:
     return [escaped(line) for line in lines]
 
 
+def _actions(rows: list[ActionRow]) -> tuple[tuple[Action, bool], ...]:
+    """The actions of a message as its summary sees them. A row of an
+    action this version does not know is left out."""
+    known = {action.value for action in Action}
+    return tuple((Action(a.action), a.executed) for a in rows if a.action in known)
+
+
 def summary(agent: Agent, entries: list[Entry]) -> list[str]:
     """What the agent has to say about the messages shown."""
     shown = [
@@ -128,7 +135,7 @@ def summary(agent: Agent, entries: list[Entry]) -> list[str]:
             if entry.message is not None and entry.message.sender is not None
             else None,
             decision=entry.decision,
-            actions=tuple((a.action, a.executed) for a in entry.actions),
+            actions=_actions(entry.actions),
         )
         for entry in entries
         if entry.decision is not None

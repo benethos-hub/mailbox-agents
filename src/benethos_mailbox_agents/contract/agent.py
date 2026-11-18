@@ -124,7 +124,7 @@ class Shown:
 
     sender: str | None
     decision: Decision
-    actions: tuple[tuple[str, bool], ...] = ()
+    actions: tuple[tuple[Action, bool], ...] = ()
 
 
 class Agent(ABC):

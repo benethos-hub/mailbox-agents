@@ -181,7 +181,7 @@ class Invoices(Agent):
             if item.sender
             and item.decision.label == "invoice"
             and item.decision.actionable
-            and not any(action == "move_to_folder" for action, _ in item.actions)
+            and not any(action is Action.MOVE_TO_FOLDER for action, _ in item.actions)
         )
         if not counted:
             return []

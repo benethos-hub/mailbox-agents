@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
+from benethos_mailbox_agents.contract import Action
 from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.model import NoModel
@@ -386,8 +387,8 @@ def test_summarize_per_group_candidates_and_alike(tmp_path: Path) -> None:
         source="baseline",
         details={"match": "ambiguous", "groups": "TelcoA,TelcoB"},
     )
-    moved = (("create_folder", True), ("move_to_folder", True))
-    recorded = (("move_to_folder", False),)
+    moved = ((Action.CREATE_FOLDER, True), (Action.MOVE_TO_FOLDER, True))
+    recorded = ((Action.MOVE_TO_FOLDER, False),)
 
     lines = agent(tmp_path).summarize(
         [
