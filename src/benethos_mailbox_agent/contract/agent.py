@@ -17,7 +17,7 @@ from typing import ClassVar
 
 from ..errors import ContractError
 from ..records import Decision, Event, MailMessage, MessageRef
-from ..settings import Settings
+from ..settings import KEYWORD_FORBIDDEN, Settings
 from .context import Context
 
 __all__ = [
@@ -39,9 +39,6 @@ NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 EVENTS = frozenset(
     {"message.created", "message.updated", "message.deleted", "message.sent"}
 )
-
-# Characters an IMAP keyword may not carry.
-_NOT_IN_KEYWORD = set(' \t()[]{}"\\%*')
 
 
 class Action(StrEnum):
@@ -238,5 +235,5 @@ def _check_declarations(cls: type[Agent]) -> None:
     if wrong:
         raise ContractError(f"{cls.name}: requires unknown settings {wrong}")
     keyword = cls.default_keyword
-    if not keyword or _NOT_IN_KEYWORD & set(keyword):
+    if not keyword or KEYWORD_FORBIDDEN & set(keyword):
         raise ContractError(f"{cls.name}: the default keyword is not one word")

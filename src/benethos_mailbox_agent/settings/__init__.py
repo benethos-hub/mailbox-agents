@@ -19,12 +19,16 @@ from ..errors import ConfigError, describe_invalid, register_secret
 
 __all__ = [
     "DEFAULT_ENV_FILE",
+    "KEYWORD_FORBIDDEN",
     "PREFIX",
     "STAGES",
     "Settings",
     "Stage",
     "load_settings",
 ]
+
+# Characters an IMAP keyword may not carry: it is one atom.
+KEYWORD_FORBIDDEN = frozenset(' \t()[]{}"\\%*')
 
 PREFIX = "MAILBOX_AGENT_"
 
@@ -106,9 +110,7 @@ class Settings(BaseSettings):
     @classmethod
     def _one_word(cls, value: str | None) -> str | None:
         """A keyword is one IMAP atom: no space, no bracket, no quote."""
-        if value is not None and (
-            not value or any(c in value for c in ' \t()[]{}"\\%*')
-        ):
+        if value is not None and (not value or KEYWORD_FORBIDDEN & set(value)):
             raise ValueError("a keyword is one word without brackets or quotes")
         return value
 
