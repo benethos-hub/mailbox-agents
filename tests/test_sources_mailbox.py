@@ -129,7 +129,7 @@ async def test_recent_follows_the_pages(service: FakeService, mailbox: Mailbox) 
     service.add(wire_message("s1", folder_ids=["sent"]), change=None)
     service.add(wire_message("x1", folder_ids=["inv"]), change=None)
 
-    found = await mailbox.recent(date(2026, 11, 10))
+    found = await mailbox.recent(date(2026, 11, 10), roles=("inbox", "sent"))
 
     assert len(found) == 251
     assert MessageRef(account_id=ACCOUNT, message_id="s1") in found

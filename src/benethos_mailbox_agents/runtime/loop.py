@@ -35,11 +35,15 @@ from .model import Asker
 from .reader import ReadOnlyMailbox
 from .steps import StepRunner, backoff, make_calls
 
-__all__ = ["BATCH", "Upstream", "Worker"]
+__all__ = ["BACKFILL_ROLES", "BATCH", "Upstream", "Worker"]
 
 # Pending messages one pass takes up at most, so a long queue still lets
 # the cursor move and the health check see progress.
 BATCH = 50
+
+# The roles of the folders every backfill reads, whatever the agent: the
+# inbox and sent mail. An agent names the folders it wants besides.
+BACKFILL_ROLES = ("inbox", "sent")
 
 
 class Upstream(Reader, Writer, Protocol):
@@ -52,7 +56,7 @@ class Upstream(Reader, Writer, Protocol):
     ) -> tuple[list[Event], str]: ...
 
     async def recent(
-        self, since: date, accounts: list[str] | None = None
+        self, since: date, accounts: list[str] | None = None, *, roles: tuple[str, ...]
     ) -> list[MessageRef]: ...
 
     async def recent_in(
@@ -301,7 +305,7 @@ class Worker:
         since = (self._now() - timedelta(days=days)).date()
         now = self._now()
         added = 0
-        refs = await self._mailbox.recent(since, self.accounts)
+        refs = await self._mailbox.recent(since, self.accounts, roles=BACKFILL_ROLES)
         refs += await self._in_folders(since)
         for ref in dict.fromkeys(refs):
             event = Event(type="message.created", ref=ref, at=now)
@@ -315,14 +319,17 @@ class Worker:
 
     async def _in_folders(self, since: date) -> list[MessageRef]:
         """The messages of the folders the agent wants in a backfill besides
-        the inbox and sent mail, in each account it works on: those the
-        settings name, or else every account the user is granted, so one
-        whose inbox and sent mail are empty is looked in too."""
+        those of :data:`BACKFILL_ROLES`, read already, in each account it
+        works on: those the settings name, or else every account the user
+        is granted, so one whose inbox and sent mail are empty is looked in
+        too."""
         accounts = self.accounts or list(await self._mailbox.accounts())
         refs: list[MessageRef] = []
         for account in accounts:
             folders = await self._mailbox.folders(account)
             for folder in folders.values():
+                if folder.role in BACKFILL_ROLES:
+                    continue
                 if self.agent.backfill_folder(folder):
                     refs += await self._mailbox.recent_in(account, folder.id, since)
         return refs

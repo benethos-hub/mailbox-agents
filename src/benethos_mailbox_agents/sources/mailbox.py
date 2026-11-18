@@ -150,7 +150,8 @@ class Mailbox:
         self,
         since: date,
         accounts: list[str] | None = None,
-        roles: tuple[str, ...] = ("inbox", "sent"),
+        *,
+        roles: tuple[str, ...],
     ) -> list[MessageRef]:
         """The messages from ``since`` on in the folders of ``roles``,
         received or sent, for a backfill. The service lists the inbox alone when

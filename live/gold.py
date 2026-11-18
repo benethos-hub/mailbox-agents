@@ -43,7 +43,9 @@ async def write(settings: Settings) -> list[Path]:
         allow_http=settings.service_allow_http,
     ) as mailbox:
         refs = await mailbox.recent(
-            date.today() - timedelta(days=30), settings.accounts
+            date.today() - timedelta(days=30),
+            settings.accounts,
+            roles=("inbox", "sent"),
         )
         for ref in refs:
             message = await mailbox.message(ref)

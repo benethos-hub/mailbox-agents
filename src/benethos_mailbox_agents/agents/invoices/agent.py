@@ -82,7 +82,7 @@ class Invoices(Agent):
         return self.places.needed()
 
     def backfill_folder(self, folder: FolderRef) -> bool:
-        return folder.role != "inbox" and self.places.looks_in(folder)
+        return self.places.looks_in(folder)
 
     def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
         return self.places.may_create(path, folders)

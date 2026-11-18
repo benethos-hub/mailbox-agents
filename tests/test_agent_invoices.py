@@ -881,6 +881,22 @@ async def test_backfill_takes_up_the_folders_it_looks_in(world: Wired) -> None:
     assert taken == len(pending)
 
 
+async def test_backfill_reads_the_inbox_once(world: Wired) -> None:
+    """The inbox, which invoices always looks in, is read with sent mail by
+    its role, and not once more as a folder it looks in."""
+    taken = await worker(world).backfill(30)
+
+    pending = [row.ref for row in world.store.messages("pending", 100)]
+    assert taken == len(pending) == len(set(pending))
+    listed = [
+        (r.url.path, r.url.params.get("folder"))
+        for r in world.service.requests
+        if r.url.path.endswith("/messages")
+    ]
+    assert listed.count(("/v1/messages", "inbox")) == 1
+    assert ("/v1/accounts/acc1/messages", "inbox") not in listed
+
+
 async def test_backfill_without_accounts_asks_every_account_for_its_folders(
     tmp_path: Path,
 ) -> None:

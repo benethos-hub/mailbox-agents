@@ -88,7 +88,9 @@ async def recent(live: Live) -> str:
     end = time.monotonic() + 120
     since = date.today() - timedelta(days=30)
     while True:
-        live.refs = await live.mailbox.recent(since, live.accounts)
+        live.refs = await live.mailbox.recent(
+            since, live.accounts, roles=("inbox", "sent")
+        )
         if len(live.refs) >= INVENTED or time.monotonic() > end:
             break
         await asyncio.sleep(3)
