@@ -425,7 +425,7 @@ once released.
 | `messages` | message id, account id, state, attempts, next attempt |
 | `steps` | message, step, prompt version, model alias and the model reported, result, tokens, duration |
 | `actions` | message, action, what it was before, when, stage, whether it was carried out |
-| `open_items` | for agents with deadlines: message, thread, due, whether the keyword is set, closed and why |
+| `open_items` | for agents with deadlines: message, thread, due, whether the keyword is on the message, the stage its keyword was recorded in without being set, closed and why |
 | `calls` | the full request and answer of a model call, only while `PROMPT_RETENTION_DAYS` keeps them |
 
 The schema version is the file's `user_version`. A reader opens the file
@@ -556,7 +556,11 @@ A sent message that expects a reply becomes an open item. It closes when:
   the earlier item starts again from the new message.
 
 An item past its deadline gets the keyword on the tick. The message stays
-where it is. The deadline counts from the date of the sent message, and a
+where it is. The item counts the keyword as set only once it is on the
+message, so in `shadow` a star or another flag closes nothing. A stage
+that does not allow the keyword records it once, and a later stage that
+does sets it. A keyword the service refused is offered again on the next
+tick. The deadline counts from the date of the sent message, and a
 date on a weekend counts from the Monday after.
 
 The model is given the recipients, the subject and the text the sender

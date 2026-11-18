@@ -14,9 +14,15 @@ __all__ = ["StoredItems"]
 class StoredItems:
     """:class:`~benethos_mailbox_agent.contract.Items` over a state file."""
 
-    def __init__(self, store: Store, now: Callable[[], datetime]) -> None:
+    def __init__(
+        self,
+        store: Store,
+        now: Callable[[], datetime],
+        stage: str | None = None,
+    ) -> None:
         self._store = store
         self._now = now
+        self._stage = stage
 
     async def open(self, ref: MessageRef, thread_id: str | None, due: datetime) -> None:
         self._store.open_item(ref, thread_id, due, self._now())
@@ -28,7 +34,7 @@ class StoredItems:
         return self._store.items_in_thread(account_id, thread_id)
 
     async def due(self, now: datetime) -> list[OpenItem]:
-        return self._store.due_items(now)
+        return self._store.due_items(now, self._stage)
 
     async def mark_keyword(self, ref: MessageRef, keyword_set: bool) -> None:
         self._store.mark_keyword(ref, keyword_set)

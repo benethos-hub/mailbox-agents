@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta
 from typing import Protocol
 
 from .. import logbook
-from ..contract import ActionRequest, Agent, Context, Limits, Reader, Route
+from ..contract import Action, ActionRequest, Agent, Context, Limits, Reader, Route
 from ..errors import (
     ChangesExpiredError,
     GatewayUnavailableError,
@@ -28,7 +28,7 @@ from ..errors import (
 )
 from ..records import Event, MessageRef
 from ..store import Store
-from .actions import Executor, Writer
+from .actions import Executor, Outcome, Writer
 from .metrics import Metrics
 from .model import Asker, Calls
 from .reader import ReadOnlyMailbox
@@ -216,9 +216,21 @@ class Worker:
         ):
             return
         requests: list[ActionRequest] = await self.agent.tick(now, self.context())
-        await self.executor(requests)
+        for request in requests:
+            self._note(request, await self.executor.run(request))
         self._last_tick = now
         logbook.tick_done(self.agent.name, len(requests))
+
+    def _note(self, request: ActionRequest, outcome: Outcome) -> None:
+        """Keep on an open item what became of its keyword: set when it is on
+        the message, recorded in this stage when the stage did not allow it.
+        A refused keyword leaves the item due."""
+        if request.action is not Action.ADD_KEYWORD:
+            return
+        if outcome in (Outcome.DONE, Outcome.PRESENT):
+            self.store.mark_keyword(request.ref, True)
+        elif outcome is Outcome.RECORDED:
+            self.store.record_keyword_stage(request.ref, self.settings.stage)
 
     def _purge(self, now: datetime) -> None:
         days = self.settings.prompt_retention_days

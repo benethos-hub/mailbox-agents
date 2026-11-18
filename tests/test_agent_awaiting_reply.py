@@ -305,6 +305,68 @@ async def test_no_tick_while_a_message_waits_for_another_reason(
     assert not world.worker._only_gateway_waits()
 
 
+async def staged(tmp_path: Path, stage: str) -> AsyncIterator[World]:
+    async with wired(tmp_path) as found:
+        made = World(found, stage)
+        await made.start()
+        yield made
+
+
+async def _due(world: World) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    world.clock.advance(days=4)
+    await world.run()
+
+
+async def test_shadow_records_an_item_once_and_a_star_closes_nothing(
+    tmp_path: Path,
+) -> None:
+    async for world in staged(tmp_path, "shadow"):
+        await _due(world)
+        assert world.keywords("s1") == []
+        assert [a.executed for a in world.w.store.actions(ref("s1"))] == [False]
+
+        world.w.service.change("message.updated", "s1")
+        world.clock.advance(days=1)
+        await world.run()
+
+        assert world.item("s1").is_open
+        assert not world.item("s1").keyword_set
+        assert len(world.w.store.actions(ref("s1"))) == 1
+
+
+async def test_a_keyword_the_service_refused_is_offered_again(tmp_path: Path) -> None:
+    async for world in staged(tmp_path, "full"):
+        world.w.service.write_refusal = (422, "keyword_refused")
+        await _due(world)
+        assert world.keywords("s1") == []
+        assert not world.item("s1").keyword_set
+
+        world.w.service.write_refusal = None
+        world.clock.advance(days=1)
+        await world.run()
+
+        assert world.keywords("s1") == ["awaiting-reply"]
+        assert world.item("s1").keyword_set
+
+
+async def test_after_shadow_the_keyword_stage_sets_the_keyword(tmp_path: Path) -> None:
+    async for world in staged(tmp_path, "shadow"):
+        await _due(world)
+        assert world.keywords("s1") == []
+
+        moment = world.clock.moment
+        keyword = World(world.w, "keyword")
+        world.clock.moment = moment
+        world.clock.advance(days=1)
+        await keyword.run()
+
+        assert world.keywords("s1") == ["awaiting-reply"]
+        assert world.item("s1").keyword_set
+
+
 async def test_a_reply_in_the_thread_closes_it_and_takes_the_keyword_off(
     world: World,
 ) -> None:

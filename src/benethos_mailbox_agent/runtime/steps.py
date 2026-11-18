@@ -88,7 +88,7 @@ class StepRunner:
         self._gateway = gateway
         self._effects = effects
         self._now = now
-        self.items = StoredItems(store, now)
+        self.items = StoredItems(store, now, agent.settings.stage)
         # Set by the loop when the gateway was found away in this pass.
         self.gateway_away: GatewayUnavailableError | None = None
 

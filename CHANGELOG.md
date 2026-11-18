@@ -82,3 +82,8 @@ commit that makes the change. Design decisions live in
   Docker keeps for itself.
 - `run` answers 1 whenever the pass found the mailbox service or the
   gateway away, also with a backoff ceiling below the poll interval.
+- `awaiting_reply` counts its keyword as set only once it is on the
+  message. In `shadow` a star on a sent message no longer closes its item,
+  an item is recorded once per stage, a refused keyword is offered again,
+  and after `shadow` the stage `keyword` sets it. The state file gets
+  migration 2.

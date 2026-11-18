@@ -96,4 +96,10 @@ CREATE TABLE calls (
 CREATE INDEX calls_by_time ON calls (at);
 """
 
-MIGRATIONS: tuple[str, ...] = (_FIRST,)
+# The stage in which the keyword of an item was recorded without being set,
+# so shadow records an item once and a later stage sets it.
+_SECOND = """
+ALTER TABLE open_items ADD COLUMN keyword_recorded_stage TEXT;
+"""
+
+MIGRATIONS: tuple[str, ...] = (_FIRST, _SECOND)

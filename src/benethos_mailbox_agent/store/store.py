@@ -485,7 +485,8 @@ class Store:
             "INSERT INTO open_items (account_id, message_id, thread_id, opened, due) "
             "VALUES (?, ?, ?, ?, ?) ON CONFLICT (account_id, message_id) DO UPDATE "
             "SET thread_id = excluded.thread_id, opened = excluded.opened, "
-            "due = excluded.due, keyword_set = 0, closed = NULL, reason = NULL",
+            "due = excluded.due, keyword_set = 0, keyword_recorded_stage = NULL, "
+            "closed = NULL, reason = NULL",
             ref.account_id,
             ref.message_id,
             thread_id,
@@ -511,12 +512,15 @@ class Store:
         )
         return [_item(row) for row in rows]
 
-    def due_items(self, now: datetime) -> list[OpenItem]:
-        """Open items past their deadline that do not carry the keyword yet."""
+    def due_items(self, now: datetime, stage: str | None = None) -> list[OpenItem]:
+        """Open items past their deadline that do not carry the keyword yet,
+        those already recorded in ``stage`` left out."""
         rows = self._all(
             _ITEM_SQL + " WHERE closed IS NULL AND keyword_set = 0 AND due <= ? "
+            "AND (keyword_recorded_stage IS NULL OR keyword_recorded_stage IS NOT ?) "
             "ORDER BY due",
             _text(now),
+            stage,
         )
         return [_item(row) for row in rows]
 
@@ -525,6 +529,17 @@ class Store:
             "UPDATE open_items SET keyword_set = ? WHERE account_id = ? "
             "AND message_id = ?",
             int(keyword_set),
+            ref.account_id,
+            ref.message_id,
+        )
+
+    def record_keyword_stage(self, ref: MessageRef, stage: str) -> None:
+        """Note that the keyword of an item was recorded in ``stage`` and not
+        set."""
+        self._write(
+            "UPDATE open_items SET keyword_recorded_stage = ? WHERE account_id = ? "
+            "AND message_id = ?",
+            stage,
             ref.account_id,
             ref.message_id,
         )

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
+from enum import StrEnum
 from typing import Any, Protocol
 
 from .. import logbook
@@ -23,7 +24,7 @@ from ..records import FolderRef, MailMessage, MessageRef
 from ..store import Store
 from .metrics import Metrics
 
-__all__ = ["FORBIDDEN_ROLES", "STAGE_ALLOWS", "Executor", "Writer"]
+__all__ = ["FORBIDDEN_ROLES", "STAGE_ALLOWS", "Executor", "Outcome", "Writer"]
 
 # What each stage carries out. The rest is recorded only.
 STAGE_ALLOWS: dict[str, frozenset[Action]] = {
@@ -34,6 +35,15 @@ STAGE_ALLOWS: dict[str, frozenset[Action]] = {
 
 # Folders no agent moves a message into: a move there is a deletion.
 FORBIDDEN_ROLES = frozenset({"trash", "junk", "spam"})
+
+
+class Outcome(StrEnum):
+    """What became of one action."""
+
+    DONE = "done"  # the stage allows it, it was taken
+    PRESENT = "present"  # its result was already there
+    RECORDED = "recorded"  # the stage does not allow it, it was recorded only
+    REFUSED = "refused"  # the executor or the mailbox service refused it
 
 
 class Writer(Protocol):
@@ -77,8 +87,8 @@ class Executor:
         for request in requests:
             await self.run(request)
 
-    async def run(self, request: ActionRequest) -> bool:
-        """Take one action, or record it. Answers whether it was recorded.
+    async def run(self, request: ActionRequest) -> Outcome:
+        """Take one action, or record it. Answers what became of it.
 
         The action is recorded with what was there before, and only then
         taken, so a crash between the two leaves what is needed to take it
@@ -92,9 +102,9 @@ class Executor:
             planned = await self._plan(request, message)
         except (ActionRefusedError, MailboxRefusedError) as exc:
             self._refused(request, exc)
-            return False
+            return Outcome.REFUSED
         if planned is None:
-            return False
+            return Outcome.PRESENT
         argument, before, target = planned
         executed = request.action in STAGE_ALLOWS[self.stage]
         recorded = self._store.add_action(
@@ -112,7 +122,7 @@ class Executor:
             except MailboxRefusedError as exc:
                 self._store.drop_action(recorded)
                 self._refused(request, exc)
-                return False
+                return Outcome.REFUSED
             self._store.mark_action_executed(recorded)
         self.metrics.action(request.action.value, executed)
         logbook.action_done(
@@ -122,7 +132,7 @@ class Executor:
             self.stage,
             executed,
         )
-        return True
+        return Outcome.DONE if executed else Outcome.RECORDED
 
     def _refused(
         self, request: ActionRequest, exc: ActionRefusedError | MailboxRefusedError

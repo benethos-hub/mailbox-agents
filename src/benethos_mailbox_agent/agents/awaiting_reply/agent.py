@@ -186,10 +186,10 @@ class AwaitingReply(Agent):
         return []
 
     async def tick(self, now: datetime, context: Context) -> list[ActionRequest]:
-        """The items past their deadline get the keyword."""
+        """The items past their deadline get the keyword. The runtime notes
+        on the item whether it was set."""
         requests = []
         for item in await context.items.due(now):
-            await context.items.mark_keyword(item.ref, True)
             requests.append(
                 ActionRequest(
                     Action.ADD_KEYWORD, item.ref, keyword=self.keyword, why="due"

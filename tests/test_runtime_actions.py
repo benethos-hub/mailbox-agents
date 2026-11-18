@@ -10,7 +10,7 @@ import pytest
 from benethos_mailbox_agent.contract import Action, ActionRequest
 from benethos_mailbox_agent.errors import MailboxUnavailableError
 from benethos_mailbox_agent.records import MessageRef
-from benethos_mailbox_agent.runtime.actions import Executor
+from benethos_mailbox_agent.runtime.actions import Executor, Outcome
 from fakes import ACCOUNT, wire_message
 from helpers import Echo, Wired, settings, wired
 
@@ -89,10 +89,10 @@ async def test_an_action_already_done_is_not_taken_again(world: Wired) -> None:
 
 
 async def test_removing_a_keyword_that_is_not_there_does_nothing(world: Wired) -> None:
-    assert not await executor(world).run(REMOVE)
+    assert await executor(world).run(REMOVE) is Outcome.PRESENT
 
     await executor(world).run(ADD)
-    assert await executor(world).run(REMOVE)
+    assert await executor(world).run(REMOVE) is Outcome.DONE
     assert world.service.writes()[-1] == (PATH, {"remove_keywords": ["echo"]})
 
 
@@ -134,7 +134,7 @@ async def test_a_refused_action_is_neither_taken_nor_recorded(
         now=world.clock,
     )
 
-    assert not await run.run(request_)
+    assert await run.run(request_) is Outcome.REFUSED
     assert world.service.writes() == []
     assert world.store.actions() == []
 
@@ -147,13 +147,13 @@ async def test_a_message_in_the_trash_or_junk_is_left_alone(
     async with wired(tmp_path) as found:
         found.service.add(wire_message("m1", folder_ids=[folder]))
 
-        assert not await executor(found).run(request_)
+        assert await executor(found).run(request_) is Outcome.REFUSED
         assert found.service.writes() == []
         assert found.store.actions() == []
 
 
 async def test_an_account_the_agent_does_not_work_on_is_refused(world: Wired) -> None:
-    assert not await executor(world, accounts=["other"]).run(ADD)
+    assert await executor(world, accounts=["other"]).run(ADD) is Outcome.REFUSED
     assert world.service.writes() == []
 
 
@@ -176,7 +176,7 @@ async def test_what_was_before_is_recorded_before_the_action(
 async def test_a_write_the_service_refuses_is_not_recorded(world: Wired) -> None:
     world.service.write_refusal = (422, "keyword_refused")
 
-    assert not await executor(world).run(ADD)
+    assert await executor(world).run(ADD) is Outcome.REFUSED
     assert world.store.actions() == []
 
 
