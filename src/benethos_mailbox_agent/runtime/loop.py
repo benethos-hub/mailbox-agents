@@ -17,7 +17,6 @@ from collections.abc import Callable
 from datetime import date, datetime, timedelta
 from typing import Protocol
 
-from .. import logbook
 from ..contract import Action, ActionRequest, Agent, Context, Limits, Reader, Route
 from ..errors import (
     ChangesExpiredError,
@@ -26,6 +25,7 @@ from ..errors import (
     MailboxRefusedError,
     UnavailableError,
 )
+from ..logbook import feed, messages, record, worker
 from ..records import Event, MessageRef
 from ..store import Store
 from .actions import Executor, Outcome, Writer
@@ -136,8 +136,12 @@ class Worker:
         self.store.set_progress(now)
         self._purge(now)
         self.metrics.state(self.store, now)
-        logbook.pass_done(
-            self.agent.name, time.monotonic() - started, self.store.counts()["pending"]
+        record(
+            worker.PassDone(
+                agent=self.agent.name,
+                seconds=time.monotonic() - started,
+                pending=self.store.counts()["pending"],
+            )
         )
         if away is not None:
             return self._wait_after(away)
@@ -151,7 +155,7 @@ class Worker:
         try:
             events, fresh = await self._mailbox.changes(state, self.accounts)
         except ChangesExpiredError:
-            logbook.feed_expired(self.agent.name)
+            record(feed.Expired(agent=self.agent.name))
             fresh = await self._mailbox.start(self.accounts)
             await self.backfill(self.settings.backfill_days)
             return fresh, []
@@ -172,14 +176,21 @@ class Worker:
             elif route is Route.OBSERVE and event.ref not in observe:
                 observe.append(event.ref)
                 selected += 1
-        logbook.feed_read(self.agent.name, len(events), selected)
+        record(feed.Read(agent=self.agent.name, changes=len(events), selected=selected))
         return observe
 
     async def _observe(self, ref: MessageRef) -> None:
         try:
             message = await self._mailbox.message(ref)
         except MailboxRefusedError as exc:
-            logbook.step_failed(self.agent.name, ref.message_id, "observe", exc)
+            record(
+                messages.StepFailed(
+                    agent=self.agent.name,
+                    message_id=ref.message_id,
+                    step="observe",
+                    error=exc,
+                )
+            )
             return
         await self.executor(await self.agent.observe(message, self.context()))
 
@@ -221,7 +232,7 @@ class Worker:
         for request in requests:
             self._note(request, await self.executor.run(request))
         self._last_tick = now
-        logbook.tick_done(self.agent.name, len(requests))
+        record(worker.TickDone(agent=self.agent.name, actions=len(requests)))
 
     def _note(self, request: ActionRequest, outcome: Outcome) -> None:
         """Keep on an open item what became of its keyword: set when it is on
@@ -242,7 +253,7 @@ class Worker:
         self._away += 1
         self.metrics.step_failed(getattr(error, "code", type(error).__name__))
         wait = backoff(self.settings, self._away)
-        logbook.upstream_away(self.agent.name, error, wait)
+        record(worker.UpstreamAway(agent=self.agent.name, error=error, wait=wait))
         return wait
 
     # -- backfill ---------------------------------------------------------------
@@ -262,7 +273,7 @@ class Worker:
                 and self.agent.select(event) is Route.DECIDE
             ):
                 added += self.store.enqueue(ref, now, again=again)
-        logbook.backfill_done(self.agent.name, added, days)
+        record(feed.Backfilled(agent=self.agent.name, messages=added, days=days))
         return added
 
     # -- the loop ---------------------------------------------------------------
@@ -275,7 +286,7 @@ class Worker:
             except UnavailableError as exc:
                 wait = self._wait_after(exc)
             except MailboxAgentError as exc:
-                logbook.pass_failed(self.agent.name, exc)
+                record(worker.PassFailed(agent=self.agent.name, error=exc))
                 wait = self._wait_after(exc)
             await self._sleep(wait, stop)
 

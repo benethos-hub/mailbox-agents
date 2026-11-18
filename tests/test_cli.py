@@ -71,7 +71,7 @@ def test_run_and_status_with_a_state_file(
     configure(monkeypatch)
 
     assert main(["run", "--agent", "counting"]) == 0
-    assert "made the state file to schema" in capsys.readouterr().err
+    assert "counting made its state file at schema" in capsys.readouterr().err
     service.add(wire_message("m1"))
     service.add(wire_message("m2"))
     assert main(["run", "--agent", "counting"]) == 0

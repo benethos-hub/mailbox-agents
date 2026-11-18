@@ -12,12 +12,12 @@ from contextlib import ExitStack, suppress
 from pathlib import Path
 from typing import Any
 
-from .. import logbook
 from ..contract import Agent, discover, load
 from ..errors import ConfigError
 from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
+from ..logbook import process, record
 from ..runtime.health import check
 from ..runtime.readiness import MAILBOX_SETTINGS, readiness, start
 from ..settings import DEFAULT_ENV_FILE, Settings
@@ -62,7 +62,13 @@ def _stop_on_signals(stop: asyncio.Event) -> None:
 
 async def _worker(name: str, settings: Settings) -> None:
     async with session(load(name), settings) as found:
-        logbook.started(found.agent.name, found.agent.version, settings.stage)
+        record(
+            process.Started(
+                agent=found.agent.name,
+                version=found.agent.version,
+                stage=settings.stage,
+            )
+        )
         stop = asyncio.Event()
         _stop_on_signals(stop)
         with ExitStack() as serving:
@@ -70,9 +76,13 @@ async def _worker(name: str, settings: Settings) -> None:
                 serving.enter_context(
                     found.worker.metrics.serving(settings.metrics_port)
                 )
-                logbook.metrics_serving(found.agent.name, settings.metrics_port)
+                record(
+                    process.MetricsServing(
+                        agent=found.agent.name, port=settings.metrics_port
+                    )
+                )
             await found.worker.run(stop)
-        logbook.stopped(found.agent.name, "signal")
+        record(process.Stopped(agent=found.agent.name, reason="signal"))
 
 
 # -- run and backfill -------------------------------------------------------------

@@ -112,7 +112,8 @@ src/benethos_mailbox_agent/
   __main__.py     # enables `python -m benethos_mailbox_agent`
   errors.py       # the error hierarchy, and redact
   settings/       # settings resolution, secrets from files
-  logbook/        # every line on stderr, and what a line may never carry
+  logbook/        # every line on stderr as an activity of its catalogue,
+                  # and what a line may never carry (docs/LOGGING.md)
   contract/       # Agent (ABC), Action, Trigger, Limits, Requires, the
                   # Context an agent is handed with its protocols Model,
                   # Reader and Items, the registry of agents, prompt loading
@@ -786,7 +787,11 @@ directory unless the command line names another.
   `mailbox_agent_model_call_seconds` and `mailbox_agent_actions_total` by
   action and whether it was carried out.
 - **Cost:** read at the gateway, per key.
-- **Logs:** stderr, through `logbook/` only.
+- **Logs:** stderr, through `logbook/` only. [docs/LOGGING.md](docs/LOGGING.md)
+  holds the levels, the shape of a line, what never goes into one and the
+  catalogue of every activity. A line is one sentence, such as
+  `invoices set message m1 to done`, after an ISO time with the offset,
+  the level and the source `activity.<area>.<name>`.
 
 ## 15. Testing
 

@@ -45,10 +45,19 @@ commit that makes the change. Design decisions live in
 - The setting `MAILBOX_AGENT_GATEWAY_ALLOW_HTTP`, for a gateway reached
   over http between two containers.
 - The log line of an action names why the agent asked for it, as a short
-  code such as `why=due` or `why=invoice`.
+  code such as `due` or `invoice` after a colon.
+- `docs/LOGGING.md`: the levels, the shape of a line, what never goes
+  into one, and the catalogue of every line the agents write.
 
 ### Changed
 
+- Every log line is one sentence in the past tense, such as
+  `invoices set message m1 to done`, instead of key-value pairs. It
+  starts with the time in ISO 8601 with milliseconds and the offset, the
+  level and the source `benethos_mailbox_agent.activity.<area>.<name>`,
+  which a level of its own can silence. On a terminal the line is in
+  colour unless `NO_COLOR` is set. A library writes at `WARNING` and
+  above only, through the same redaction.
 - The runtime leaves a message in the trash or junk alone, and moves no
   message into a folder below the trash or junk.
 - The evidence check looks for a quote only in the parts of the mail, not

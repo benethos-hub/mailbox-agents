@@ -28,7 +28,8 @@ SOURCE = Path(benethos_mailbox_agent.__file__).parent
 # purpose.
 MAY_IMPORT: dict[str, frozenset[str]] = {
     "errors": frozenset(),
-    "logbook": frozenset(),
+    # errors for redact, which every line passes before it is written.
+    "logbook": frozenset({"errors"}),
     "settings": frozenset({"errors"}),
     "records": frozenset(),
     "contract": frozenset({"errors", "records", "settings"}),
@@ -68,7 +69,17 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
 # A dependency some modules may import and no other: the modules that are
 # its interface to the rest of the package.
 CONFINED: dict[str, frozenset[str]] = {
-    "logging": frozenset({"logbook/output.py"}),
+    # The output, the recorder, and the areas of the catalogue that set a
+    # level of their own.
+    "logging": frozenset(
+        {
+            "logbook/output.py",
+            "logbook/activity.py",
+            "logbook/catalogue/worker.py",
+            "logbook/catalogue/feed.py",
+            "logbook/catalogue/messages.py",
+        }
+    ),
     # A step of the schema is handed the connection to run its statements on.
     "sqlite3": frozenset({"store/store.py", "store/migrations/migration.py"}),
     "benethos_mailbox_client": frozenset({"sources/mailbox.py"}),

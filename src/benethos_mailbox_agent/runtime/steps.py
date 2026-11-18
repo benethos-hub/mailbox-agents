@@ -16,17 +16,18 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from .. import logbook
 from ..contract import ActionRequest, Agent, Context, Items, Limits, Reader
 from ..errors import (
     AnswerRefusedError,
     GatewayUnavailableError,
     LimitReachedError,
+    MailboxAgentError,
     MailboxRefusedError,
     MessageGoneError,
 )
 from ..llm.evidence import check
 from ..llm.gateway import Reply
+from ..logbook import messages, record
 from ..records import Decision, MailMessage, MessageRef, StepResult
 from ..settings import Settings
 from ..store import Store
@@ -195,8 +196,21 @@ class StepRunner:
         self._store.set_state(
             ref, state, self._now(), attempts=attempts, next_attempt=next_attempt
         )
-        logbook.message_state(self.agent.name, ref.message_id, state)
+        record(
+            messages.StateSet(
+                agent=self.agent.name, message_id=ref.message_id, state=state
+            )
+        )
         return state
+
+    def _failed(self, ref: MessageRef, step: str, exc: MailboxAgentError) -> None:
+        """The line and the count of a step that failed."""
+        record(
+            messages.StepFailed(
+                agent=self.agent.name, message_id=ref.message_id, step=step, error=exc
+            )
+        )
+        self.metrics.step_failed(exc.code)
 
     def _retry(self, ref: MessageRef, attempts: int) -> str:
         tried = attempts + 1
@@ -216,8 +230,7 @@ class StepRunner:
         try:
             message = await self._reader.message(ref)
         except MailboxRefusedError as exc:
-            logbook.step_failed(self.agent.name, ref.message_id, "fetch", exc)
-            self.metrics.step_failed(exc.code)
+            self._failed(ref, "fetch", exc)
             if isinstance(exc, MessageGoneError):
                 return self._state(ref, "skipped")
             return self._retry(ref, attempts)
@@ -228,18 +241,22 @@ class StepRunner:
         try:
             decision = await self._decision(message, calls)
         except AnswerRefusedError as exc:
-            logbook.answer_refused(self.agent.name, ref.message_id, exc.reason)
+            record(
+                messages.AnswerRefused(
+                    agent=self.agent.name,
+                    message_id=ref.message_id,
+                    reason=exc.reason,
+                )
+            )
             return self._retry(ref, attempts)
         except LimitReachedError as exc:
-            logbook.step_failed(self.agent.name, ref.message_id, "model", exc)
-            self.metrics.step_failed(exc.code)
+            self._failed(ref, "model", exc)
             if not exc.per_day:
                 return self._state(ref, "failed", attempts=attempts + 1)
             tomorrow = start_of_day(self._now()) + timedelta(days=1)
             return self._state(ref, "pending", next_attempt=tomorrow)
         except MailboxRefusedError as exc:
-            logbook.step_failed(self.agent.name, ref.message_id, "decide", exc)
-            self.metrics.step_failed(exc.code)
+            self._failed(ref, "decide", exc)
             return self._retry(ref, attempts)
         if not decision.actionable:
             self.metrics.answer_refused(decision.refused or "")
@@ -258,8 +275,7 @@ class StepRunner:
             requests = await self.agent.effect(decision, message, self.context(calls))
             await self._effects(requests)
         except MailboxRefusedError as exc:
-            logbook.step_failed(self.agent.name, ref.message_id, "effect", exc)
-            self.metrics.step_failed(exc.code)
+            self._failed(ref, "effect", exc)
             if isinstance(exc, MessageGoneError):
                 return self._state(ref, "skipped")
             return self._retry(ref, attempts)
@@ -296,7 +312,13 @@ class StepRunner:
         decided = await decide_checked(self.agent, message, self.context(calls), calls)
         for item in decided.evidence:
             if item.found is False:
-                logbook.evidence_missing(self.agent.name, ref.message_id, item.field)
+                record(
+                    messages.QuoteMissing(
+                        agent=self.agent.name,
+                        message_id=ref.message_id,
+                        field=item.field,
+                    )
+                )
         duration = _since(started)
         self._store.add_step(
             ref,
@@ -312,7 +334,14 @@ class StepRunner:
             ),
             self.model_alias,
         )
-        logbook.step_done(self.agent.name, ref.message_id, "decision", duration)
+        record(
+            messages.StepDone(
+                agent=self.agent.name,
+                message_id=ref.message_id,
+                step="decision",
+                ms=duration,
+            )
+        )
         return decided
 
 

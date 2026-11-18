@@ -9,11 +9,11 @@ reaches the log. See SPECS.md section 8.2.
 
 from __future__ import annotations
 
-import unicodedata
 from dataclasses import dataclass, field
 
 from ..contract import Agent, Reader
 from ..errors import MailboxRefusedError
+from ..logbook import escaped
 from ..records import Decision, MailMessage, MessageRef
 from ..settings import Settings
 from ..store import ActionRow, MessageRow, Store, path_for
@@ -86,18 +86,6 @@ def _decision(decision: Decision, model: str) -> str:
     return line
 
 
-def _printable(text: str) -> str:
-    """``text`` with every control character and line separator written as
-    its escape, so nothing from a mail or a model moves the cursor, sets the
-    title or starts a line of its own in the terminal."""
-    return "".join(
-        ch.encode("unicode_escape").decode("ascii")
-        if unicodedata.category(ch) in ("Cc", "Zl", "Zp")
-        else ch
-        for ch in text
-    )
-
-
 def _action(action: ActionRow) -> str:
     done = "done" if action.executed else "would have been done"
     return f"  action: {action.action} {action.argument} ({action.stage}: {done})"
@@ -127,7 +115,9 @@ def render(entries: list[Entry]) -> list[str]:
             lines.append(f"  baseline: {entry.baseline.label}")
         lines.extend(_action(action) for action in entry.actions)
         lines.append("")
-    return [_printable(line) for line in lines]
+    # Nothing from a mail or a model moves the cursor, sets the title or
+    # starts a line of its own in the terminal.
+    return [escaped(line) for line in lines]
 
 
 def summary(agent: Agent, entries: list[Entry]) -> list[str]:
@@ -142,7 +132,7 @@ def summary(agent: Agent, entries: list[Entry]) -> list[str]:
         for entry in entries
         if entry.decision is not None
     ]
-    return [_printable(line) for line in agent.summarize(decided)]
+    return [escaped(line) for line in agent.summarize(decided)]
 
 
 async def report(

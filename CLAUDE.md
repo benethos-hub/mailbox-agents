@@ -53,7 +53,8 @@ src/benethos_mailbox_agent/
   __main__.py     # enables `python -m benethos_mailbox_agent`
   errors.py       # the error hierarchy, and redact
   settings/       # settings resolution, secrets from files
-  logbook/        # every line on stderr, one function per line
+  logbook/        # every line on stderr, one activity class per line,
+                  # see docs/LOGGING.md
   records/        # the models passed between layers
   contract/       # Agent (ABC), Action, Trigger, Limits, Requires, the
                   # Context protocols, registry, prompt loading

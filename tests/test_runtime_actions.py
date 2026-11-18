@@ -189,9 +189,9 @@ async def test_the_log_line_names_why(
     await executor(world).run(request)
     await executor(world).run(MOVE)
 
-    lines = [r.getMessage() for r in caplog.records if "action=" in r.getMessage()]
-    assert lines[0].endswith("action=add_keyword stage=full executed=yes why=due")
-    assert lines[1].endswith("why=-")
+    lines = [r.getMessage() for r in caplog.records if ".actions." in r.name]
+    assert lines[0].endswith("carried out add_keyword on message m1 in stage full: due")
+    assert lines[1].endswith("in stage full")
 
 
 async def test_a_service_that_is_away_is_raised(world: Wired) -> None:

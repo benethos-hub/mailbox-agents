@@ -17,9 +17,9 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol
 
-from .. import logbook
 from ..contract import Action, ActionRequest, Agent
 from ..errors import ActionRefusedError, MailboxRefusedError
+from ..logbook import actions, record
 from ..records import FolderRef, MailMessage, MessageRef
 from ..store import Store
 from .metrics import Metrics
@@ -125,21 +125,28 @@ class Executor:
                 return Outcome.REFUSED
             self._store.mark_action_executed(recorded)
         self.metrics.action(request.action.value, executed)
-        logbook.action_done(
-            self.agent.name,
-            request.ref.message_id,
-            request.action.value,
-            self.stage,
-            executed,
-            request.why,
+        done = actions.Done if executed else actions.Recorded
+        record(
+            done(
+                agent=self.agent.name,
+                message_id=request.ref.message_id,
+                action=request.action.value,
+                stage=self.stage,
+                reason=request.why,
+            )
         )
         return Outcome.DONE if executed else Outcome.RECORDED
 
     def _refused(
         self, request: ActionRequest, exc: ActionRefusedError | MailboxRefusedError
     ) -> None:
-        logbook.action_refused(
-            self.agent.name, request.ref.message_id, request.action.value, exc
+        record(
+            actions.Refused(
+                agent=self.agent.name,
+                message_id=request.ref.message_id,
+                action=request.action.value,
+                error=exc,
+            )
         )
         self.metrics.step_failed(exc.code)
 
