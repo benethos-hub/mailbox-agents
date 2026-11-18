@@ -236,3 +236,6 @@ commit that makes the change. Design decisions live in
 - `backfill` without `MAILBOX_AGENTS_ACCOUNTS` looks in the folders of
   every account the agent's user is granted. An account whose inbox and
   sent mail were empty, as `sorting` leaves one, was left out before.
+- A folder the owner deleted or renamed while the worker runs is made
+  again for the next move into it. The worker took it as there until it
+  was restarted, and each move into it failed.

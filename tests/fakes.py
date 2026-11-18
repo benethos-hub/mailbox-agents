@@ -307,6 +307,17 @@ class FakeService:
         if found is None:
             return _error(404, "not_found", "no such message")
         body = json.loads(request.content)
+        known = {
+            name
+            for f in self.folders.get(parts[1], [])
+            for name in (f["id"], f.get("role"))
+            if name
+        }
+        for folder_id in body.get("folder_ids", []):
+            if folder_id not in known:
+                # As the service at IMAP answers a folder deleted or renamed
+                # since it was listed (measured 2026-11-18).
+                return _error(404, "not_found", f"folder {folder_id} not found")
         keywords = [
             k for k in found["keywords"] if k not in body.get("remove_keywords", [])
         ]

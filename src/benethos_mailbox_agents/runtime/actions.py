@@ -21,6 +21,7 @@ docs/specs/safety.md.
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
@@ -85,7 +86,9 @@ class Writer(Protocol):
 
     async def folder_at(self, account_id: str, path: str) -> FolderRef | None: ...
 
-    async def folders(self, account_id: str) -> dict[str, FolderRef]: ...
+    async def folders(
+        self, account_id: str, *, fresh: bool = False
+    ) -> dict[str, FolderRef]: ...
 
     async def add_keyword(self, ref: MessageRef, keyword: str) -> None: ...
 
@@ -132,8 +135,13 @@ class Executor:
         message the agent moved before, the folders made for its move are
         skipped: the move will be refused, and an empty folder would stay.
         A message that is gone is logged and raised as MessageGoneError, so
-        the caller ends it as gone, whatever was taken before."""
+        the caller ends it as gone, whatever was taken before.
+
+        Before a folder or a move, the account's folders are read anew, so
+        a folder the owner deleted or renamed since is made again, not
+        taken as there."""
         self._recorded_folders = set()
+        await self._read_folders(requests)
         moved = {
             request.ref
             for request in requests
@@ -156,6 +164,19 @@ class Executor:
                 if outcome is Outcome.RECORDED:
                     recorded.add(request.ref)
         return outcomes
+
+    async def _read_folders(self, requests: list[ActionRequest]) -> None:
+        """Read the folders of each account anew that a folder or a move
+        of ``requests`` is in. A refusal is left to the action that needs
+        the folders, which is refused with it."""
+        accounts = dict.fromkeys(
+            request.ref.account_id
+            for request in requests
+            if request.action in _FOLDER_ACTIONS
+        )
+        for account in accounts:
+            with suppress(MailboxRefusedError):
+                await self._mailbox.folders(account, fresh=True)
 
     async def _run(self, request: ActionRequest) -> Outcome:
         """Take one action, or record it. Answers what became of it.

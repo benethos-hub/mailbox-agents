@@ -455,6 +455,23 @@ async def test_after_a_refused_folder_the_rest_is_not_taken(world: Wired) -> Non
     assert world.service.writes() == []
 
 
+# -- a folder deleted or renamed by the owner ------------------------------------
+
+
+async def test_a_folder_deleted_since_it_was_read_is_made_again(world: Wired) -> None:
+    run = maker(world)
+    assert await run([make("Providers")]) == [Outcome.DONE]
+    world.service.folders[ACCOUNT] = [
+        f for f in world.service.folders[ACCOUNT] if f["id"] != "Providers"
+    ]
+    move = ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Providers")
+
+    assert await run([make("Providers"), move]) == [Outcome.DONE, Outcome.DONE]
+
+    assert world.service.made() == [{"name": "Providers"}, {"name": "Providers"}]
+    assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["Providers"]
+
+
 def test_every_stage_has_a_row() -> None:
     assert set(STAGE_ALLOWS) == set(get_args(Stage))
 

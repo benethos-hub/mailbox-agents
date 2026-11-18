@@ -75,7 +75,10 @@ is made only when the agent's `may_create` answers yes for its path, the
 folder above it exists and is none of those three nor below them, and no
 folder of the same name exists in another case. A folder below a missing
 one is made after it, each as an action of its own, recorded under the
-message whose move needs it. `create_folder` is the one action without a
+message whose move needs it. Before the folders and the move of a
+message, the runtime reads the account's folders anew, so a folder the
+owner deleted or renamed since the last look is made again, not taken as
+there. `create_folder` is the one action without a
 reverse of its own. It is accepted because it changes no message
 (decided 2026-11-18). An
 action whose result is already there is not taken again. A write whose

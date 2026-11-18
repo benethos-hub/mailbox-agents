@@ -51,6 +51,11 @@ Stalwart, on the test account:
   before it makes one.
 - `delete_folder` is refused, `403 forbidden`, to a user with `mail.read`
   and `mail.write`. A folder an agent made is removed by the owner.
+- A folder deleted or renamed at IMAP is no longer listed by its old id.
+  A move through `update_message` to that id answers `404 not_found`,
+  the same status and code as a message that is gone, and the message
+  stays where it was. So the runtime reads the folders anew before the
+  folders and the move of a message.
 - A message that arrives straight in a folder other than the inbox, as one
   a mail server files by a rule of its own, reaches the feed as
   `message.created`, here about 20 seconds after it arrived, and is read
