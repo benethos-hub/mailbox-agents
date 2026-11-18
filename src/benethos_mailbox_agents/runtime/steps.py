@@ -230,10 +230,7 @@ class StepRunner:
         try:
             message = await self._reader.message(ref)
         except MailboxRefusedError as exc:
-            self._failed(ref, "fetch", exc)
-            if isinstance(exc, MessageGoneError):
-                return self._state(ref, "skipped")
-            return self._retry(ref, attempts)
+            return self._not_fetched(ref, attempts, exc)
         if not self.agent.admit(message):
             return self._state(ref, "skipped")
         self._baseline(message)
@@ -261,7 +258,25 @@ class StepRunner:
         if not decision.actionable:
             self.metrics.answer_refused(decision.refused or "")
             return self._state(ref, "decided")
+        if calls.count:
+            # The model takes its time, and another agent or a person may
+            # move the message meanwhile: the agent acts on where it lies
+            # now, not where it lay when it was read.
+            try:
+                message = await self._reader.message(ref)
+            except MailboxRefusedError as exc:
+                return self._not_fetched(ref, attempts, exc)
         return await self._act(decision, message, calls, attempts)
+
+    def _not_fetched(
+        self, ref: MessageRef, attempts: int, exc: MailboxRefusedError
+    ) -> str:
+        """A message the service refused to hand over: skipped when it is
+        gone, else an attempt counted."""
+        self._failed(ref, "fetch", exc)
+        if isinstance(exc, MessageGoneError):
+            return self._state(ref, "skipped")
+        return self._retry(ref, attempts)
 
     async def _act(
         self, decision: Decision, message: MailMessage, calls: Calls, attempts: int

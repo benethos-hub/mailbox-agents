@@ -363,6 +363,8 @@ class FakeGateway:
         self.model = model
         self.answers: list[dict[str, Any] | str | httpx.Response] = []
         self.requests: list[httpx.Request] = []
+        # Called while a question is answered, for what happens meanwhile.
+        self.during: Callable[[], None] | None = None
 
     def answer(self, *answers: dict[str, Any] | str | httpx.Response) -> None:
         self.answers.extend(answers)
@@ -379,6 +381,8 @@ class FakeGateway:
             return httpx.Response(404, json={"error": {"message": "no such path"}})
         if not self.answers:
             return httpx.Response(503, json={"error": {"message": "no answer queued"}})
+        if self.during is not None:
+            self.during()
         found = self.answers.pop(0)
         if isinstance(found, httpx.Response):
             return found

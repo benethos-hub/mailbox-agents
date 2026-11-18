@@ -142,3 +142,25 @@ async def test_sorting_first_then_invoices_moves_it_on(
 
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
     assert item(world, "inv-unlisted") is None
+
+
+async def test_an_invoice_sorting_moves_while_the_model_answers_is_filed_there(
+    world: Wired,
+) -> None:
+    """sorting moves the invoice out of the inbox while invoices asks the
+    model about it: invoices files it where it lies when it acts, not into
+    the inbox folder."""
+
+    def sorting_moves_it() -> None:
+        mail(world, "inv-unlisted")["folder_ids"] = ["inv-hosting"]
+
+    world.fake_gateway.answer(answer())
+    world.fake_gateway.during = sorting_moves_it
+
+    assert (
+        await run(world, "inv-unlisted", invoices(invoices_inbox_folder="Invoices/mo"))
+        == "done"
+    )
+
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
+    assert item(world, "inv-unlisted") is None

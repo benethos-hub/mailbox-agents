@@ -246,3 +246,7 @@ commit that makes the change. Design decisions live in
 - A move into a folder deleted in the moment before it, and a folder made
   below one, are refused and logged as refused. The message was ended as
   `skipped`, as if it had been deleted.
+- An agent acts on where a message lies after its model answered. With
+  `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` set, an invoice `sorting` moved
+  while the model was asked was moved on into the inbox folder, out of the
+  folder of its group. It is now filed into the subfolder there.

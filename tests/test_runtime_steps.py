@@ -147,6 +147,17 @@ async def test_a_message_gone_is_skipped(world: Wired) -> None:
     assert await runner(world).process(gone) == "skipped"
 
 
+async def test_a_message_gone_while_the_model_answers_is_skipped(world: Wired) -> None:
+    """After a model call the message is fetched anew, to act on where it
+    lies now: one deleted meanwhile has nothing to act on."""
+    world.fake_gateway.answer(MATCH)
+    world.fake_gateway.during = lambda: world.service.messages.pop((ACCOUNT, "m1"))
+    effects = Collected()
+
+    assert await runner(world, effects=effects).process(REF) == "skipped"
+    assert effects.requests == []
+
+
 async def test_a_message_the_service_refuses_is_tried_again(world: Wired) -> None:
     world.service.refusal = (403, "forbidden")
 
