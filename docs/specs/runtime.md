@@ -69,7 +69,7 @@ changed until the evaluation was run again.
 | `report --agent <name> [--limit N] [--state S] [--offline]` | [report](#report) |
 | `eval --agent <name> --gold <file> [--reports DIR]` | [evaluation](evaluation.md) |
 | `health --agent <name>` | exit 0 while the loop makes progress, [operation](operation.md) |
-| `status` | for each agent whether it is ready, which setting it misses, a folder it expects that is missing or there in another case only, its counts and its last progress |
+| `status` | for each agent whether it is ready, which setting it misses, a folder it expects that is missing or there in another case only, in each account `ACCOUNTS` names or else in each account the user is granted, its counts and its last progress |
 | `paths` | the settings file, the data folder and each state file |
 
 `--env-file` names the settings file for every command. An error to

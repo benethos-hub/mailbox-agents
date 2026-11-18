@@ -274,6 +274,45 @@ def test_status_reads_the_sorting_list_once(
     assert reads == [listed]
 
 
+def test_status_without_accounts_checks_every_granted_account(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*,Missing/*")
+    service.folders["acc2"] = [{"id": "inbox", "name": "INBOX", "role": "inbox"}]
+
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert "  folder missing in acc1: Missing\n" in out
+    assert "folder missing in acc1: Invoices\n" not in out
+    assert "  folder missing in acc2: Invoices\n" in out
+    assert "  folder missing in acc2: Missing\n" in out
+    assert "folders not checked" not in out
+    assert any(r.url.path == "/v1/me" for r in service.requests)
+
+
+def test_status_says_when_no_account_is_granted(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
+    service.folders.clear()
+
+    assert main(["status"]) == 0
+    assert "  folders not checked: no account is granted" in capsys.readouterr().out
+
+
 def test_status_says_why_folders_were_not_checked(
     service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
@@ -284,12 +323,12 @@ def test_status_says_why_folders_were_not_checked(
     monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
     monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
     monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
+    service.down = True
 
     assert main(["status"]) == 0
-    assert "  folders not checked: no account is named" in capsys.readouterr().out
+    assert "  folders not checked: the mailbox service" in capsys.readouterr().out
 
     monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
-    service.down = True
 
     assert main(["status"]) == 0
     assert "  folders not checked: the mailbox service" in capsys.readouterr().out

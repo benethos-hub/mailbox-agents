@@ -71,8 +71,9 @@ lies in, not resolved once at the start, so a folder `sorting` makes later
 is looked in at once. At the start the settings are checked: a wrong one
 stops it. `status` looks up in the mailbox service the folders that should
 be there, those named, the parents of `Parent/*` and the inbox folder, and
-names each one missing in each account the settings name, or says the
-folders were not checked when no account is named. A missing one does
+names each one missing in each account the settings name, or without
+`MAILBOX_AGENTS_ACCOUNTS` in each account the user is granted, as
+`get_me` answers them (since 2026-11-18). A missing one does
 not stop the start, as `sorting` may make it later. One whose name is
 there in another case only is named as such: the runtime neither moves
 into it nor makes it.

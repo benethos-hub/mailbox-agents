@@ -145,6 +145,9 @@ commit that makes the change. Design decisions live in
   case only as `folder in another case in <account>: <path>`, no longer as
   missing: the runtime neither moves into it nor makes it. It prepares
   each agent once, so it reads the `sorting` list once.
+- `status` without `MAILBOX_AGENTS_ACCOUNTS` checks the folders an agent
+  expects in every account its user is granted, as the worker takes them,
+  instead of saying that no account is named.
 
 ### Removed
 

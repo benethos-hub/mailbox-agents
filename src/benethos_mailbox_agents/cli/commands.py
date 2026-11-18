@@ -124,8 +124,6 @@ def _folders(agent: Agent, settings: Settings) -> list[str]:
     needed = agent.folders_needed()
     if not needed:
         return []
-    if not settings.accounts:
-        return ["folders not checked: no account is named"]
     try:
         return asyncio.run(_missing(needed, settings))
     except MailboxAgentError as exc:
@@ -133,12 +131,17 @@ def _folders(agent: Agent, settings: Settings) -> list[str]:
 
 
 async def _missing(needed: tuple[str, ...], settings: Settings) -> list[str]:
-    """A line for each folder of ``needed`` that is not there. One whose
-    name is there in another case is said so: the executor neither moves
-    into it nor makes it, as the service would make a second folder."""
+    """A line for each folder of ``needed`` that is not there, in each
+    account the settings name, or else in every account the user is
+    granted, as the worker takes them. One whose name is there in another
+    case is said so: the executor neither moves into it nor makes it, as
+    the service would make a second folder."""
     lines = []
     async with mailbox_for(settings) as mailbox:
-        for account in settings.accounts:
+        accounts = settings.accounts or list(await mailbox.accounts())
+        if not accounts:
+            return ["folders not checked: no account is granted"]
+        for account in accounts:
             there = {f.path for f in (await mailbox.folders(account)).values()}
             folded = {path.casefold() for path in there}
             for path in needed:

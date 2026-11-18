@@ -121,4 +121,5 @@ message.
 `status` reports for each agent whether it is ready and which required
 setting is missing, without starting it. For a ready agent that names
 folders it expects, it looks them up in the mailbox service, in each
-account the settings name, and names each one missing.
+account the settings name or else in each account the user is granted,
+and names each one missing.
