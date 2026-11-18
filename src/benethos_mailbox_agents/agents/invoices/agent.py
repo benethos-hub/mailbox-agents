@@ -149,13 +149,21 @@ class Invoices(Agent):
         """An update of an invoice marked in the inbox: once it lies in a
         folder the agent looks in, it moves on into the subfolder, with no
         model call, and its item closes. One moved anywhere else closes
-        its item and stays."""
+        its item and stays.
+
+        An item closed as filed whose message still lies in a folder the
+        agent looks in is filed again: the item closes before the actions
+        are taken, and a mailbox service away in between brings the same
+        update back. The executor skips what is already there."""
         item = await context.items.get(message.ref)
-        if item is None or not item.is_open or message.in_role("inbox"):
+        if item is None or message.in_role("inbox"):
+            return []
+        if not item.is_open and item.reason != FILED:
             return []
         folder = self._looked_in(message)
         if folder is None:
-            await context.items.close(message.ref, MOVED_ELSEWHERE)
+            if item.is_open:
+                await context.items.close(message.ref, MOVED_ELSEWHERE)
             return []
         await context.items.close(message.ref, FILED)
         return self._file(message, folder)

@@ -23,7 +23,7 @@ from benethos_mailbox_agents.agents.invoices.schema import (
     Answer,
     render,
 )
-from benethos_mailbox_agents.errors import ConfigError
+from benethos_mailbox_agents.errors import ConfigError, MailboxUnavailableError
 from benethos_mailbox_agents.evaluation.gold import load_gold
 from benethos_mailbox_agents.llm.gateway import strict_schema
 from benethos_mailbox_agents.records import MailMessage, MessageRef
@@ -704,6 +704,27 @@ async def test_invoices_first_then_sorting_moves_it_on(
     found = item(world, "inv-unlisted")
     assert found is not None and (found.is_open, found.reason) == (False, "filed")
     assert len(world.fake_gateway.requests) == 1
+
+
+async def test_a_filing_cut_short_by_the_service_is_done_on_the_next_pass(
+    world: Wired, tmp_path: Path
+) -> None:
+    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
+    marking = worker(world)
+    await marking.run_pass()
+    await run(world, "inv-unlisted")
+    await sort(world, tmp_path, "inv-unlisted")
+    world.service.change("message.updated", "inv-unlisted")
+    world.service.write_refusal = (503, "unavailable")
+
+    with pytest.raises(MailboxUnavailableError):
+        await marking.run_pass()
+    world.service.write_refusal = None
+    await marking.run_pass()
+
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
+    found = item(world, "inv-unlisted")
+    assert found is not None and (found.is_open, found.reason) == (False, "filed")
 
 
 async def test_sorting_first_then_invoices_moves_it_on(

@@ -82,6 +82,13 @@ that still names them starts, as an unknown setting is ignored.
 | is an invoice in the inbox | the keyword and an open item, and it stays. With an inbox folder set, which must be there, the keyword and a move into that folder, and no open item |
 | was marked in the inbox and now lies in a folder it looks in | a move to the subfolder, no model call. The open item closes as `filed` |
 | was marked in the inbox and now lies in a folder it does not look in | nothing. The open item closes as `moved_elsewhere` |
+| has an item closed as `filed` and still lies in a folder it looks in | a move to the subfolder again, as for an open item |
+
+The item closes before the runtime takes the actions. A mailbox service
+that is away in between leaves the cursor where it was, and the same
+update comes again: so an item closed as `filed` whose message still
+lies in a folder the agent looks in is filed again, and what is already
+there is not done twice.
 
 Where the message lies is looked up again when the agent acts. In
 `shadow` the keyword, the folders and the move are recorded, in `keyword`

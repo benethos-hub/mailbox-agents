@@ -195,3 +195,7 @@ commit that makes the change. Design decisions live in
 - `backfill` ends with exit code 1 when the gateway is away, after asking
   it once, instead of asking it again and again without end. The live
   checks stop the same way.
+- `invoices` files an invoice marked in the inbox and moved later also
+  when the mailbox service was away while it made the subfolder or moved
+  the message: the same update on the next pass files it, where it was
+  dropped before.
