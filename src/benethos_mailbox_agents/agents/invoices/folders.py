@@ -32,7 +32,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from ...errors import ConfigError
-from ...records import FolderRef
+from ...records import DISCARD_ROLES, FolderRef
 from ...settings import PREFIX
 
 __all__ = ["ALL_AT_TOP", "FOLDER", "Places"]
@@ -42,10 +42,6 @@ ALL_AT_TOP = "*"
 
 # What the subfolder's pattern starts with: the folder a message lies in.
 FOLDER = "{folder}"
-
-# Roles a named folder is never looked in: a message there is not the
-# owner's to file, and the runtime refuses to touch it.
-_NEVER = frozenset({"trash", "junk", "spam"})
 
 
 def _path(value: str, setting: str) -> str:
@@ -125,7 +121,9 @@ class Places:
 
     def _matches(self, path: str, role: str | None) -> bool:
         """Whether the settings take in the folder at ``path``."""
-        if role in _NEVER:
+        # A named folder of these roles is never looked in: a message there
+        # is not the owner's to file, and the runtime refuses to touch it.
+        if role in DISCARD_ROLES:
             return False
         if path in self.named:
             return True

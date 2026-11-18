@@ -246,6 +246,22 @@ def test_no_agent_compares_the_stage(path: Path) -> None:
                 )
 
 
+@pytest.mark.parametrize(
+    "path",
+    [p for p in _modules() if p != SOURCE / "records" / "mail.py"],
+    ids=lambda p: p.relative_to(SOURCE).as_posix(),
+)
+def test_the_discard_roles_are_spelt_once(path: Path) -> None:
+    """The trash, junk and spam are named in records/mail.py alone, so the
+    executor and an agent cannot come to differ on them."""
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Set):
+            values = {e.value for e in node.elts if isinstance(e, ast.Constant)}
+            assert "trash" not in values, (
+                f"{path.name} names the roles on line {node.lineno}"
+            )
+
+
 def _third_party(path: Path) -> set[str]:
     """The top-level names of what ``path`` imports from outside the package."""
     found: set[str] = set()

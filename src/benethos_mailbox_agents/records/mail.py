@@ -12,6 +12,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 __all__ = [
+    "DISCARD_ROLES",
     "EVENTS",
     "Address",
     "Attachment",
@@ -64,6 +65,12 @@ class Attachment(_Record):
     content_type: str
     size: int
     inline: bool = False
+
+
+# The roles of the folders no agent moves a message into, makes a folder
+# below or looks in: a move there is a deletion, and a message there is not
+# the owner's to file.
+DISCARD_ROLES = frozenset({"trash", "junk", "spam"})
 
 
 class FolderRef(_Record):

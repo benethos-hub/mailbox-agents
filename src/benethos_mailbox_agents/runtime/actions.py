@@ -36,7 +36,7 @@ from ..errors import (
     MessageGoneError,
 )
 from ..logbook import actions, record
-from ..records import FolderRef, MailMessage, MessageRef
+from ..records import DISCARD_ROLES, FolderRef, MailMessage, MessageRef
 from ..store import Store
 from .metrics import Metrics
 
@@ -50,7 +50,7 @@ STAGE_ALLOWS: dict[str, frozenset[Action]] = {
 }
 
 # Folders no agent moves a message into: a move there is a deletion.
-FORBIDDEN_ROLES = frozenset({"trash", "junk", "spam"})
+FORBIDDEN_ROLES = DISCARD_ROLES
 
 # The actions after whose refusal the rest of a message's are not taken,
 # and after whose recording only the rest are recorded only.

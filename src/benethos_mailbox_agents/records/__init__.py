@@ -6,6 +6,7 @@ from __future__ import annotations
 from .decisions import LABEL, Decision, Evidence, Step, StepResult
 from .items import OpenItem
 from .mail import (
+    DISCARD_ROLES,
     EVENTS,
     Address,
     Attachment,
@@ -17,6 +18,7 @@ from .mail import (
 )
 
 __all__ = [
+    "DISCARD_ROLES",
     "EVENTS",
     "LABEL",
     "Address",
