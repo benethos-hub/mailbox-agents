@@ -18,12 +18,18 @@ from benethos_mailbox_agent.agents.inquiries.schema import FIELDS
 from benethos_mailbox_agent.agents.inquiries.schema import (
     Inquiry as InquiryAnswer,
 )
+from benethos_mailbox_agent.agents.invoices import agent as invoices_agent
 from benethos_mailbox_agent.agents.invoices.agent import Invoices, _mentions
 from benethos_mailbox_agent.agents.invoices.schema import (
     MAX_ANSWER_TEXT,
     answer_schema,
     render,
 )
+from benethos_mailbox_agent.agents.invoices.suppliers import (
+    Suppliers,
+    load_suppliers,
+)
+from benethos_mailbox_agent.cli.session import start_agent
 from benethos_mailbox_agent.errors import ConfigError
 from benethos_mailbox_agent.evaluation.gold import load_gold
 from benethos_mailbox_agent.records import MailMessage, MessageRef
@@ -460,6 +466,42 @@ def test_readiness_names_what_is_missing(tmp_path: Path) -> None:
         ),
     )
     assert found.problem is not None and "JSONDecodeError" in found.problem
+
+
+def test_starting_reads_the_list_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    read: list[Path] = []
+
+    def counted(path: Path) -> Suppliers:
+        read.append(path)
+        return load_suppliers(path)
+
+    monkeypatch.setattr(invoices_agent, "load_suppliers", counted)
+    values = {
+        "service_url": "https://mailbox.example.test",
+        "service_token": "t",
+        "gateway_url": "https://gateway.example.test/v1",
+        "gateway_key": "k",
+    }
+
+    started = start_agent(Invoices, agent(**values).settings)
+
+    assert started.suppliers.names == ("CloudHost", "Telco")
+    assert read == [SUPPLIERS]
+
+
+def test_a_wrong_list_stops_the_start(tmp_path: Path) -> None:
+    broken = tmp_path / "suppliers.json"
+    broken.write_text("{", encoding="utf-8")
+    values = {
+        "service_url": "https://mailbox.example.test",
+        "service_token": "t",
+        "gateway_url": "https://gateway.example.test/v1",
+        "gateway_key": "k",
+        "invoices_suppliers_file": broken,
+    }
+
+    with pytest.raises(ConfigError, match="^invoices is not ready: "):
+        start_agent(Invoices, agent(**values).settings)
 
 
 def test_an_unset_list_is_a_config_error() -> None:

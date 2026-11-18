@@ -11,10 +11,10 @@ from typing import Any, TypeVar
 from pydantic import BaseModel
 
 from ..contract import Agent
-from ..errors import ConfigError
+from ..errors import ConfigError, ContractError
 from ..llm.gateway import Gateway, Reply
 from ..runtime.loop import Worker
-from ..runtime.readiness import readiness, uses_model
+from ..runtime.readiness import required, uses_model
 from ..settings import Settings
 from ..sources.mailbox import Mailbox, connect
 from ..store import Store, path_for
@@ -62,14 +62,16 @@ class Session:
 
 
 def start_agent(cls: type[Agent], settings: Settings) -> Agent:
-    """The agent, once its settings and its preparation are found ready."""
-    found = readiness(cls, settings)
-    if found.missing:
-        raise ConfigError(f"{cls.name} misses settings: {', '.join(found.missing)}")
-    if found.problem:
-        raise ConfigError(f"{cls.name} is not ready: {found.problem}")
-    agent = cls(settings)
-    agent.prepare()
+    """The agent, once its settings and its preparation are found ready.
+    It is built and prepared once, what it reads besides read once."""
+    missing = settings.missing(required(cls))
+    if missing:
+        raise ConfigError(f"{cls.name} misses settings: {', '.join(missing)}")
+    try:
+        agent = cls(settings)
+        agent.prepare()
+    except (ConfigError, ContractError) as exc:
+        raise ConfigError(f"{cls.name} is not ready: {exc.message}") from None
     return agent
 
 
