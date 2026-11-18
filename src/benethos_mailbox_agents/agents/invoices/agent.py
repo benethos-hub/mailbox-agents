@@ -8,8 +8,10 @@ the folder says whose invoice it is. One in the inbox stays there, unless
 an inbox folder is set, and gets an open item: when a person or
 ``sorting`` moves it into a folder the agent looks in, the update of the
 message reaches the agent, which moves it on into the subfolder without a
-new model call. Who put a message into a folder does not matter:
-``sorting``, a rule of the mail server or the owner by hand. The agent
+new model call. The item is opened also when an inbox folder is set, as
+its move may not be taken, and closes when the message reaches it. Who
+put a message into a folder does not matter: ``sorting``, a rule of the
+mail server or the owner by hand. The agent
 knows nothing of groups and names no supplier (agent version 4). See
 docs/specs/agents/invoices.md.
 """
@@ -136,12 +138,14 @@ class Invoices(Agent):
         folder = self._looked_in(message)
         if folder is None:
             return requests
-        filed = self._file(message, folder)
-        if not filed and folder.role == "inbox":
-            # It stays: a move into a folder the agent looks in, by a
-            # person or by sorting, reaches it as an update (observe).
+        if folder.role == "inbox":
+            # It stays, or its move into the inbox folder may not be taken,
+            # the folder missing or the stage below full: a move into a
+            # folder the agent looks in, by a person or by sorting, reaches
+            # it as an update (observe). One that reaches the inbox folder,
+            # which the agent does not look in, closes the item.
             await context.items.open(message.ref, message.thread_id, NO_DEADLINE)
-        return requests + filed
+        return requests + self._file(message, folder)
 
     async def observe(
         self, message: MailMessage, context: Context

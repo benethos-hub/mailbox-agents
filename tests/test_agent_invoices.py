@@ -727,17 +727,25 @@ async def test_an_invoice_in_the_inbox_gets_an_open_item(world: Wired) -> None:
     assert found.due.year == 9999
 
 
-async def test_no_open_item_when_it_leaves_the_inbox_at_once(world: Wired) -> None:
+async def test_the_item_closes_when_it_reaches_the_inbox_folder(world: Wired) -> None:
+    into_o2 = agent(invoices_inbox_folder="Invoices/mo")
     world.fake_gateway.answer(
         answer("invoice", "please find attached invoice INV-77"),
         answer("invoice", "Ihre Rechnung R-77"),
     )
+    marking = worker(world, into_o2)
+    await marking.run_pass()
 
-    await run(world, "inv-unlisted", agent(invoices_inbox_folder="Invoices/mo"))
+    await run(world, "inv-unlisted", into_o2)
     await run(world, "filed")
+    world.service.change("message.updated", "inv-unlisted")
+    await marking.run_pass()
 
-    assert item(world, "inv-unlisted") is None
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-mo"]
+    found = item(world, "inv-unlisted")
+    assert found is not None and found.reason == "moved_elsewhere"
     assert item(world, "filed") is None
+    assert world.service.made() == [{"name": "Rechnungen", "parent_id": "inv-hosting"}]
 
 
 async def test_invoices_first_then_sorting_moves_it_on(
@@ -761,6 +769,26 @@ async def test_invoices_first_then_sorting_moves_it_on(
     found = item(world, "inv-unlisted")
     assert found is not None and (found.is_open, found.reason) == (False, "filed")
     assert len(world.fake_gateway.requests) == 1
+
+
+async def test_an_invoice_not_moved_into_a_missing_inbox_folder_is_filed_later(
+    world: Wired, tmp_path: Path
+) -> None:
+    missing = agent(invoices_inbox_folder="Missing")
+    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
+    marking = worker(world, missing)
+    await marking.run_pass()
+    await run(world, "inv-unlisted", missing)
+
+    found = item(world, "inv-unlisted")
+    assert found is not None and found.is_open
+    await sort(world, tmp_path, "inv-unlisted")
+    world.service.change("message.updated", "inv-unlisted")
+    await marking.run_pass()
+
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
+    found = item(world, "inv-unlisted")
+    assert found is not None and found.reason == "filed"
 
 
 async def test_a_filing_cut_short_by_the_service_is_done_on_the_next_pass(

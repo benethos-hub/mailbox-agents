@@ -84,7 +84,7 @@ that still names them starts, as an unknown setting is ignored.
 | is no invoice | nothing |
 | is an invoice in a folder it looks in | the keyword, and a move to the subfolder, made when missing, each folder of the path as an action of its own |
 | is an invoice in a folder it looks in, no subfolder pattern set | the keyword. It stays |
-| is an invoice in the inbox | the keyword and an open item, and it stays. With an inbox folder set, which must be there, the keyword and a move into that folder, and no open item |
+| is an invoice in the inbox | the keyword and an open item, and it stays. With an inbox folder set, which must be there, the keyword, a move into that folder and an open item too, which closes as `moved_elsewhere` once the message lies there. While the move is not taken, the folder missing or the stage below `full`, the item stays open, so a later move into a folder it looks in still files the invoice |
 | was marked in the inbox and now lies in a folder it looks in | a move to the subfolder, no model call. The open item closes as `filed` |
 | was marked in the inbox and now lies in a folder it does not look in | nothing. The open item closes as `moved_elsewhere` |
 | has an item closed as `filed` and still lies in a folder it looks in | a move to the subfolder again, as for an open item |

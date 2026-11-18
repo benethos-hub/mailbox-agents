@@ -213,3 +213,7 @@ commit that makes the change. Design decisions live in
 - A move the mailbox service carried out without its answer reaching the
   agent, after a timeout, counts as the agent's move. A later `backfill`
   no longer moves a message again that the owner moved back.
+- `invoices` opens an item for an invoice in the inbox also when
+  `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` is set. When that folder is
+  missing or the stage is below `full`, an invoice `sorting` moves later
+  is filed into its subfolder, where it stayed unfiled before.
