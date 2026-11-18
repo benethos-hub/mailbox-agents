@@ -8,7 +8,10 @@ below those three, nor one whose name exists in another case. A message in
 one of them is left alone. What the stage allows is
 carried out, the rest is recorded as what would have been done. Every
 action records what was there before, so it can be taken back. An action
-whose result is already there is not taken again. See docs/specs/agent-contract.md,
+whose result is already there is not taken again, and a message the
+agent moved once is not moved again, so one the owner moved back stays.
+After a refused move or folder, the rest of the message's actions are not
+taken. See docs/specs/agent-contract.md,
 docs/specs/runtime.md and docs/specs/safety.md.
 """
 
@@ -37,6 +40,9 @@ STAGE_ALLOWS: dict[str, frozenset[Action]] = {
 
 # Folders no agent moves a message into: a move there is a deletion.
 FORBIDDEN_ROLES = frozenset({"trash", "junk", "spam"})
+
+# The actions after whose refusal the rest of a message's are not taken.
+_FOLDER_ACTIONS = frozenset({Action.CREATE_FOLDER, Action.MOVE_TO_FOLDER})
 
 
 class Outcome(StrEnum):
@@ -89,8 +95,16 @@ class Executor:
         self._now = now
 
     async def __call__(self, requests: list[ActionRequest]) -> None:
+        """Take the actions in order. After a refused folder or move, or a
+        message that is gone, those after it are not taken: an action
+        asked after a move, such as a keyword that says the message was
+        moved, must not stand without it."""
         for request in requests:
-            await self.run(request)
+            outcome = await self.run(request)
+            if outcome is Outcome.GONE or (
+                outcome is Outcome.REFUSED and request.action in _FOLDER_ACTIONS
+            ):
+                return
 
     async def run(self, request: ActionRequest) -> Outcome:
         """Take one action, or record it. Answers what became of it.
@@ -192,6 +206,8 @@ class Executor:
             before = [f.id for f in message.folders]
             if before == [folder.id]:
                 return None
+            if self._moved_before(request.ref):
+                raise ActionRefusedError("the agent moved this message before")
             return folder.path, {"folders": before}, folder.id
         if request.action is Action.CREATE_FOLDER:
             return await self._plan_folder(request.ref.account_id, request.folder)
@@ -202,6 +218,15 @@ class Executor:
         if (request.action is Action.ADD_KEYWORD) == present:
             return None
         return keyword, {"keywords": list(message.keywords)}, keyword
+
+    def _moved_before(self, ref: MessageRef) -> bool:
+        """Whether the agent moved the message once already: then the
+        owner's choice of folder stands (decided 2026-11-18). A move only
+        recorded does not count."""
+        return any(
+            row.action == Action.MOVE_TO_FOLDER.value and row.executed
+            for row in self._store.actions(ref)
+        )
 
     async def _plan_folder(
         self, account_id: str, path: str | None

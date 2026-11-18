@@ -284,3 +284,47 @@ async def test_a_folder_is_recorded_only_below_full(world: Wired, stage: str) ->
         "Providers",
         False,
     )
+
+
+# -- a message is moved once ----------------------------------------------------
+
+
+async def test_a_message_the_owner_moved_back_is_not_moved_again(
+    world: Wired,
+) -> None:
+    run = executor(world)
+    assert await run.run(MOVE) is Outcome.DONE
+    world.service.messages[(ACCOUNT, "m1")]["folder_ids"] = ["inbox"]
+
+    assert await run.run(MOVE) is Outcome.REFUSED
+    assert world.service.writes() == [(PATH, {"folder_ids": ["inv-hosting"]})]
+    assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
+
+
+async def test_a_move_only_recorded_does_not_count(world: Wired) -> None:
+    assert await executor(world, "shadow").run(MOVE) is Outcome.RECORDED
+
+    assert await executor(world).run(MOVE) is Outcome.DONE
+
+
+async def test_after_a_refused_move_the_rest_is_not_taken(world: Wired) -> None:
+    missing = ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Missing")
+
+    await executor(world)([missing, ADD])
+
+    assert world.service.writes() == []
+    assert world.store.actions() == []
+
+
+async def test_after_a_refused_folder_the_rest_is_not_taken(world: Wired) -> None:
+    await maker(world)([make("Elsewhere"), MOVE, ADD])
+
+    assert world.service.writes() == []
+
+
+async def test_a_refused_keyword_does_not_stop_a_move(world: Wired) -> None:
+    other = ActionRequest(Action.ADD_KEYWORD, REF, keyword="other")
+
+    await executor(world)([other, MOVE])
+
+    assert world.service.writes() == [(PATH, {"folder_ids": ["inv-hosting"]})]

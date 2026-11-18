@@ -62,5 +62,14 @@ reverse of its own. It is accepted because it changes no message
 action whose result is already there is not taken again. What the stage
 does not allow is recorded as what would have been done.
 
+**A message is moved at most once by one agent (decided 2026-11-18).** A
+move of a message the agent has moved before is refused, so a message the
+owner moved back, into the inbox or anywhere, stays where the owner put it,
+also when `backfill --again` takes it up anew. A move only recorded in
+`shadow` or `keyword` does not count. A message moved by hand never wanders
+back in a later pass. The actions of one message are taken in order, and
+after a refused move or folder the rest are not taken, so a keyword that
+says a message was moved never stands without the move.
+
 `status` reports for each agent whether it is ready and which required
 setting is missing, without starting it.

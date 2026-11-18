@@ -51,6 +51,10 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- An agent moves a message at most once. A message its owner moved back,
+  into the inbox or anywhere, stays there, also when `backfill --again`
+  takes it up anew. After a refused move the rest of the message's
+  actions are not taken.
 - The specification is split: `SPECS.md` is its table of contents, with
   the decisions that matter most, and the details are in `docs/specs/`,
   one file per topic and one per agent. It plans the agent `sorting`,
