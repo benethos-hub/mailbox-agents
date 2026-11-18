@@ -4,7 +4,11 @@ state file and the worker over them."""
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from contextlib import AsyncExitStack, asynccontextmanager
+from contextlib import (
+    AbstractAsyncContextManager,
+    AsyncExitStack,
+    asynccontextmanager,
+)
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
@@ -75,20 +79,23 @@ def start_agent(cls: type[Agent], settings: Settings) -> Agent:
     return agent
 
 
+def mailbox_for(settings: Settings) -> AbstractAsyncContextManager[Mailbox]:
+    """The mailbox service as the settings name it."""
+    return connect(
+        settings.service_url or "",
+        settings.secret("service_token"),
+        allow_http=settings.service_allow_http,
+        transport=TRANSPORTS.get("service"),
+    )
+
+
 @asynccontextmanager
 async def upstreams(
     agent: Agent, settings: Settings
 ) -> AsyncIterator[tuple[Mailbox, Gateway | NoModel]]:
     """The mailbox service, and the gateway for an agent that asks a model."""
     async with AsyncExitStack() as stack:
-        mailbox = await stack.enter_async_context(
-            connect(
-                settings.service_url or "",
-                settings.secret("service_token"),
-                allow_http=settings.service_allow_http,
-                transport=TRANSPORTS.get("service"),
-            )
-        )
+        mailbox = await stack.enter_async_context(mailbox_for(settings))
         gateway: Gateway | NoModel = NoModel()
         if uses_model(type(agent)):
             gateway = await stack.enter_async_context(

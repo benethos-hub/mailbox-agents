@@ -12,13 +12,12 @@ from __future__ import annotations
 import unicodedata
 from dataclasses import dataclass, field
 
-from ..contract import Agent
+from ..contract import Agent, Reader
 from ..errors import MailboxRefusedError
 from ..records import Decision, MailMessage, MessageRef
 from ..settings import Settings
-from ..sources.mailbox import Mailbox, connect
 from ..store import ActionRow, MessageRow, Store, path_for
-from .session import TRANSPORTS
+from .session import mailbox_for
 
 __all__ = ["Entry", "collect", "render", "report", "summary"]
 
@@ -44,7 +43,7 @@ def _latest(store: Store, ref: MessageRef, step: str) -> tuple[Decision | None, 
 
 async def collect(
     store: Store,
-    mailbox: Mailbox | None,
+    mailbox: Reader | None,
     *,
     limit: int,
     state: str | None = None,
@@ -154,11 +153,6 @@ async def report(
         if offline:
             entries = await collect(store, None, limit=limit, state=state)
         else:
-            async with connect(
-                settings.service_url or "",
-                settings.secret("service_token"),
-                allow_http=settings.service_allow_http,
-                transport=TRANSPORTS.get("service"),
-            ) as mailbox:
+            async with mailbox_for(settings) as mailbox:
                 entries = await collect(store, mailbox, limit=limit, state=state)
     return render(entries) + summary(agent, entries)

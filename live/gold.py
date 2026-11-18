@@ -36,7 +36,9 @@ from mail import GOLD  # noqa: E402 - beside the setup, not a package
 async def write(settings: Settings) -> list[Path]:
     lines: dict[str, list[str]] = {}
     async with connect(
-        settings.service_url or "", settings.secret("service_token")
+        settings.service_url or "",
+        settings.secret("service_token"),
+        allow_http=settings.service_allow_http,
     ) as mailbox:
         refs = await mailbox.recent(
             date.today() - timedelta(days=30), settings.accounts
