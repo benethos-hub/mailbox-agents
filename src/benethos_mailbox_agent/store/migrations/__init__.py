@@ -5,7 +5,7 @@ module ``versions/vNNNN_<subject>.py``, listed in ``MIGRATIONS`` at its
 number. A file's ``user_version`` says how many have run. **A migration is
 never changed once released**: ``RELEASED`` in ``tests/test_store.py``
 holds the fingerprint of each released step. A change of the schema is a
-new step at the end. SPECS.md section 9 names the tables.
+new step at the end. docs/specs/state.md names the tables.
 """
 
 from __future__ import annotations

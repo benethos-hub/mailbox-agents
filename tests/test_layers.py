@@ -1,6 +1,6 @@
 """Which part of the package may import which, read from the source.
 
-The package is layered, see SPECS.md section 4: the foundation, the
+The package is layered, see docs/specs/architecture.md: the foundation, the
 records, the contract and the state file, the two modules that talk to
 the upstreams, the runtime, the agents, and the command line on top.
 Every import statement counts, one inside a function or under

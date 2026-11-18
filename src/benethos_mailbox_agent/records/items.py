@@ -12,7 +12,7 @@ __all__ = ["OpenItem"]
 
 
 class OpenItem(BaseModel):
-    """One row of the table ``open_items``, SPECS.md section 9.
+    """One row of the table ``open_items``, docs/specs/state.md.
 
     ``keyword_set`` says whether the agent has put its keyword on the
     message, so a keyword a person takes off can be told from one never

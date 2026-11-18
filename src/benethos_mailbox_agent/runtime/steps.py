@@ -4,7 +4,7 @@ check and effect.
 Each step writes its result before the next begins. The baseline is stored
 once per agent version, the decision once per prompt version and model
 alias, so a message run again, after a crash or a repeated feed entry,
-reuses what was decided and asks the model nothing. See SPECS.md section 8.
+reuses what was decided and asks the model nothing. See docs/specs/runtime.md.
 """
 
 from __future__ import annotations

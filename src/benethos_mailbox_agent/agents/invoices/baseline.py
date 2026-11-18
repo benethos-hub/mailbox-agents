@@ -7,7 +7,7 @@ in the subject or an attachment name, a phrase that says an invoice is
 ready, or a listed sender with a PDF or XML attachment makes it an
 ``invoice``. The supplier comes from the list. The
 evaluation sets these rules beside the model, so what the model adds is a
-number. See SPECS.md section 10.1.
+number. See docs/specs/agents/invoices.md.
 """
 
 from __future__ import annotations

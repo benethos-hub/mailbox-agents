@@ -13,7 +13,7 @@
 # One service per agent, each behind a profile of its own name, so a plain
 # `up` starts nothing and an agent runs only where it was asked for. Each
 # has its own credentials, its own state volume, its own health and its own
-# restart. They share the image and nothing else. See SPECS.md section 14.
+# restart. They share the image and nothing else. See docs/specs/operation.md.
 
 name: benethos-mailbox-agent
 

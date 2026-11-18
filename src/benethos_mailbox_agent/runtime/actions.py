@@ -6,8 +6,8 @@ folder that exists and is not the trash, junk or spam, nor below them.
 A message in one of them is left alone. What the stage allows is
 carried out, the rest is recorded as what would have been done. Every
 action records what was there before, so it can be taken back. An action
-whose result is already there is not taken again. See SPECS.md sections 7,
-8 and 11.
+whose result is already there is not taken again. See docs/specs/agent-contract.md,
+docs/specs/runtime.md and docs/specs/safety.md.
 """
 
 from __future__ import annotations

@@ -6,7 +6,7 @@ the folders, a keyword set or taken off, and a move. There is no way here
 to send, delete, trash or create a folder, so the runtime cannot do any of
 it whatever an agent asks. Every answer is
 turned into a record of :mod:`records`, and every failure into an error of
-:mod:`errors`. See SPECS.md section 5.
+:mod:`errors`. See docs/specs/mailbox-service.md.
 """
 
 from __future__ import annotations

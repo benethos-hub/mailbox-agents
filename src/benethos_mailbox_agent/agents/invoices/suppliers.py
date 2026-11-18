@@ -12,8 +12,8 @@ written in one of three ways:
 
 Matching ignores case. The most specific rule wins, an address before a
 pattern before a domain. Two suppliers whose rules of the same kind both
-match leave the sender unmatched, so neither is guessed. See SPECS.md
-section 10.1.
+match leave the sender unmatched, so neither is guessed. See
+docs/specs/agents/invoices.md.
 
 The file is JSON. A reader is chosen by the file's suffix, so another
 format is one entry in :data:`READERS`.

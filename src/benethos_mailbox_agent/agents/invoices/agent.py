@@ -7,7 +7,7 @@ none matches, the model may name a supplier of the list, with a quote the
 code finds in the mail (decided 2026-11-17). An invoice gets the keyword,
 and one of a known supplier is moved to that supplier's folder under the
 parent. An unknown sender's invoice stays in the inbox, and ``report``
-names the sender as a candidate for the list. See SPECS.md section 10.1.
+names the sender as a candidate for the list. See docs/specs/agents/invoices.md.
 """
 
 from __future__ import annotations

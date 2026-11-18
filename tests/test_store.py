@@ -80,9 +80,8 @@ def test_one_writer_per_state_file(path: Path, store: Store) -> None:
         again.set_cursor("s2", NOW)
 
 
-def test_the_tables_are_those_of_specs_section_9(path: Path, store: Store) -> None:
-    text = (ROOT / "SPECS.md").read_text(encoding="utf-8")
-    section = text[text.index("\n## 9. ") : text.index("\n## 10. ")]
+def test_the_tables_are_those_of_the_state_spec(path: Path, store: Store) -> None:
+    section = (ROOT / "docs" / "specs" / "state.md").read_text(encoding="utf-8")
     named = set(re.findall(r"^\| `([a-z_]+)` \|", section, flags=re.MULTILINE))
     tables = {
         row[0]

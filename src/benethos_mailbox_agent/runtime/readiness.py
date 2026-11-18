@@ -1,7 +1,7 @@
 """Whether an agent can start: its settings, and what it reads besides.
 
 ``status`` asks this of every agent without starting one. :func:`start`
-builds the agent a command runs, once. See SPECS.md section 7.
+builds the agent a command runs, once. See docs/specs/agent-contract.md.
 """
 
 from __future__ import annotations

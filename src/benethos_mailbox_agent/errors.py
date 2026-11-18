@@ -99,7 +99,7 @@ class ConfigError(MailboxAgentError):
 
 
 class ContractError(MailboxAgentError):
-    """An agent class breaks the contract of SPECS.md section 7, or the
+    """An agent class breaks the contract of docs/specs/agent-contract.md, or the
     registry cannot find the agent named."""
 
     code = "contract"

@@ -1,2 +1,2 @@
 """``awaiting_reply``: marks sent mail that still waits for an answer after
-its deadline. See SPECS.md section 10.2."""
+its deadline. See docs/specs/agents/awaiting_reply.md."""

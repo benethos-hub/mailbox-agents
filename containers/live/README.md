@@ -202,8 +202,8 @@ about 570.
 | `claude/opus-5-5` | 4.00 | 20.00 | 18.64 |
 
 Eleven invented messages show a model that fails outright, not which of
-the good ones is best. That takes the evaluation on real mail of SPECS.md
-section 12.
+the good ones is best. That takes the evaluation on real mail of
+[docs/specs/evaluation.md](../../docs/specs/evaluation.md).
 
 ## Ports
 

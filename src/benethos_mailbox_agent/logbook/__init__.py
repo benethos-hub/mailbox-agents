@@ -6,7 +6,7 @@ hands it to :func:`record`. The class decides what a line may carry: ids,
 states, counts, durations and the class and code of an error. Never a
 subject, a sender, the text of a mail, an attachment name, a token or a
 key, and never the message of an error, which may quote what an upstream
-answered. See SPECS.md section 11.
+answered. See docs/specs/safety.md.
 """
 
 from __future__ import annotations

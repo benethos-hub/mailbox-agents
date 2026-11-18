@@ -62,7 +62,7 @@ packages = ["src/benethos_mailbox_agent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# The coverage floor of SPECS.md section 15 is part of every run. A run of
+# The coverage floor of docs/specs/testing.md is part of every run. A run of
 # one file alone takes --no-cov.
 addopts = "--cov --cov-fail-under=80"
 asyncio_mode = "auto"

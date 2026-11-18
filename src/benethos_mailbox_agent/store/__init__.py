@@ -1,5 +1,5 @@
-"""SQLite: the schema, its migrations, one file per agent. See SPECS.md
-section 9."""
+"""SQLite: the schema, its migrations, one file per agent. See
+docs/specs/state.md."""
 
 from __future__ import annotations
 

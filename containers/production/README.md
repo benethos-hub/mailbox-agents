@@ -22,7 +22,7 @@ This folder is all it needs, no clone of the repository.
 
    Each agent has a user of its own in the mailbox service, with
    `mail.read` and `mail.write` on the accounts it works on and nothing
-   else, and a key of its own at the gateway. See SPECS.md sections 5 and 6.
+   else, and a key of its own at the gateway. See docs/specs/mailbox-service.md and docs/specs/model-gateway.md.
 4. Start the agents, first `counting`, which changes nothing, to see the
    deployment work:
 

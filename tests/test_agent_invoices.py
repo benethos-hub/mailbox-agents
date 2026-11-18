@@ -1,4 +1,4 @@
-"""The agent invoices, on invented mail: each row of SPECS.md 10.1."""
+"""The agent invoices, on invented mail: each row of docs/specs/agents/invoices.md."""
 
 from __future__ import annotations
 
@@ -100,7 +100,7 @@ def decision(world: Wired, message_id: str) -> dict[str, Any]:
     return found.result
 
 
-# -- the table of SPECS.md 10.1 ---------------------------------------------------
+# -- the table of docs/specs/agents/invoices.md -----------------------------------
 
 
 async def test_an_invoice_of_a_listed_supplier_is_marked_and_moved(

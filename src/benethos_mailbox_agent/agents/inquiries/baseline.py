@@ -2,7 +2,7 @@
 
 A message is an inquiry when its sender's domain is known, or when it
 carries two phrases of an inquiry, or one phrase together with a date or a
-rate. See SPECS.md section 10.3.
+rate. See docs/specs/agents/inquiries.md.
 """
 
 from __future__ import annotations

@@ -2,7 +2,7 @@
 
 A prompt lives in ``agents/<name>/prompts/<prompt>.<version>.md``. The
 version is part of the name, so a changed prompt is a new file and a new
-version, and the step runner takes it as new work. See SPECS.md section 7.
+version, and the step runner takes it as new work. See docs/specs/agent-contract.md.
 """
 
 from __future__ import annotations

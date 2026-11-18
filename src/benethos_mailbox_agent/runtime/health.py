@@ -5,7 +5,7 @@ after each message it ran and at the end of each pass. The check reads the
 file beside the running agent and passes while that time is younger than
 three poll intervals plus one model call. A process that is alive and stuck
 fails it. A gateway that is away does not, since the loop goes on and waits.
-See SPECS.md section 14.
+See docs/specs/operation.md.
 """
 
 from __future__ import annotations

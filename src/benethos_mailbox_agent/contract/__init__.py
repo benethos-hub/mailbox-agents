@@ -1,5 +1,5 @@
 """The agent contract: what an agent declares and implements, what it may
-reach, and the registry that finds the agents. See SPECS.md section 7."""
+reach, and the registry that finds the agents. See docs/specs/agent-contract.md."""
 
 from __future__ import annotations
 

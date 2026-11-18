@@ -7,8 +7,8 @@ A decision the evidence check refused counts as no answer, since the agent
 does not act on it. Where an agent records who chose a field, as
 ``<field>_source`` in its details, the field is counted once more per
 source, so what the model chose and what a rule chose are told apart. The
-rules alone are scored the same way, beside the model. See SPECS.md
-section 12.
+rules alone are scored the same way, beside the model. See
+docs/specs/evaluation.md.
 """
 
 from __future__ import annotations

@@ -2,7 +2,7 @@
 
 What an agent writes to its log, at which level, in which shape, and what
 never goes into a line. The code is `src/benethos_mailbox_agent/logbook/`.
-[SPECS.md](../SPECS.md) section 11 holds the rule behind it: nothing of a
+[specs/safety.md](specs/safety.md) holds the rule behind it: nothing of a
 mail in a log line.
 
 ## 1. What the log is for

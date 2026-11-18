@@ -1,7 +1,7 @@
 # The model gateway of the live setup: LiteLLM with one alias per backend.
 # The agents name an alias in MAILBOX_AGENT_MODEL and never a model. There
 # is no fallback from one alias to another: a key that reads mail must not
-# reach a hosted model through a backend that was away (SPECS.md section 6).
+# reach a hosted model through a backend that was away (docs/specs/model-gateway.md).
 
 # What every local model is called with. Unlike Claude, a local model takes
 # a temperature, and on the CPU it takes its time.

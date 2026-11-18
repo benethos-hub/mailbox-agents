@@ -6,7 +6,7 @@ agent selects for a decision as ``pending``, hands each event routed to
 that are due, asks the agent on the tick what is due, and stores the
 cursor last. A crash repeats work and skips no mail. A mailbox service or
 gateway that is away leaves every message where it is, and the next pass
-waits twice as long, up to the ceiling. See SPECS.md section 8.
+waits twice as long, up to the ceiling. See docs/specs/runtime.md.
 """
 
 from __future__ import annotations

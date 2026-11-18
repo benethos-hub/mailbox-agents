@@ -1,7 +1,8 @@
 # Working guidelines for Claude
 
 How to work in this repository. Read this before making changes. See
-[SPECS.md](SPECS.md) for what the project is and does.
+[SPECS.md](SPECS.md) for what the project is and does, and
+[docs/specs/](docs/specs/) for the details.
 
 ## Golden rules
 
@@ -28,7 +29,7 @@ How to work in this repository. Read this before making changes. See
    talks to the model gateway. `tests/test_layers.py` holds the import order.
 7. **A model that reads mail has no tools.** It returns a value in a fixed
    schema. Acting on the value is code, and the code checks the evidence
-   first. See SPECS.md section 11.
+   first. See docs/specs/safety.md.
 8. **The repo stands on its own.** State a convention as this project's
    decision. Do not reference the author's other repositories, local
    filesystem paths or email addresses in versioned files.
@@ -45,7 +46,7 @@ How to work in this repository. Read this before making changes. See
 
 ## Project layout
 
-See SPECS.md section 4 for the full table.
+See docs/specs/architecture.md for the full table.
 
 ```
 src/benethos_mailbox_agent/
@@ -76,6 +77,7 @@ live/             # run by hand, outside testpaths: a mail server of its own
 containers/       # images/, production/, development/, and live/: a mail
                   # server and a mailbox service of their own for live/
 config/           # .env.example and *.example.json versioned, .env local
+docs/             # specs/ (the details of SPECS.md), LOGGING.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
 ```
@@ -103,7 +105,8 @@ uv lock --check
 - Async tests run with pytest-asyncio in `auto` mode.
 - **The gates do not cover the upstreams changing.** Verify a new
   assumption about the mailbox service or the gateway with a live check
-  before building on it, and mark it **(to verify)** in SPECS.md until then.
+  before building on it, and mark it **(to verify)** in its spec under
+  `docs/specs/` until then.
 - A live check is a manual run, never a gate: `containers/live/README.md`
   says how to start the mail server of its own, and `live/smoke.py` checks
   the package against it, read-only.
@@ -128,8 +131,10 @@ uv lock --check
   docstring says what it does and why. Each statement stands alone, a step
   in Python is the method `before`. A release freezes its new migrations:
   the fingerprint of each goes into `RELEASED` in `tests/test_store.py`.
-- **SPECS.md moves with the code.** A change that departs from it changes
-  it in the same commit. Every user-facing change gets an entry under
+- **The spec moves with the code.** `SPECS.md` is the table of contents,
+  the details are in `docs/specs/`, one file per topic and one per agent
+  in `docs/specs/agents/`. A change that departs from them changes them in
+  the same commit. Every user-facing change gets an entry under
   `[Unreleased]` in `CHANGELOG.md` in the same commit.
 - No semicolons in prose: README, docstrings, docs and commit messages.
 

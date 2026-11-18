@@ -4,7 +4,7 @@ Every setting carries the prefix ``MAILBOX_AGENT_`` and comes from the
 environment or from one ``.env`` file, read with pydantic-settings. A
 process runs one agent, so one environment describes one agent. The
 service token and the gateway key may be given as a file instead, named
-in the same setting with the suffix ``_FILE``. See SPECS.md section 13.
+in the same setting with the suffix ``_FILE``. See docs/specs/configuration.md.
 """
 
 from __future__ import annotations
@@ -81,14 +81,14 @@ class Settings(BaseSettings):
     metrics_port: int = Field(default=0, ge=0, le=65535)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
-    # --- invoices, SPECS.md section 10.1 -----------------------------------------
+    # --- invoices, docs/specs/agents/invoices.md --------------------------------------
     invoices_folder: str | None = None
     invoices_suppliers_file: Path | None = None
 
-    # --- awaiting_reply, SPECS.md section 10.2 -------------------------------
+    # --- awaiting_reply, docs/specs/agents/awaiting_reply.md --------------------------
     reply_days: int = Field(default=3, ge=1)
 
-    # --- inquiries, SPECS.md section 10.3 ----------------------------------------
+    # --- inquiries, docs/specs/agents/inquiries.md ------------------------------------
     inquiries_patterns_file: Path | None = None
 
     @field_validator("accounts", mode="before")

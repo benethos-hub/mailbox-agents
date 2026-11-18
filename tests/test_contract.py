@@ -120,9 +120,8 @@ def test_every_action_has_a_way_back() -> None:
     assert set(REVERSED_BY) == set(Action)
 
 
-def test_the_actions_of_specs_section_7_are_the_code() -> None:
-    text = (ROOT / "SPECS.md").read_text(encoding="utf-8")
-    section = text[text.index("\n## 7. ") : text.index("\n## 8. ")]
+def test_the_actions_of_the_contract_spec_are_the_code() -> None:
+    section = (ROOT / "docs" / "specs" / "agent-contract.md").read_text("utf-8")
     table = section[section.index("| Action |") :]
     named = re.findall(r"^\| `([a-z_]+)` \|", table, flags=re.MULTILINE)
 

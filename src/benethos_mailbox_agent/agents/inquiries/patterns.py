@@ -7,7 +7,7 @@ that write. It is JSON, like the supplier list:
 
     {"domains": ["staffing.example"], "phrases": ["für einen kunden"]}
 
-See SPECS.md section 10.3.
+See docs/specs/agents/inquiries.md.
 """
 
 from __future__ import annotations

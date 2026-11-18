@@ -5,7 +5,7 @@ the agent should give, and for an extracting agent the value each field
 should have, ``null`` for a field the message does not fill. The mail
 itself is fetched by its id when the evaluation runs, so a gold file holds
 ids and labels only. A line that starts with ``#`` and an empty line are
-skipped. See SPECS.md section 12.
+skipped. See docs/specs/evaluation.md.
 
     {"account_id": "acc1", "message_id": "m1", "label": "invoice",
      "fields": {"supplier": "CloudHost"}}

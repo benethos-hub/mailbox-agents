@@ -5,7 +5,7 @@ at the same time, opened with ``read_only``: ``report``, ``status``, the
 health check, and later an overview of what every agent did. Calls are
 short and made from the one event loop of the process, so they run
 synchronously. What is stored is ids, decisions, evidence quotes, counts
-and times, never the text of a mail. See SPECS.md section 9.
+and times, never the text of a mail. See docs/specs/state.md.
 """
 
 from __future__ import annotations
@@ -577,7 +577,7 @@ class Store:
             > 0
         )
 
-    # -- kept model calls, SPECS.md section 9 ----------------------------------------
+    # -- kept model calls, docs/specs/state.md ----------------------------------------
 
     def add_call(
         self, ref: MessageRef, request: Any, answer: Any, now: datetime

@@ -1,4 +1,5 @@
-"""Settings: prefix, .env, secrets from files, and the table of SPECS 13."""
+"""Settings: prefix, .env, secrets from files, and the table of
+docs/specs/configuration.md."""
 
 from __future__ import annotations
 
@@ -144,16 +145,15 @@ def test_missing_names_the_unset_settings() -> None:
     assert found.missing(("model", "service_url")) == ["MAILBOX_AGENT_SERVICE_URL"]
 
 
-def _specs_section(number: int) -> str:
-    text = (ROOT / "SPECS.md").read_text(encoding="utf-8")
-    start = text.index(f"\n## {number}. ")
-    end = text.index("\n## ", start + 1)
-    return text[start:end]
+def _configuration_spec() -> str:
+    return (ROOT / "docs" / "specs" / "configuration.md").read_text("utf-8")
 
 
-def test_every_setting_of_specs_section_13_exists() -> None:
-    """The table of SPECS.md section 13 against the code."""
-    rows = [line for line in _specs_section(13).splitlines() if line.startswith("| `")]
+def test_every_setting_of_the_configuration_spec_exists() -> None:
+    """The table of docs/specs/configuration.md against the code."""
+    rows = [
+        line for line in _configuration_spec().splitlines() if line.startswith("| `")
+    ]
     names = {
         name.lower()
         for row in rows

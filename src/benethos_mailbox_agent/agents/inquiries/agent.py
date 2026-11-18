@@ -5,7 +5,7 @@ quote the code finds in the mail, and for an inquiry fills its fields, each
 with a quote of its own. A field whose quote is not found is dropped, and
 what a message does not say stays empty. An inquiry gets the keyword. The
 rules beside it know phrases, dates and rates, and the sender domains and
-phrases of a patterns file. See SPECS.md section 10.3.
+phrases of a patterns file. See docs/specs/agents/inquiries.md.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""The state file of one agent, SPECS.md section 9.
+"""The state file of one agent, docs/specs/state.md.
 
 The cursor of the change feed, the time of the loop's last progress, every
 message the agent took up with its state, the steps of each and their

@@ -1,7 +1,7 @@
 """The mailbox as an agent reads it: a message and a thread, nothing more.
 
 An agent is handed this view, never the mailbox itself, so the only way
-to change a message is to ask the executor. See SPECS.md section 7.
+to change a message is to ask the executor. See docs/specs/agent-contract.md.
 """
 
 from __future__ import annotations

@@ -51,6 +51,10 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- The specification is split: `SPECS.md` is its table of contents, with
+  the decisions that matter most, and the details are in `docs/specs/`,
+  one file per topic and one per agent. It plans the agent `sorting`,
+  which moves mail of known senders into folders of free groups.
 - The agent `invoices` asks with the prompt version `v3`: a receipt that
   carries the invoice for its payment is an invoice, whatever it calls
   itself, and so is a credit note. Only a payment confirmation without an

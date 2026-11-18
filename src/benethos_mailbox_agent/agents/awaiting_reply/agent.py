@@ -6,7 +6,7 @@ when a later message from another sender arrives in its thread, an
 automatic answer not counted, or when a person takes the keyword off. A
 new message of the sender in the same thread restarts the deadline and
 does not count as a reply. An item past its deadline gets the keyword on
-the sent message, which stays where it is. See SPECS.md section 10.2.
+the sent message, which stays where it is. See docs/specs/agents/awaiting_reply.md.
 
 Known misses, counted by the evaluation rather than argued away: an answer
 that comes as a new mail outside the thread, an answer by telephone, and

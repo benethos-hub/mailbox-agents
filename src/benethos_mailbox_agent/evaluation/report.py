@@ -4,8 +4,8 @@ It names the agent and its version, the prompt version, the model alias
 and the models the gateway reported, and the date. It holds the scores of
 the model and of the rules, what a message cost, and why messages went
 unanswered. No id, no label of a single message, nothing of a mail, so a
-report can be versioned beside the change it measures. See SPECS.md
-section 12.
+report can be versioned beside the change it measures. See
+docs/specs/evaluation.md.
 """
 
 from __future__ import annotations
