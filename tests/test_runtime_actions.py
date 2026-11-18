@@ -201,3 +201,86 @@ async def test_a_service_that_is_away_is_raised(world: Wired) -> None:
 
     with pytest.raises(MailboxUnavailableError):
         await executor(world).run(ADD)
+
+
+# -- folders an agent makes -----------------------------------------------------
+
+MAY_MAKE = frozenset(
+    {
+        "Providers",
+        "Providers/CloudHost",
+        "Trash/New",
+        "Junk/New",
+        "invoices",
+        "Invoices/Hosting",
+        "Missing/Below",
+    }
+)
+
+
+class Maker(Every):
+    def may_create(self, path: str) -> bool:
+        return path in MAY_MAKE
+
+
+def maker(world: Wired, stage: str = "full") -> Executor:
+    return Executor(
+        agent=Maker(settings(stage=stage)),
+        store=world.store,
+        mailbox=world.mailbox,
+        now=world.clock,
+    )
+
+
+def make(path: str) -> ActionRequest:
+    return ActionRequest(Action.CREATE_FOLDER, REF, folder=path, why="group")
+
+
+async def test_a_folder_the_agent_may_make_is_made_from_the_top(world: Wired) -> None:
+    run = maker(world)
+
+    outcomes = [await run.run(make(p)) for p in ("Providers", "Providers/CloudHost")]
+
+    assert outcomes == [Outcome.DONE, Outcome.DONE]
+    assert world.service.made() == [
+        {"name": "Providers"},
+        {"name": "CloudHost", "parent_id": "Providers"},
+    ]
+    made = world.store.actions(REF)
+    assert [(a.action, a.argument, a.before, a.executed) for a in made] == [
+        ("create_folder", "Providers", {}, True),
+        ("create_folder", "Providers/CloudHost", {}, True),
+    ]
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["Elsewhere", "Trash/New", "Junk/New", "invoices", "Missing/Below"],
+    ids=["not-declared", "below-trash", "below-junk", "other-case", "parent-missing"],
+)
+async def test_a_folder_is_refused(world: Wired, path: str) -> None:
+    assert await maker(world).run(make(path)) is Outcome.REFUSED
+    assert world.service.made() == []
+    assert world.store.actions() == []
+
+
+async def test_a_folder_that_exists_is_not_made_again(world: Wired) -> None:
+    assert await maker(world).run(make("Invoices/Hosting")) is Outcome.PRESENT
+    assert world.service.made() == []
+
+
+async def test_an_agent_makes_no_folder_unless_it_says_so(world: Wired) -> None:
+    assert await executor(world).run(make("Providers")) is Outcome.REFUSED
+    assert world.service.made() == []
+
+
+@pytest.mark.parametrize("stage", ["shadow", "keyword"])
+async def test_a_folder_is_recorded_only_below_full(world: Wired, stage: str) -> None:
+    assert await maker(world, stage).run(make("Providers")) is Outcome.RECORDED
+    assert world.service.made() == []
+    (made,) = world.store.actions(REF)
+    assert (made.action, made.argument, made.executed) == (
+        "create_folder",
+        "Providers",
+        False,
+    )

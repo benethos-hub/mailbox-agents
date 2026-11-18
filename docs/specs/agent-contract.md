@@ -23,6 +23,7 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `observe(message, context)` | for an event routed to `observe`: the actions it calls for, no model |
 | `tick(now, context)` | for agents with deadlines: what is due |
 | `prepare()` | reads what the agent needs beyond its settings, such as a list in a file |
+| `may_create(path)` | whether the runtime may make the folder at `path` for it: one its configuration names. Code only, no folder by default |
 | `summarize(decided)` | for `report`: lines about the messages shown, given as sender and decision |
 
 An event routed to `decide` makes the message `pending` and runs the steps
@@ -42,6 +43,7 @@ The actions that exist:
 | `add_keyword` | `remove_keyword` |
 | `remove_keyword` | `add_keyword` |
 | `move_to_folder` | a move back, the previous folder is recorded |
+| `create_folder` | none by an agent: deleting a folder needs a right no agent has. The owner removes an empty one |
 
 An agent declares which of them it uses, and the runtime carries out no
 other. A new action is added here first, with how it is taken back.
@@ -49,7 +51,14 @@ other. A new action is added here first, with how it is taken back.
 The runtime carries out an action only on these terms: it is declared, a
 keyword is the agent's own, a move goes into a folder that exists and is
 neither the trash, junk or spam nor below them, the message itself is
-not in one of them, and the account is one the agent works on. An
+not in one of them, and the account is one the agent works on. A folder
+is made only when the agent's `may_create` answers yes for its path, the
+folder above it exists and is none of those three nor below them, and no
+folder of the same name exists in another case. A folder below a missing
+one is made after it, each as an action of its own, recorded under the
+message whose move needs it. `create_folder` is the one action without a
+reverse of its own. It is accepted because it changes no message
+(decided 2026-11-18). An
 action whose result is already there is not taken again. What the stage
 does not allow is recorded as what would have been done.
 

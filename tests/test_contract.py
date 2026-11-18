@@ -118,6 +118,10 @@ def test_a_missing_declaration_is_named() -> None:
 
 def test_every_action_has_a_way_back() -> None:
     assert set(REVERSED_BY) == set(Action)
+    # Only a folder made is taken back by the owner, not by an agent.
+    assert [a for a, back in REVERSED_BY.items() if back is None] == [
+        Action.CREATE_FOLDER
+    ]
 
 
 def test_the_actions_of_the_contract_spec_are_the_code() -> None:

@@ -43,14 +43,17 @@ class Action(StrEnum):
     ADD_KEYWORD = "add_keyword"
     REMOVE_KEYWORD = "remove_keyword"
     MOVE_TO_FOLDER = "move_to_folder"
+    CREATE_FOLDER = "create_folder"
 
 
 # How each action is taken back. A move is taken back by a move to the
-# folder recorded before it.
-REVERSED_BY: dict[Action, Action] = {
+# folder recorded before it. A folder made is taken back by the owner, as
+# deleting a folder needs a right no agent has: None.
+REVERSED_BY: dict[Action, Action | None] = {
     Action.ADD_KEYWORD: Action.REMOVE_KEYWORD,
     Action.REMOVE_KEYWORD: Action.ADD_KEYWORD,
     Action.MOVE_TO_FOLDER: Action.MOVE_TO_FOLDER,
+    Action.CREATE_FOLDER: None,
 }
 
 
@@ -95,9 +98,10 @@ class Requires:
 class ActionRequest:
     """One action an agent asks the runtime to take.
 
-    ``keyword`` for the keyword actions, ``folder`` for a move: the path of
-    the target folder, ``/`` between the names. The runtime resolves it and
-    refuses a folder that does not exist.
+    ``keyword`` for the keyword actions, ``folder`` for a move and for a
+    folder to make: the path of the folder, ``/`` between the names. The
+    runtime resolves it, refuses a move into a folder that does not exist,
+    and makes only a folder the agent may make, see :meth:`Agent.may_create`.
     """
 
     action: Action
@@ -170,6 +174,13 @@ class Agent(ABC):
         """For ``report``: lines about the messages shown, each given as its
         sender's address and its decision. Nothing by default."""
         return []
+
+    def may_create(self, path: str) -> bool:
+        """Whether the runtime may make the folder at ``path`` for this
+        agent: one its configuration names, such as a folder of its list or
+        one above it. Code only, never from an answer of the model. None by
+        default."""
+        return False
 
     def prepare(self) -> None:
         """Read what the agent needs beyond its settings, such as a list

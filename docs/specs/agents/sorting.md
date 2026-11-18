@@ -149,9 +149,11 @@ Given a list, the agent may make the folders of the list itself.
 It is the one action without a reverse of its own. It is accepted because
 it changes no message.
 
-How the runtime knows which folders an agent may make: the agent declares
-them after `prepare`, as a set of paths, and the executor refuses any
-other. This is new in the contract.
+How the runtime knows which folders an agent may make: the agent answers
+for each path, with `may_create`, whether its configuration names it, and
+the executor refuses any other. A method rather than a set of paths,
+because `invoices` knows its subfolders only from the folder a message
+lies in.
 
 What changes with the build, each in the commit that builds it:
 

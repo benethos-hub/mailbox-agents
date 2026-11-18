@@ -2,8 +2,10 @@
 
 An agent asks, this module decides. It carries out only an action the
 agent declared, a keyword only if it is the agent's own, a move only into a
-folder that exists and is not the trash, junk or spam, nor below them.
-A message in one of them is left alone. What the stage allows is
+folder that exists and is not the trash, junk or spam, nor below them, and
+makes only a folder the agent may make, below a folder that exists and not
+below those three, nor one whose name exists in another case. A message in
+one of them is left alone. What the stage allows is
 carried out, the rest is recorded as what would have been done. Every
 action records what was there before, so it can be taken back. An action
 whose result is already there is not taken again. See docs/specs/agent-contract.md,
@@ -61,6 +63,8 @@ class Writer(Protocol):
     async def remove_keyword(self, ref: MessageRef, keyword: str) -> None: ...
 
     async def move(self, ref: MessageRef, folder_id: str) -> None: ...
+
+    async def create_folder(self, account_id: str, path: str) -> FolderRef: ...
 
 
 class Executor:
@@ -163,6 +167,11 @@ class Executor:
         if request.action is Action.MOVE_TO_FOLDER:
             if not request.folder:
                 raise ActionRefusedError("a move names no folder")
+        elif request.action is Action.CREATE_FOLDER:
+            if not request.folder:
+                raise ActionRefusedError("a folder to make has no path")
+            if not self.agent.may_create(request.folder):
+                raise ActionRefusedError(f"{self.agent.name} may not make that folder")
         elif request.keyword != self.agent.keyword:
             raise ActionRefusedError("an agent sets and takes off its own keyword only")
 
@@ -184,6 +193,8 @@ class Executor:
             if before == [folder.id]:
                 return None
             return folder.path, {"folders": before}, folder.id
+        if request.action is Action.CREATE_FOLDER:
+            return await self._plan_folder(request.ref.account_id, request.folder)
         keyword = self.agent.keyword
         # IMAP keywords ignore case, and a service may answer them in lower
         # case (measured 2026-11-18 at Stalwart through service 0.7.5).
@@ -191,6 +202,28 @@ class Executor:
         if (request.action is Action.ADD_KEYWORD) == present:
             return None
         return keyword, {"keywords": list(message.keywords)}, keyword
+
+    async def _plan_folder(
+        self, account_id: str, path: str | None
+    ) -> tuple[str, dict[str, Any], str] | None:
+        """A folder to make: None when it exists. Refused when its name
+        exists in another case, which the service would make as a second
+        folder (measured 2026-11-18), when the folder above it is missing,
+        and below the trash, junk or spam."""
+        path = path or ""  # never empty, _admissible checked it
+        if await self._mailbox.folder_at(account_id, path) is not None:
+            return None
+        known = await self._mailbox.folders(account_id)
+        if any(f.path.casefold() == path.casefold() for f in known.values()):
+            raise ActionRefusedError("a folder of that name exists in another case")
+        above = path.rpartition("/")[0]
+        if above:
+            parent = await self._mailbox.folder_at(account_id, above)
+            if parent is None:
+                raise ActionRefusedError("the folder above it does not exist")
+            if await self._forbidden(account_id, parent):
+                raise ActionRefusedError("no agent makes a folder there")
+        return path, {}, path
 
     async def _forbidden(self, account_id: str, folder: FolderRef) -> bool:
         """Whether ``folder`` is the trash, junk or spam, or lies below one."""
@@ -208,5 +241,7 @@ class Executor:
             await self._mailbox.add_keyword(request.ref, target)
         elif request.action is Action.REMOVE_KEYWORD:
             await self._mailbox.remove_keyword(request.ref, target)
+        elif request.action is Action.CREATE_FOLDER:
+            await self._mailbox.create_folder(request.ref.account_id, target)
         else:
             await self._mailbox.move(request.ref, target)

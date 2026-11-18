@@ -6,7 +6,7 @@ Three locks, in three places, none of which the model can reach:
 |---|---|
 | The mailbox service | sending, deleting for good, drafts: the agent's user has no right to them |
 | The model gateway | a model outside the agent's list, spending past its budget |
-| The runtime | every action the agent did not declare, the trash and folder creation among them |
+| The runtime | every action the agent did not declare, the trash among them, and a folder its configuration does not name |
 
 Further rules:
 
