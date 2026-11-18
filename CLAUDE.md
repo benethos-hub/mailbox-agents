@@ -33,6 +33,11 @@ How to work in this repository. Read this before making changes. See
 8. **The repo stands on its own.** State a convention as this project's
    decision. Do not reference the author's other repositories, local
    filesystem paths or email addresses in versioned files.
+9. **Decisions are restated, never quoted.** A decision taken in a
+   conversation goes into a versioned file in plain English, with its
+   date. No message, prompt or wording of the owner is copied in, in any
+   language, not even as a short quote. Who proposed what stays out too:
+   the file says what was decided and why.
 
 ## Environment
 
