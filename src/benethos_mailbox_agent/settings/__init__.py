@@ -115,8 +115,12 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _secrets_from_files(self) -> Settings:
         """Read a secret named by its ``_FILE`` setting, and register both
-        secrets so no error text carries them."""
+        secrets so no error text carries them. An empty value counts as not
+        set, as the empty line ``.env.example`` holds."""
         for name in ("service_token", "gateway_key"):
+            given: SecretStr | None = getattr(self, name)
+            if given is not None and not given.get_secret_value():
+                object.__setattr__(self, name, None)
             path: Path | None = getattr(self, f"{name}_file")
             if getattr(self, name) is None and path is not None:
                 try:

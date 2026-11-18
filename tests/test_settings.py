@@ -92,6 +92,22 @@ def test_a_secret_given_directly_wins_over_its_file(
     assert load_settings().secret("gateway_key") == "direct-key-value"
 
 
+def test_an_empty_secret_lets_its_file_be_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    secret = tmp_path / "service_token"
+    secret.write_text("from-the-file\n", encoding="utf-8")
+    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN", "")
+    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN_FILE", str(secret))
+    monkeypatch.setenv("MAILBOX_AGENT_GATEWAY_KEY", "")
+
+    found = load_settings(None)
+
+    assert found.secret("service_token") == "from-the-file"
+    assert found.gateway_key is None
+    assert found.missing(("gateway_key",)) == ["MAILBOX_AGENT_GATEWAY_KEY"]
+
+
 def test_an_unreadable_secret_file_is_a_config_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
