@@ -30,6 +30,7 @@ from ..store import Store
 from .actions import Executor, Writer
 from .metrics import Metrics
 from .model import Asker, Calls
+from .reader import ReadOnlyMailbox
 from .steps import StepRunner, backoff
 
 __all__ = ["BATCH", "Upstream", "Worker"]
@@ -77,7 +78,7 @@ class Worker:
         self.runner = StepRunner(
             agent=agent,
             store=store,
-            reader=mailbox,
+            reader=ReadOnlyMailbox(mailbox),
             gateway=gateway,
             effects=self.executor,
             now=now,

@@ -17,6 +17,7 @@ from ..errors import AnswerRefusedError, LimitReachedError, MailboxRefusedError
 from ..llm.evidence import check
 from ..runtime.items import StoredItems
 from ..runtime.model import Asker, Calls
+from ..runtime.reader import ReadOnlyMailbox
 from ..store import Store
 from .gold import GoldItem
 from .scoring import Outcome
@@ -33,6 +34,7 @@ async def evaluate(
     store: Store,
     now: Callable[[], datetime],
 ) -> list[Outcome]:
+    reader = ReadOnlyMailbox(reader)
     outcomes = []
     for item in items:
         try:

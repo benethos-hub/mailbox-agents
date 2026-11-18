@@ -77,6 +77,13 @@ async def test_a_new_message_is_decided_and_marked(world: Wired) -> None:
     assert world.store.cursor() == "2"
 
 
+def test_an_agent_reads_the_mailbox_and_cannot_write_it(world: Wired) -> None:
+    reader = worker(world).context().reader
+
+    for name in ("move", "add_keyword", "remove_keyword", "folders", "changes"):
+        assert not hasattr(reader, name)
+
+
 async def test_a_repeated_feed_entry_is_harmless(world: Wired) -> None:
     run = worker(world)
     await run.run_pass()
