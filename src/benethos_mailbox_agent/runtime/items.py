@@ -27,6 +27,9 @@ class StoredItems:
     async def open(self, ref: MessageRef, thread_id: str | None, due: datetime) -> None:
         self._store.open_item(ref, thread_id, due, self._now())
 
+    async def restart(self, ref: MessageRef, due: datetime) -> None:
+        self._store.restart_item(ref, due, self._now())
+
     async def get(self, ref: MessageRef) -> OpenItem | None:
         return self._store.item(ref)
 

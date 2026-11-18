@@ -234,7 +234,7 @@ def test_an_open_item_from_opening_to_closing(store: Store) -> None:
     assert store.items_in_thread("acc", "t1") == []
 
 
-def test_opening_an_item_again_restarts_it(store: Store) -> None:
+def test_opening_an_item_again_leaves_it_as_it_is(store: Store) -> None:
     store.open_item(REF, "t1", NOW, NOW)
     store.mark_keyword(REF, True)
     store.close_item(REF, "replied", NOW)
@@ -243,7 +243,31 @@ def test_opening_an_item_again_restarts_it(store: Store) -> None:
 
     item = store.item(REF)
     assert item is not None
-    assert (item.is_open, item.keyword_set) == (True, False)
+    assert (item.is_open, item.reason) == (False, "replied")
+
+
+def test_restarting_an_item_gives_it_a_new_deadline(store: Store) -> None:
+    later = NOW + timedelta(days=5)
+    store.open_item(REF, "t1", NOW, NOW)
+    store.mark_keyword(REF, True)
+    store.close_item(REF, "replied", NOW)
+
+    store.restart_item(REF, later, NOW)
+
+    item = store.item(REF)
+    assert item is not None
+    assert (item.is_open, item.keyword_set, item.due) == (True, False, later)
+
+
+def test_an_item_a_person_closed_is_not_restarted(store: Store) -> None:
+    store.open_item(REF, "t1", NOW, NOW)
+    store.close_item(REF, "keyword_removed", NOW)
+
+    store.restart_item(REF, NOW + timedelta(days=5), NOW)
+
+    item = store.item(REF)
+    assert item is not None
+    assert (item.is_open, item.reason) == (False, "keyword_removed")
 
 
 def test_kept_calls_are_purged(store: Store) -> None:

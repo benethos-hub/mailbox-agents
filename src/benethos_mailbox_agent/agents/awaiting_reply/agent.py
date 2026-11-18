@@ -166,7 +166,7 @@ class AwaitingReply(Agent):
             if expects:
                 await context.items.close(item.ref, "followed_up")
             else:
-                await context.items.open(item.ref, item.thread_id, due)
+                await context.items.restart(item.ref, due)
         if expects and not await self._answered(message, context):
             await context.items.open(message.ref, message.thread_id, due)
         return requests

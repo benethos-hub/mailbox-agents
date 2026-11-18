@@ -480,18 +480,31 @@ class Store:
     def open_item(
         self, ref: MessageRef, thread_id: str | None, due: datetime, now: datetime
     ) -> None:
-        """Open an item, or open it anew with a new deadline."""
+        """Open an item for a message that has none. An item there already,
+        open or closed, stays as it is, so taking a message up again opens
+        nothing that a reply or a person closed."""
         self._write(
             "INSERT INTO open_items (account_id, message_id, thread_id, opened, due) "
-            "VALUES (?, ?, ?, ?, ?) ON CONFLICT (account_id, message_id) DO UPDATE "
-            "SET thread_id = excluded.thread_id, opened = excluded.opened, "
-            "due = excluded.due, keyword_set = 0, keyword_recorded_stage = NULL, "
-            "closed = NULL, reason = NULL",
+            "VALUES (?, ?, ?, ?, ?) ON CONFLICT (account_id, message_id) DO NOTHING",
             ref.account_id,
             ref.message_id,
             thread_id,
             _text(now),
             _text(due),
+        )
+
+    def restart_item(self, ref: MessageRef, due: datetime, now: datetime) -> None:
+        """Start an item again with a new deadline, its keyword off, unless a
+        person closed it by taking the keyword off."""
+        self._write(
+            "UPDATE open_items SET opened = ?, due = ?, keyword_set = 0, "
+            "keyword_recorded_stage = NULL, closed = NULL, reason = NULL "
+            "WHERE account_id = ? AND message_id = ? "
+            "AND (reason IS NULL OR reason != 'keyword_removed')",
+            _text(now),
+            _text(due),
+            ref.account_id,
+            ref.message_id,
         )
 
     def item(self, ref: MessageRef) -> OpenItem | None:

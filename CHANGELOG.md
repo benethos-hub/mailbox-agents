@@ -92,3 +92,5 @@ commit that makes the change. Design decisions live in
   `backfill --again`, without a new model call.
 - `awaiting_reply` opens no item for a sent message whose thread already
   holds a later answer, as after a backfill that took up the reply first.
+- `backfill --again` no longer opens an `awaiting_reply` item again that a
+  reply or a person closed.

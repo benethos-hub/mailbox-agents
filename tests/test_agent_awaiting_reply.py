@@ -395,6 +395,26 @@ async def test_a_later_automatic_answer_still_opens_the_item(world: World) -> No
     assert world.item("s1").is_open
 
 
+async def test_taking_a_message_up_again_reopens_nothing(world: World) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    world.clock.advance(days=4)
+    await world.run()
+    assert world.keywords("s1") == ["awaiting-reply"]
+    world.w.service.messages[(ACCOUNT, "s1")]["keywords"] = []
+    world.w.service.change("message.updated", "s1")
+    await world.run()
+    assert world.item("s1").reason == "keyword_removed"
+
+    await world.worker.backfill(30, again=True)
+    world.clock.advance(days=1)
+    await world.run()
+
+    assert world.item("s1").reason == "keyword_removed"
+    assert world.keywords("s1") == []
+
+
 async def test_a_reply_in_the_thread_closes_it_and_takes_the_keyword_off(
     world: World,
 ) -> None:

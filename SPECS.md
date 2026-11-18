@@ -564,6 +564,8 @@ A sent message that expects a reply becomes an open item. It closes when:
 A sent message whose thread already holds a later answer from someone
 else opens no item. So a reply taken up before the message it answers,
 by a backfill or a backoff, is not missed.
+Taking a message up again, as `backfill --again` does, opens no item it
+had before: an item a reply or a person closed stays closed.
 
 An item past its deadline gets the keyword on the tick. The message stays
 where it is. The item counts the keyword as set only once it is on the

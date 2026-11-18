@@ -53,9 +53,13 @@ class Reader(Protocol):
 class Items(Protocol):
     """The open items of an agent with deadlines, SPECS.md section 9."""
 
-    async def open(
-        self, ref: MessageRef, thread_id: str | None, due: datetime
-    ) -> None: ...
+    async def open(self, ref: MessageRef, thread_id: str | None, due: datetime) -> None:
+        """Open an item for a message that has none, an item there already
+        left as it is."""
+
+    async def restart(self, ref: MessageRef, due: datetime) -> None:
+        """Start an item again with a new deadline, unless a person closed it
+        by taking the keyword off."""
 
     async def get(self, ref: MessageRef) -> OpenItem | None: ...
 
