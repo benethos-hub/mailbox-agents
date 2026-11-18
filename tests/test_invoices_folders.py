@@ -17,6 +17,11 @@ def folder(path: str, role: str | None = None) -> FolderRef:
 INBOX = folder("INBOX", "inbox")
 
 
+def by_path(*found: FolderRef) -> dict[str, FolderRef]:
+    """The folders of an account by path, as the executor hands them over."""
+    return {f.path: f for f in found}
+
+
 def places(
     *folders: str, subfolder: str | None = None, inbox: str | None = None
 ) -> Places:
@@ -76,19 +81,42 @@ def test_the_subfolder_below_the_folder_a_message_lies_in() -> None:
         "Providers/Hosting/Rechnungen/Eingang"
     )
     assert found.target(INBOX) is None
-    assert found.may_create("Providers/Hosting/Rechnungen")
-    assert found.may_create("Providers/Hosting/Rechnungen/Eingang")
-    assert not found.may_create("Providers/Hosting")
-    assert not found.may_create("Other/Hosting/Rechnungen")
-    assert not found.may_create("INBOX/Rechnungen")
-    assert not found.may_create("Providers/Hosting/Other")
+    known = by_path(
+        INBOX,
+        folder("Providers"),
+        folder("Providers/Hosting"),
+        folder("Other"),
+        folder("Other/Hosting"),
+    )
+    assert found.may_create("Providers/Hosting/Rechnungen", known)
+    assert found.may_create("Providers/Hosting/Rechnungen/Eingang", known)
+    assert not found.may_create("Providers/Hosting", known)
+    assert not found.may_create("Other/Hosting/Rechnungen", known)
+    assert not found.may_create("INBOX/Rechnungen", known)
+    assert not found.may_create("Providers/Hosting/Other", known)
+
+
+def test_star_makes_no_subfolder_below_a_folder_with_a_role() -> None:
+    found = places("*", subfolder="{folder}/Rechnungen")
+    known = by_path(
+        INBOX,
+        folder("Sent", "sent"),
+        folder("Drafts", "drafts"),
+        folder("Acme"),
+    )
+
+    assert found.may_create("Acme/Rechnungen", known)
+    assert not found.may_create("Sent/Rechnungen", known)
+    assert not found.may_create("Drafts/Rechnungen", known)
+    assert not found.may_create("INBOX/Rechnungen", known)
+    assert not found.may_create("Missing/Rechnungen", known)
 
 
 def test_without_a_subfolder_nothing_is_made() -> None:
     found = places("*")
 
     assert found.target(folder("Hosting")) is None
-    assert not found.may_create("Hosting/Rechnungen")
+    assert not found.may_create("Hosting/Rechnungen", by_path(folder("Hosting")))
 
 
 def test_the_inbox_folder_is_needed_and_not_made() -> None:
@@ -96,7 +124,7 @@ def test_the_inbox_folder_is_needed_and_not_made() -> None:
 
     assert found.target(INBOX) == "Rechnungen/Eingang"
     assert found.needed() == ("Providers/CloudHost", "Rechnungen/Eingang")
-    assert not found.may_create("Rechnungen/Eingang")
+    assert not found.may_create("Rechnungen/Eingang", by_path(folder("Rechnungen")))
 
 
 @pytest.mark.parametrize(

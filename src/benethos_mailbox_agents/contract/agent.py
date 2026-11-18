@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -205,11 +206,12 @@ class Agent(ABC):
         None by default."""
         return ()
 
-    def may_create(self, path: str) -> bool:
+    def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
         """Whether the runtime may make the folder at ``path`` for this
         agent: one its configuration names, such as a folder of its list or
-        one above it. Code only, never from an answer of the model. None by
-        default."""
+        one above it. ``folders`` are the account's folders by path, for an
+        agent whose answer depends on the folder above, such as its role.
+        Code only, never from an answer of the model. None by default."""
         return False
 
     def prepare(self) -> None:

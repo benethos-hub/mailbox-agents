@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from pathlib import Path
 
 import pytest
 
 from benethos_mailbox_agents.contract import Action, ActionRequest
 from benethos_mailbox_agents.errors import MailboxUnavailableError
-from benethos_mailbox_agents.records import MessageRef
+from benethos_mailbox_agents.records import FolderRef, MessageRef
 from benethos_mailbox_agents.runtime.actions import Executor, Outcome
 from fakes import ACCOUNT, wire_message
 from helpers import Echo, Wired, settings, wired
@@ -219,8 +219,9 @@ MAY_MAKE = frozenset(
 
 
 class Maker(Every):
-    def may_create(self, path: str) -> bool:
-        return path in MAY_MAKE
+    def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
+        # The executor hands over the account's folders by path.
+        return path in MAY_MAKE and folders["INBOX"].role == "inbox"
 
 
 def maker(world: Wired, stage: str = "full") -> Executor:

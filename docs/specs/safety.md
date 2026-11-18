@@ -6,7 +6,12 @@ Three locks, in three places, none of which the model can reach:
 |---|---|
 | The mailbox service | sending, deleting for good, drafts: the agent's user has no right to them |
 | The model gateway | a model outside the agent's list, spending past its budget |
-| The runtime | every action the agent did not declare, the trash among them, and a folder its configuration does not name |
+| The runtime | every action the agent did not declare, the trash among them, and a folder made that its configuration does not name |
+
+The runtime does not check the target of a move against the agent's
+configuration: only the agent's code computes it, never a model
+(decided 2026-11-18). A move into the trash, junk or spam, or below
+them, is refused all the same.
 
 Further rules:
 

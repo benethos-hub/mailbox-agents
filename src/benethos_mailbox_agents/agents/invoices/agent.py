@@ -17,6 +17,7 @@ docs/specs/agents/invoices.md.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from functools import cached_property
 
@@ -82,8 +83,8 @@ class Invoices(Agent):
     def backfill_folder(self, folder: FolderRef) -> bool:
         return folder.role != "inbox" and self.places.looks_in(folder)
 
-    def may_create(self, path: str) -> bool:
-        return self.places.may_create(path)
+    def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
+        return self.places.may_create(path, folders)
 
     @cached_property
     def system(self) -> str:

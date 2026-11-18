@@ -51,7 +51,9 @@ every folder at the top that has no role, the owner's own among them, so
 the folders of [sorting](sorting.md) may lie at the top. The inbox, sent
 mail, drafts, the trash, junk, the archive and a folder of all mail have a
 role and are not taken in. A folder named by its path is looked in whatever
-its role, but the trash, junk and spam.
+its role, but the trash, junk and spam. The runtime makes a subfolder only
+below a folder that exists and that the agent looks in, judged with its
+role, so `*` makes none below sent mail, drafts or the inbox.
 
 `Parent/*` and `*` are matched against the path of the folder a message
 lies in, not resolved once at the start, so a folder `sorting` makes later

@@ -25,6 +25,7 @@ inbox goes. Unset, it is marked and stays. See docs/specs/agents/invoices.md.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from ...errors import ConfigError
@@ -147,15 +148,18 @@ class Places:
             for count in range(1, len(self.subfolder) + 1)
         )
 
-    def may_create(self, path: str) -> bool:
+    def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
         """Whether ``path`` is the subfolder of a folder it looks in, or a
-        folder between the two: what the runtime may make for it. The
-        inbox folder is not made."""
+        folder between the two: what the runtime may make for it.
+        ``folders`` are the account's folders by path: the folder it looks
+        in must be one of them, and is judged with its role, so ``*``
+        makes nothing below sent mail or drafts. The inbox folder is not
+        made."""
         for count in range(1, len(self.subfolder) + 1):
             suffix = "/".join(self.subfolder[:count])
             if path.endswith("/" + suffix):
-                base = path[: -len(suffix) - 1]
-                if self._by_path(base, None):
+                base = folders.get(path[: -len(suffix) - 1])
+                if base is not None and self._by_path(base.path, base.role):
                     return True
         return False
 

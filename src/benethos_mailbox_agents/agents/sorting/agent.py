@@ -16,6 +16,7 @@ is then, so a sender added since reaches older mail through
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Mapping
 from functools import cached_property
 
 from ...contract import (
@@ -30,7 +31,7 @@ from ...contract import (
     Trigger,
 )
 from ...errors import ConfigError
-from ...records import Decision, Event, MailMessage
+from ...records import Decision, Event, FolderRef, MailMessage
 from ...settings import PREFIX
 from .groups import Group, Groups, load_groups
 
@@ -87,7 +88,8 @@ class Sorting(Agent):
             raise ConfigError(f"{PREFIX}SORTING_FILE is not set")
         return load_groups(path)
 
-    def may_create(self, path: str) -> bool:
+    def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
+        # The list names whole paths: the folders above do not matter.
         return self.groups.may_create(path)
 
     # -- the contract -------------------------------------------------------------

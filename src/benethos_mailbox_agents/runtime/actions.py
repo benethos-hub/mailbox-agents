@@ -191,8 +191,6 @@ class Executor:
         elif request.action is Action.CREATE_FOLDER:
             if not request.folder:
                 raise ActionRefusedError("a folder to make has no path")
-            if not self.agent.may_create(request.folder):
-                raise ActionRefusedError(f"{self.agent.name} may not make that folder")
         elif request.keyword != self.agent.keyword:
             raise ActionRefusedError("an agent sets and takes off its own keyword only")
 
@@ -243,11 +241,15 @@ class Executor:
     async def _plan_folder(
         self, account_id: str, path: str | None
     ) -> tuple[str, dict[str, Any], str] | None:
-        """A folder to make: None when it exists. Refused when its name
-        exists in another case, which the service would make as a second
-        folder (measured 2026-11-18), when the folder above it is missing,
-        and below the trash, junk or spam."""
+        """A folder to make: refused unless the agent may make it, given
+        the account's folders by path. None when it exists. Refused when
+        its name exists in another case, which the service would make as a
+        second folder (measured 2026-11-18), when the folder above it is
+        missing, and below the trash, junk or spam."""
         path = path or ""  # never empty, _admissible checked it
+        known = await self._mailbox.folders(account_id)
+        if not self.agent.may_create(path, {f.path: f for f in known.values()}):
+            raise ActionRefusedError(f"{self.agent.name} may not make that folder")
         if await self._mailbox.folder_at(account_id, path) is not None:
             return None
         known = await self._mailbox.folders(account_id)
