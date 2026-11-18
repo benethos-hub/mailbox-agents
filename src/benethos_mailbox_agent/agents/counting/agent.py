@@ -29,7 +29,7 @@ class Counting(Agent):
     triggers = Trigger(events=frozenset({"message.created", "message.sent"}))
     actions = frozenset[Action]()
     limits = Limits(model_calls_per_message=0, model_calls_per_day=0)
-    default_keyword = "counted"
+    default_keyword = "agent-counted"
 
     def select(self, event: Event) -> Route | None:
         return Route.DECIDE if event.type in self.triggers.events else None

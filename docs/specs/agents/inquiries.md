@@ -10,7 +10,7 @@
 | Actions | `add_keyword` |
 
 The label comes first (built 2026-11-17, prompt `system.v1.md`): an
-inquiry gets the keyword `inquiry`. The rules call a message an inquiry
+inquiry gets the keyword `agent-inquiry`. The rules call a message an inquiry
 when its sender's domain is known, when it carries two phrases of an
 inquiry, or one together with a date or a rate.
 

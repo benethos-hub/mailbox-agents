@@ -136,9 +136,9 @@ async def test_an_invoice_in_a_folder_moves_to_its_subfolder(world: Wired) -> No
 
     assert world.service.made() == [{"name": "Rechnungen", "parent_id": "inv-hosting"}]
     assert mail(world, "filed")["folder_ids"] == ["inv-hosting/Rechnungen"]
-    assert mail(world, "filed")["keywords"] == ["invoice"]
+    assert mail(world, "filed")["keywords"] == ["agent-invoice"]
     assert actions(world, "filed") == [
-        ("add_keyword", "invoice", True),
+        ("add_keyword", "agent-invoice", True),
         ("create_folder", "Invoices/Hosting/Rechnungen", True),
         ("move_to_folder", "Invoices/Hosting/Rechnungen", True),
     ]
@@ -173,7 +173,7 @@ async def test_without_a_subfolder_an_invoice_is_marked_and_stays(
 
     await run(world, "filed", agent(invoices_subfolder=None))
 
-    assert mail(world, "filed")["keywords"] == ["invoice"]
+    assert mail(world, "filed")["keywords"] == ["agent-invoice"]
     assert mail(world, "filed")["folder_ids"] == ["inv-hosting"]
     assert world.service.made() == []
 
@@ -183,7 +183,7 @@ async def test_an_invoice_in_the_inbox_is_marked_and_stays(world: Wired) -> None
 
     assert await run(world, "inv-unlisted") == "done"
 
-    assert mail(world, "inv-unlisted")["keywords"] == ["invoice"]
+    assert mail(world, "inv-unlisted")["keywords"] == ["agent-invoice"]
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inbox"]
     assert world.service.made() == []
 
@@ -202,7 +202,7 @@ async def test_a_missing_inbox_folder_is_not_made(world: Wired) -> None:
 
     await run(world, "inv-unlisted", agent(invoices_inbox_folder="Missing"))
 
-    assert mail(world, "inv-unlisted")["keywords"] == ["invoice"]
+    assert mail(world, "inv-unlisted")["keywords"] == ["agent-invoice"]
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inbox"]
     assert world.service.made() == []
 
@@ -214,7 +214,7 @@ async def test_a_notice_without_a_file_counts(world: Wired) -> None:
 
     assert await run(world, "inv-telco-notice") == "done"
 
-    assert mail(world, "inv-telco-notice")["keywords"] == ["invoice"]
+    assert mail(world, "inv-telco-notice")["keywords"] == ["agent-invoice"]
 
 
 @pytest.mark.parametrize(
@@ -283,7 +283,7 @@ async def test_shadow_changes_nothing_and_records_all(world: Wired) -> None:
     assert world.service.writes() == []
     assert world.service.made() == []
     assert actions(world, "filed") == [
-        ("add_keyword", "invoice", False),
+        ("add_keyword", "agent-invoice", False),
         ("create_folder", "Invoices/Hosting/Rechnungen", False),
         ("move_to_folder", "Invoices/Hosting/Rechnungen", False),
     ]
@@ -294,7 +294,7 @@ async def test_keyword_marks_and_moves_nothing(world: Wired) -> None:
 
     await run(world, "filed", agent("keyword"))
 
-    assert mail(world, "filed")["keywords"] == ["invoice"]
+    assert mail(world, "filed")["keywords"] == ["agent-invoice"]
     assert mail(world, "filed")["folder_ids"] == ["inv-hosting"]
     assert world.service.made() == []
 
@@ -698,8 +698,8 @@ async def test_invoices_first_then_sorting_moves_it_on(
 
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
     assert sorted(mail(world, "inv-unlisted")["keywords"]) == [
+        "agent-invoice",
         "agent-sorted",
-        "invoice",
     ]
     found = item(world, "inv-unlisted")
     assert found is not None and (found.is_open, found.reason) == (False, "filed")

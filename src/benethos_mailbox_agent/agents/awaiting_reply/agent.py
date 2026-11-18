@@ -55,7 +55,7 @@ class AwaitingReply(Agent):
     )
     actions = frozenset({Action.ADD_KEYWORD, Action.REMOVE_KEYWORD})
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
-    default_keyword = "awaiting-reply"
+    default_keyword = "agent-awaiting-reply"
     prompt_version = "v1"
 
     @cached_property

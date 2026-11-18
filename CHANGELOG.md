@@ -26,17 +26,17 @@ commit that makes the change. Design decisions live in
   operation, one service per agent behind a profile of its name, and for
   development against a test account of invented mail.
 - The agent `invoices`: marks invoices and invoice notices from suppliers
-  with the keyword `invoice`, and moves those of a listed supplier into
+  with the keyword `agent-invoice`, and moves those of a listed supplier into
   its folder under `MAILBOX_AGENT_INVOICES_FOLDER`. The supplier comes from
   a sender rule of the JSON list in `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`,
   or from the model's choice among the listed suppliers when no rule
   matches.
 - The agent `awaiting_reply`: opens an item for each sent message the
   model finds asking for an answer, closes it on a reply in its thread or
-  when the keyword is taken off, and sets the keyword `awaiting-reply` on
+  when the keyword is taken off, and sets the keyword `agent-awaiting-reply` on
   the sent message after `MAILBOX_AGENT_REPLY_DAYS` working days.
 - The agent `inquiries`: marks project inquiries with the keyword
-  `inquiry` and records what an inquiry says, role, start, end, duration,
+  `agent-inquiry` and records what an inquiry says, role, start, end, duration,
   workload, location, remote share, contract form, intermediary, end
   client, rate, skills and deadline, each with a quote from the mail. Its rules read phrases, dates and rates, and the sender
   domains and phrases of `MAILBOX_AGENT_INQUIRIES_PATTERNS_FILE`.
@@ -61,6 +61,10 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- Every agent's keyword has the form `agent-<word>`: `agent-invoice`,
+  `agent-awaiting-reply`, `agent-inquiry`, `agent-sorted`. A mail marked
+  with an older keyword keeps it. `MAILBOX_AGENT_KEYWORD` still names
+  another.
 - The agent `invoices` is version 4 with the prompt `v4`. It asks only
   whether a message is an invoice, no longer from which supplier. It looks
   in the inbox and in the folders `MAILBOX_AGENT_INVOICES_FOLDERS` names,

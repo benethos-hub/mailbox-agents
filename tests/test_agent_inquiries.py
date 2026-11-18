@@ -165,7 +165,7 @@ async def test_an_inquiry_is_marked(world: Wired) -> None:
     world.fake_gateway.answer(said("inquiry", "suchen wir ab 01.02.2027"))
 
     assert await run(world, "inq-staffing") == "done"
-    assert keywords(world, "inq-staffing") == ["inquiry"]
+    assert keywords(world, "inq-staffing") == ["agent-inquiry"]
 
 
 async def test_another_message_is_not(world: Wired) -> None:

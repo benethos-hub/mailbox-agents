@@ -37,7 +37,7 @@ class Inquiries(Agent):
     triggers = Trigger(events=frozenset({"message.created"}))
     actions = frozenset({Action.ADD_KEYWORD})
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
-    default_keyword = "inquiry"
+    default_keyword = "agent-inquiry"
     prompt_version = "v3"
 
     def prepare(self) -> None:

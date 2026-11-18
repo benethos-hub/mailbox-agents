@@ -220,7 +220,7 @@ async def test_a_sent_message_that_asks_waits_and_is_marked_when_due(
     world.clock.advance(days=3, minutes=1)
     await world.run()
 
-    assert world.keywords("s1") == ["awaiting-reply"]
+    assert world.keywords("s1") == ["agent-awaiting-reply"]
     assert world.item("s1").keyword_set
     assert world.w.service.messages[(ACCOUNT, "s1")]["folder_ids"] == ["sent"]
 
@@ -276,7 +276,7 @@ async def test_a_gateway_that_is_away_holds_up_neither_tick_nor_replies(
 
     await world.run()
 
-    assert world.keywords("s1") == ["awaiting-reply"]
+    assert world.keywords("s1") == ["agent-awaiting-reply"]
     states = {m: world.w.store.message(ref(m)) for m in ("s2", "s3", "r9")}
     assert {m: (row.state, row.attempts) for m, row in states.items() if row} == {
         "s2": ("pending", 0),
@@ -348,7 +348,7 @@ async def test_a_keyword_the_service_refused_is_offered_again(tmp_path: Path) ->
         world.clock.advance(days=1)
         await world.run()
 
-        assert world.keywords("s1") == ["awaiting-reply"]
+        assert world.keywords("s1") == ["agent-awaiting-reply"]
         assert world.item("s1").keyword_set
 
 
@@ -379,7 +379,7 @@ async def test_after_shadow_the_keyword_stage_sets_the_keyword(tmp_path: Path) -
         world.clock.advance(days=1)
         await keyword.run()
 
-        assert world.keywords("s1") == ["awaiting-reply"]
+        assert world.keywords("s1") == ["agent-awaiting-reply"]
         assert world.item("s1").keyword_set
 
 
@@ -417,7 +417,7 @@ async def test_taking_a_message_up_again_reopens_nothing(world: World) -> None:
     await world.run()
     world.clock.advance(days=4)
     await world.run()
-    assert world.keywords("s1") == ["awaiting-reply"]
+    assert world.keywords("s1") == ["agent-awaiting-reply"]
     world.w.service.messages[(ACCOUNT, "s1")]["keywords"] = []
     world.w.service.change("message.updated", "s1")
     await world.run()
@@ -469,7 +469,7 @@ async def test_a_reply_in_the_thread_closes_it_and_takes_the_keyword_off(
     await world.run()
     world.clock.advance(days=4)
     await world.run()
-    assert world.keywords("s1") == ["awaiting-reply"]
+    assert world.keywords("s1") == ["agent-awaiting-reply"]
 
     world.add(received("r1", date="2026-11-20T10:00:00+00:00"))
     await world.run()
@@ -602,7 +602,7 @@ async def test_known_miss_an_answer_by_telephone_closes_nothing(world: World) ->
     world.clock.advance(days=4)
     await world.run()
 
-    assert world.keywords("s1") == ["awaiting-reply"]
+    assert world.keywords("s1") == ["agent-awaiting-reply"]
 
 
 async def test_known_miss_one_of_several_recipients_closes_it(world: World) -> None:

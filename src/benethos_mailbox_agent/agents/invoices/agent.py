@@ -58,7 +58,7 @@ class Invoices(Agent):
         {Action.ADD_KEYWORD, Action.MOVE_TO_FOLDER, Action.CREATE_FOLDER}
     )
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
-    default_keyword = "invoice"
+    default_keyword = "agent-invoice"
     prompt_version = "v4"
 
     # -- what it reads besides its settings -----------------------------------
