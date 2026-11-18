@@ -68,7 +68,7 @@ def test_every_line_function_writes_one_line(stream: io.StringIO) -> None:
     logbook.step_failed("a", "m1", "model", error)
     logbook.answer_refused("a", "m1", "schema")
     logbook.evidence_missing("a", "m1", "label")
-    logbook.action_done("a", "m1", "add_keyword", "shadow", False)
+    logbook.action_done("a", "m1", "add_keyword", "shadow", False, "due")
     logbook.action_refused("a", "m1", "move_to_folder", error)
 
     assert len(stream.getvalue().splitlines()) == 17

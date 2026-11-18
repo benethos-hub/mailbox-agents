@@ -131,6 +131,7 @@ class Executor:
             request.action.value,
             self.stage,
             executed,
+            request.why,
         )
         return Outcome.DONE if executed else Outcome.RECORDED
 

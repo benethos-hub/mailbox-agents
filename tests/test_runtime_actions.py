@@ -180,6 +180,20 @@ async def test_a_write_the_service_refuses_is_not_recorded(world: Wired) -> None
     assert world.store.actions() == []
 
 
+async def test_the_log_line_names_why(
+    world: Wired, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level("INFO")
+    request = ActionRequest(Action.ADD_KEYWORD, REF, keyword="echo", why="due")
+
+    await executor(world).run(request)
+    await executor(world).run(MOVE)
+
+    lines = [r.getMessage() for r in caplog.records if "action=" in r.getMessage()]
+    assert lines[0].endswith("action=add_keyword stage=full executed=yes why=due")
+    assert lines[1].endswith("why=-")
+
+
 async def test_a_service_that_is_away_is_raised(world: Wired) -> None:
     world.service.down = True
 

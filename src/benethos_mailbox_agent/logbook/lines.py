@@ -124,15 +124,18 @@ def evidence_missing(agent: str, message_id: str, field: str) -> None:
 
 
 def action_done(
-    agent: str, message_id: str, action: str, stage: str, executed: bool
+    agent: str, message_id: str, action: str, stage: str, executed: bool, why: str
 ) -> None:
+    """``why`` is the agent's short code for the action, such as ``due``:
+    a word of code, never anything of the mail."""
     LOGGER.info(
-        "agent=%s message=%s action=%s stage=%s executed=%s",
+        "agent=%s message=%s action=%s stage=%s executed=%s why=%s",
         agent,
         message_id,
         action,
         stage,
         "yes" if executed else "no",
+        why or "-",
     )
 
 

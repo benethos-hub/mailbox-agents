@@ -44,6 +44,8 @@ commit that makes the change. Design decisions live in
   nothing, for checking a deployment end to end.
 - The setting `MAILBOX_AGENT_GATEWAY_ALLOW_HTTP`, for a gateway reached
   over http between two containers.
+- The log line of an action names why the agent asked for it, as a short
+  code such as `why=due` or `why=invoice`.
 
 ### Changed
 
