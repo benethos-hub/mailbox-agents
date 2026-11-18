@@ -105,8 +105,7 @@ class ActionRequest:
     runtime resolves it, refuses a move into a folder that does not exist,
     and makes only a folder the agent may make, see :meth:`Agent.may_create`.
     ``held`` asks for the action to be recorded only, as in ``shadow``,
-    whatever the stage: for a group of ``sorting`` whose folder would lend
-    a forged mail trust.
+    whatever the stage: for a group or rule its configuration holds.
     """
 
     action: Action
@@ -143,7 +142,7 @@ class Agent(ABC):
     # The version of the prompt the model step runs under. A step stored
     # under the same message, prompt version and model is not run again.
     # Read from the instance: an agent whose decision rests on a list it
-    # reads, such as sorting, sets it from that list.
+    # reads sets it from that list.
     prompt_version: str = ""
 
     def __init__(self, settings: Settings) -> None:

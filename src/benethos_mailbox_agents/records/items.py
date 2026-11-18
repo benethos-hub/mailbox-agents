@@ -1,4 +1,5 @@
-"""An open item: a sent message that waits for something by a deadline."""
+"""An open item: a message an agent follows until something happens to it,
+by a deadline or without one."""
 
 from __future__ import annotations
 

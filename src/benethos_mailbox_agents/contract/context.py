@@ -52,7 +52,8 @@ class Reader(Protocol):
 
 
 class Items(Protocol):
-    """The open items of an agent with deadlines, docs/specs/state.md."""
+    """The open items of an agent, with or without a deadline,
+    docs/specs/state.md."""
 
     async def open(self, ref: MessageRef, thread_id: str | None, due: datetime) -> None:
         """Open an item for a message that has none, an item there already
