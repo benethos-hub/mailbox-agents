@@ -67,8 +67,7 @@ class Live:
 async def snapshot(
     live: Live,
 ) -> dict[MessageRef, tuple[tuple[str, ...], tuple[str, ...]]]:
-    """Each message of the inbox and the folders below: its folders and
-    keywords."""
+    """Each message of the inbox: its folders and keywords."""
     since = date.today() - timedelta(days=30)
     refs = await live.mailbox.recent(since, live.settings.accounts, roles=("inbox",))
     found = {}
