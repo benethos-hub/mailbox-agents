@@ -48,11 +48,9 @@ class Answer(BaseModel):
 
 def render(message: MailMessage) -> str:
     """The content of one call: sender, subject, attachments, text."""
-    sender = message.sender
     lines = []
-    if sender is not None:
-        named = f"{sender.name} <{sender.email}>" if sender.name else sender.email
-        lines.append(f"From: {named}")
+    if message.sender is not None:
+        lines.append(f"From: {_named(message)}")
     lines.append(f"Subject: {message.subject or ''}")
     if message.attachments:
         files = ", ".join(
