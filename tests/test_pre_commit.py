@@ -53,6 +53,8 @@ def _stage(repo: Path, name: str, content: str = "x\n") -> None:
         "data/gold/invoices.jsonl",
         "state.db-wal",
         "somewhere/agent.sqlite",
+        "containers/live/secrets/x",
+        "secrets/agent.env.json",
     ],
 )
 def test_refuses_files_that_never_belong(repo: Path, name: str) -> None:
@@ -99,8 +101,20 @@ def test_refuses_a_line_that_looks_like_a_credential(repo: Path) -> None:
         "GATEWAY_KEY: " + "sk-" + "live-abcdefghijklmnop1234",
         "MAILBOX_AGENTS_GATEWAY_KEY = " + '"' + "abcdefghijklmnop1234" + '"',
         "SERVICE_TOKEN: " + "'" + "abcdefghijklmnop1234" + "'",
+        '{"password": "' + 'Tr0ub4dor3xyzabc"}',
+        "token: " + "abcdefghijklmnopq",
+        "Gateway_Key = " + "abcdefghijklmnopq",
     ],
-    ids=["json-token", "bearer", "sk-with-dash", "spaced-quoted", "yaml-quoted"],
+    ids=[
+        "json-token",
+        "bearer",
+        "sk-with-dash",
+        "spaced-quoted",
+        "yaml-quoted",
+        "json-lower-case",
+        "yaml-lower-case",
+        "mixed-case",
+    ],
 )
 def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
     _stage(repo, "notes.txt", line + "\n")
@@ -117,6 +131,11 @@ def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
         "MAILBOX_AGENTS_GATEWAY_KEY_FILE: /run/secrets/gateway_key",
         "GATEWAY_KEY: ${GATEWAY_KEY}",
         'headers={"Authorization": f"Bearer {key}"}',
+        "api_key: os.environ/ANTHROPIC_API_KEY",
+        "token = base64.b64encode(raw).decode()",
+        "tokens_in=calls.tokens_in",
+        'default_keyword = "agent-awaiting-reply"',
+        '"secret": mailbox_password}',
     ],
 )
 def test_a_reference_to_a_secret_passes(repo: Path, line: str) -> None:

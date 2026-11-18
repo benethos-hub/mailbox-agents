@@ -19,11 +19,13 @@ note() {
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -n "$staged" ] || exit 0
 
-# 1. Files that never belong in the repository: a .env other than the
-#    example, anything under data/ but .gitkeep, and SQLite files anywhere.
+# 1. Files that never belong in the repository: anything in a folder
+#    secrets/, a .env other than the example, anything under data/ but
+#    .gitkeep, and SQLite files anywhere.
 forbidden=$(
     printf '%s\n' "$staged" | while IFS= read -r file; do
         case "$file" in
+            secrets/* | */secrets/*) printf '%s\n' "$file" ;;
             *.env.example) ;;
             .env | */.env | .env.* | */.env.*) printf '%s\n' "$file" ;;
             data/*/.gitkeep | data/.gitkeep) ;;
@@ -50,11 +52,21 @@ patterns="$patterns|BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY"
 # A name, then = or :, maybe a quote, then the value. A value that
 # starts with / is a path, as a *_FILE setting names one.
 patterns="$patterns|(TOKEN|SECRET|PASSWORD|API_KEY|_KEY)[A-Z_]*[[:space:]]*[:=][[:space:]]*[\"']?[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
+# The same in any case, as JSON and YAML write it: a name that ends in
+# token, secret, password or _key, then = or :, then a quoted value, or a
+# bare one that ends the line or a word. A bare value with a dot or a
+# bracket is code, such as token = base64.b64encode(raw).
+named="(^|[^a-z0-9])[\"']?[a-z0-9_]*(token|secret|password|passwd|_key)[\"']?"
+named="$named[[:space:]]*[:=][[:space:]]*"
+named="$named([\"'][A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}|[A-Za-z0-9+_-][A-Za-z0-9+/_-]{11,}([[:space:]]|\$))"
 
+added=$(git diff --cached -U0 | grep '^+' || true)
 hits=$(
-    git diff --cached -U0 \
-        | grep '^+' \
-        | grep -E "$patterns" \
+    {
+        printf '%s\n' "$added" | grep -E "$patterns" || true
+        printf '%s\n' "$added" | grep -iE "$named" || true
+    } \
+        | awk '!seen[$0]++' \
         | grep -v 'pragma: allowlist secret' \
         || true
 )

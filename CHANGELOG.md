@@ -188,3 +188,7 @@ commit that makes the change. Design decisions live in
 - A log line and `report` write a mark that sets the direction of text,
   such as U+202E, as its escape, so a sender's name or a subject can no
   longer turn the text after it around.
+- The pre-commit hook in `.githooks/` finds a credential whatever the
+  case of its name, such as `"password": "..."` in JSON or `token: ...` in
+  YAML, and refuses every file in a folder `secrets/`, also one added with
+  `git add -f`.
