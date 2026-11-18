@@ -1,15 +1,15 @@
 # The agent `invoices`
 
 > **Status: version 4, rebuilt on 2026-11-18 after [sorting](sorting.md),
-> steps I1 to I3 of the plan at the end. The open item of an invoice in the
-> inbox (I4) and the removal of the supplier list (I5) are still to come.
+> steps I1 to I4 of the plan at the end. The removal of the supplier list
+> (I5) is still to come.
 > Not run on a real mailbox in this version.**
 
 **Question:** is this message an invoice?
 
 | | |
 |---|---|
-| Triggers | `message.created` in the inbox or in a folder it looks in |
+| Triggers | `message.created` in the inbox or in a folder it looks in, and `message.updated` for a message with an open item |
 | Baseline | a PDF or XML attachment, invoice words in subject and attachment names, phrases of a notice that an invoice waits at the supplier, near-miss words in the subject, a receipt that carries its invoice taken as one, and a credit note. The sender plays no part |
 | Model | label `invoice` or `other`, for `other` the near miss it is: reminder, quotation, order confirmation, payment receipt, none. One quote |
 | Actions | `add_keyword`, `move_to_folder`, and `create_folder` for the subfolder only |
@@ -73,8 +73,9 @@ example.
 | is no invoice | nothing |
 | is an invoice in a named folder | the keyword, and a move to the subfolder, made when missing, each folder of the path as an action of its own |
 | is an invoice in a named folder, no subfolder pattern set | the keyword. It stays |
-| is an invoice in the inbox | the keyword. It stays, unless an inbox folder is set, which must be there. An open item follows with step I4 |
-| was marked in the inbox and now lies in a named folder | a move to the subfolder, no model call. The open item closes. Step I4, not built yet |
+| is an invoice in the inbox | the keyword and an open item. It stays, unless an inbox folder is set, which must be there |
+| was marked in the inbox and now lies in a named folder | a move to the subfolder, no model call. The open item closes as `filed` |
+| was marked in the inbox and now lies in a folder it does not look in | nothing. The open item closes as `moved_elsewhere` |
 
 Where the message lies is looked up again when the agent acts. In
 `shadow` the keyword, the folders and the move are recorded, in `keyword`
@@ -104,20 +105,22 @@ Whichever agent comes first, the end is the same:
 - `invoices` first: the message is marked in the inbox and gets an open
   item. `sorting` moves it. The move reaches `invoices` as an update of the
   message, it finds the open item, sees the message in a named folder and
-  moves it on (step I4).
+  moves it on.
 - `sorting` first: `invoices` finds the message in the named folder and
   moves it on after its decision.
 
 The open item and the look at an updated message are what
 [awaiting reply](awaiting_reply.md) uses already. An open item of an
-invoice has no deadline.
+invoice has no deadline: its due date lies in the year 9999, and the agent
+has no tick. Every update of a message is fetched and looked at, as for
+`awaiting_reply`, and one without an open item ends there.
 
 ## What changed from version 3
 
 | Part | Version 3 | Version 4 |
 |---|---|---|
 | Question | an invoice, and from which listed supplier | an invoice |
-| Triggers | `message.created` | `message.created`, and with I4 `message.updated` for a message with an open item |
+| Triggers | `message.created` | `message.created`, and `message.updated` for a message with an open item |
 | `admit` | in the inbox | in the inbox or in a folder it looks in |
 | Model answer | label, near miss, supplier, two quotes | label, near miss, one quote |
 | Prompt | `v3`, names the suppliers | `v4`, names none |
@@ -156,7 +159,7 @@ action `create_folder` and the measurements. Each step is one commit.
 | I1 | The two measurements above | done 2026-11-18 |
 | I2 | The three settings, checked at the start, `status` names a folder that is missing | done 2026-11-18 |
 | I3 | `admit` by folder, the supplier taken out of schema, baseline and decision, prompt `v4` | done 2026-11-18 |
-| I4 | The open item and the look at an updated message | the last row, in both orders with `sorting` |
+| I4 | The open item and the look at an updated message | done 2026-11-18 |
 | I5 | `report` and the evaluation without the supplier, the old settings and the supplier list removed | the suite green, the changelog names what was removed |
 | I6 | Evaluation of `v4` on the gold set, then `shadow` on the test account beside `sorting` | a report under `reports/invoices/` |
 

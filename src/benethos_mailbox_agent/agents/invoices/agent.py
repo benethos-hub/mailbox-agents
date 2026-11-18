@@ -5,7 +5,10 @@ not, which near miss it is. The agent looks at the inbox and at the
 folders its settings name. An invoice gets the keyword. One in a folder it
 looks in moves into the subfolder below that folder, made when missing, so
 the folder says whose invoice it is. One in the inbox stays there, unless
-an inbox folder is set. Who put a message into a folder does not matter:
+an inbox folder is set, and gets an open item: when a person or
+``sorting`` moves it into a folder the agent looks in, the update of the
+message reaches the agent, which moves it on into the subfolder without a
+new model call. Who put a message into a folder does not matter:
 ``sorting``, a rule of the mail server or the owner by hand. The agent
 knows nothing of groups and names no supplier (agent version 4). See
 docs/specs/agents/invoices.md.
@@ -14,6 +17,7 @@ docs/specs/agents/invoices.md.
 from __future__ import annotations
 
 from collections import Counter
+from datetime import UTC, datetime
 from functools import cached_property
 
 from ...contract import (
@@ -32,7 +36,15 @@ from .baseline import baseline
 from .folders import Places
 from .schema import Answer, parts, render
 
-__all__ = ["Invoices"]
+__all__ = ["FILED", "MOVED_ELSEWHERE", "NO_DEADLINE", "Invoices"]
+
+# An open item of an invoice has no deadline: the agent has no tick.
+NO_DEADLINE = datetime(9999, 12, 31, tzinfo=UTC)
+
+# Why an open item closes: the invoice reached a folder the agent looks in
+# and was filed, or went to a folder it does not look in.
+FILED = "filed"
+MOVED_ELSEWHERE = "moved_elsewhere"
 
 
 class Invoices(Agent):
@@ -41,7 +53,7 @@ class Invoices(Agent):
     description = (
         "Marks invoices, and moves one into the subfolder of the folder it lies in."
     )
-    triggers = Trigger(events=frozenset({"message.created"}))
+    triggers = Trigger(events=frozenset({"message.created", "message.updated"}))
     actions = frozenset(
         {Action.ADD_KEYWORD, Action.MOVE_TO_FOLDER, Action.CREATE_FOLDER}
     )
@@ -77,7 +89,11 @@ class Invoices(Agent):
     # -- the contract -------------------------------------------------------------
 
     def select(self, event: Event) -> Route | None:
-        return Route.DECIDE if event.type == "message.created" else None
+        if event.type == "message.created":
+            return Route.DECIDE
+        if event.type == "message.updated":
+            return Route.OBSERVE
+        return None
 
     def admit(self, message: MailMessage) -> bool:
         return self._looked_in(message) is not None
@@ -114,9 +130,31 @@ class Invoices(Agent):
         ]
         # Where it lies when the agent acts, not when it was decided.
         folder = self._looked_in(message)
-        if folder is not None:
-            requests += self._file(message, folder)
-        return requests
+        if folder is None:
+            return requests
+        filed = self._file(message, folder)
+        if not filed and folder.role == "inbox":
+            # It stays: a move into a folder the agent looks in, by a
+            # person or by sorting, reaches it as an update (observe).
+            await context.items.open(message.ref, message.thread_id, NO_DEADLINE)
+        return requests + filed
+
+    async def observe(
+        self, message: MailMessage, context: Context
+    ) -> list[ActionRequest]:
+        """An update of an invoice marked in the inbox: once it lies in a
+        folder the agent looks in, it moves on into the subfolder, with no
+        model call, and its item closes. One moved anywhere else closes
+        its item and stays."""
+        item = await context.items.get(message.ref)
+        if item is None or not item.is_open or message.in_role("inbox"):
+            return []
+        folder = self._looked_in(message)
+        if folder is None:
+            await context.items.close(message.ref, MOVED_ELSEWHERE)
+            return []
+        await context.items.close(message.ref, FILED)
+        return self._file(message, folder)
 
     def summarize(self, shown: list[Shown]) -> list[str]:
         """The senders of invoices no supplier of the list was found for,

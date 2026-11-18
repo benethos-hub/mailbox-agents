@@ -10,7 +10,7 @@ once released.
 | `messages` | message id, account id, state, attempts, next attempt |
 | `steps` | message, step, prompt version, model alias and the model reported, result, tokens, duration |
 | `actions` | message, action, what it was before, when, stage, whether it was carried out |
-| `open_items` | for agents with deadlines: message, thread, due, whether the keyword is on the message, the stage its keyword was recorded in without being set, closed and why |
+| `open_items` | for agents that follow a message, `awaiting_reply` with a deadline and `invoices` without one: message, thread, due, whether the keyword is on the message, the stage its keyword was recorded in without being set, closed and why |
 | `calls` | the full request and answer of a model call, only while `PROMPT_RETENTION_DAYS` keeps them |
 
 The schema version is the file's `user_version`. A reader opens the file
