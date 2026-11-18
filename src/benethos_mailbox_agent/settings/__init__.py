@@ -82,8 +82,6 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     # --- invoices, docs/specs/agents/invoices.md --------------------------------------
-    invoices_folder: str | None = None
-    invoices_suppliers_file: Path | None = None
     invoices_folders: Annotated[list[str], NoDecode] = Field(default_factory=list)
     invoices_subfolder: str | None = None
     invoices_inbox_folder: str | None = None

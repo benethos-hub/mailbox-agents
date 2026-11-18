@@ -125,6 +125,16 @@ commit that makes the change. Design decisions live in
 - The state file and the secrets of the live setup are written readable
   by their owner only.
 
+### Removed
+
+- The supplier list of `invoices`, its examples and the settings
+  `MAILBOX_AGENT_INVOICES_FOLDER` and
+  `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`: the agent `sorting` files mail
+  by its sender now, and `invoices` moves an invoice within the folder it
+  lies in. A `.env` that still names them starts and ignores them.
+- `report` for `invoices` no longer names candidates for the supplier
+  list. It names the senders of invoices it marked and did not move.
+
 ### Fixed
 
 - `health` says what it measures: `last progress 42s ago` and

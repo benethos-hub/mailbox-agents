@@ -1,2 +1,2 @@
-"""``invoices``: marks invoices from suppliers and moves those of a listed
-supplier into its folder. See docs/specs/agents/invoices.md."""
+"""``invoices``: marks invoices and moves one into the subfolder of the
+folder it lies in. See docs/specs/agents/invoices.md."""

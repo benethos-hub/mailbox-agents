@@ -492,21 +492,55 @@ async def test_a_gateway_that_is_away_leaves_the_invoice_pending(world: Wired) -
 # -- the report --------------------------------------------------------------------
 
 
-async def test_the_report_ends_with_the_candidates(world: Wired) -> None:
+async def test_the_report_names_invoices_marked_and_not_moved(world: Wired) -> None:
     from benethos_mailbox_agent.cli.report import collect, render, summary
 
     world.fake_gateway.answer(
         answer("invoice", "please find attached invoice INV-77"),
+        answer("invoice", "Ihre Rechnung R-77"),
     )
     await run(world, "inv-unlisted")
+    await run(world, "filed")
 
     entries = await collect(world.store, world.mailbox, limit=10)
     lines = render(entries) + summary(agent(), entries)
 
     assert lines[-2:] == [
-        "candidates for the supplier list:",
+        "invoices marked and not moved, by sender:",
         "  accounts@paperworks.example (1 invoice)",
     ]
+
+
+def test_summarize_counts_invoices_left_where_they_lay() -> None:
+    from benethos_mailbox_agent.contract import Shown
+    from benethos_mailbox_agent.records import Decision
+
+    invoice = Decision(label="invoice", source="model")
+    refused = invoice.model_copy(update={"refused": "evidence"})
+    other = Decision(label="other", source="model")
+    marked = (("add_keyword", True),)
+    moved = (("add_keyword", True), ("move_to_folder", True))
+    recorded = (("add_keyword", False), ("move_to_folder", False))
+
+    lines = agent().summarize(
+        [
+            Shown("accounts@paperworks.example", invoice, marked),
+            Shown("Accounts@Paperworks.example", invoice, marked),
+            Shown("billing@new.example", invoice, ()),
+            Shown("rechnung@telco.example", invoice, moved),
+            Shown("billing@host.example", invoice, recorded),
+            Shown("x@refused.example", refused, ()),
+            Shown("y@other.example", other, ()),
+            Shown(None, invoice, ()),
+        ]
+    )
+
+    assert lines == [
+        "invoices marked and not moved, by sender:",
+        "  accounts@paperworks.example (2 invoices)",
+        "  billing@new.example (1 invoice)",
+    ]
+    assert agent().summarize([Shown("y@other.example", other)]) == []
 
 
 # -- the schema ----------------------------------------------------------------------

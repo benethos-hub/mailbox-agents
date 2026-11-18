@@ -207,7 +207,7 @@ def _read_json(text: str) -> Any:
     return json.loads(text)
 
 
-# The readers by suffix. JSON, as the supplier list of invoices.
+# The readers by suffix. JSON, as the other lists of this project.
 READERS: dict[str, Callable[[str], Any]] = {".json": _read_json}
 
 

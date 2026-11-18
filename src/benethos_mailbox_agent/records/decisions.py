@@ -21,8 +21,8 @@ class Evidence(BaseModel):
 
     ``found`` is set by the evidence check in code, never by the model:
     ``None`` before the check, then whether the quote is in the text the
-    model was given. A value that code found by a rule, such as the
-    supplier of a sender rule, has no quote and is ``True`` from the start,
+    model was given. A value that code found by a rule, such as a field
+    a sender rule chose, has no quote and is ``True`` from the start,
     so nothing of the mail is stored for it. See docs/specs/safety.md.
     """
 

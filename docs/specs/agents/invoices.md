@@ -1,8 +1,7 @@
 # The agent `invoices`
 
 > **Status: version 4, rebuilt on 2026-11-18 after [sorting](sorting.md),
-> steps I1 to I4 of the plan at the end. The removal of the supplier list
-> (I5) is still to come.
+> steps I1 to I5 of the plan at the end.
 > Not run on a real mailbox in this version.**
 
 **Question:** is this message an invoice?
@@ -65,8 +64,8 @@ not stop the start, as `sorting` may make it later.
 folder it looks in, account by account, each folder by its id.
 
 `MAILBOX_AGENT_INVOICES_FOLDER` and `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`
-are no longer read and retire with step I5, with the supplier list and its
-example.
+are retired with the supplier list and its examples (step I5). A `.env`
+that still names them starts, as an unknown setting is ignored.
 
 ## What happens to a message
 
@@ -130,7 +129,7 @@ has no tick. Every update of a message is fetched and looked at, as for
 | Baseline | uses the supplier list | the invoice rules alone |
 | Where an invoice goes | the folder of its supplier under one parent, by a sender rule of the list | the subfolder of the folder it lies in |
 | Actions | `add_keyword`, `move_to_folder` | the same and `create_folder`, for the subfolder only |
-| `report` | senders of invoices without a supplier | with I5, senders of invoices marked in the inbox |
+| `report` | senders of invoices without a supplier | senders of invoices marked and not moved, as candidates for a group of `sorting` |
 | Evaluation | label, and the supplier by its source | label alone |
 
 Version 3 decided the supplier by a sender rule of a list, and the model
@@ -139,8 +138,10 @@ Only an address or a pattern rule moved. That list and its rules are now
 the business of [sorting](sorting.md), which moves by the sender before
 `invoices` asks its question.
 
-The gold set there is serves: its labels stay, its supplier field is no
-longer scored. The agent version is 4, and it starts in `shadow`.
+The gold set there is serves: its labels stay. The invented gold sets
+dropped their supplier field. In a gold file that still names one, the
+supplier counts as missing, as the agent no longer answers it: drop the
+field. The agent version is 4, and it starts in `shadow`.
 
 ## Measured first
 
@@ -163,7 +164,7 @@ action `create_folder` and the measurements. Each step is one commit.
 | I2 | The three settings, checked at the start, `status` names a folder that is missing | done 2026-11-18 |
 | I3 | `admit` by folder, the supplier taken out of schema, baseline and decision, prompt `v4` | done 2026-11-18 |
 | I4 | The open item and the look at an updated message | done 2026-11-18 |
-| I5 | `report` and the evaluation without the supplier, the old settings and the supplier list removed | the suite green, the changelog names what was removed |
+| I5 | `report` and the evaluation without the supplier, the old settings and the supplier list removed | done 2026-11-18 |
 | I6 | Evaluation of `v4` on the gold set, then `shadow` on the test account beside `sorting` | a report under `reports/invoices/` |
 
 A run on the owner's account is the owner's decision, in `shadow` first.

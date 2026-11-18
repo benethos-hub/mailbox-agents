@@ -3,7 +3,7 @@
 The phrases built in are those a project inquiry usually carries. A file
 named in MAILBOX_AGENT_INQUIRIES_PATTERNS_FILE adds the sender domains and
 phrases the owner's own gold set shows, such as the domains of the agencies
-that write. It is JSON, like the supplier list:
+that write. It is JSON, like the list of sorting:
 
     {"domains": ["staffing.example"], "phrases": ["für einen kunden"]}
 

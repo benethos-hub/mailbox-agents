@@ -7,9 +7,7 @@ This folder is all it needs, no clone of the repository.
 
 1. Copy `.env.example` to `.env` and name the version.
 2. For each agent you run, copy `agents/<name>/.env.example` to
-   `agents/<name>/.env` and fill it in. `invoices` also needs
-   `agents/invoices/suppliers.json`, the supplier list, made after
-   `suppliers.example.json`, and `sorting` needs
+   `agents/<name>/.env` and fill it in. `sorting` also needs
    `agents/sorting/sorting.json`, its groups, made after
    `sorting.example.json`. `sorting` asks no model and has no
    `gateway_key`.

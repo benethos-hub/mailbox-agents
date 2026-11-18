@@ -72,12 +72,8 @@ services:
     <<: *agent
     profiles: ["invoices"]
     command: ["worker", "--agent", "invoices"]
-    environment:
-      <<: *environment
-      MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE: /config/suppliers.json
     volumes:
       - invoices-data:/data
-      - ../live/suppliers.json:/config/suppliers.json:ro
     ports:
       - "127.0.0.1:${INVOICES_METRICS_PORT:-9481}:9464"
     healthcheck:

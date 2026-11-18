@@ -28,7 +28,7 @@ may be given as a file with the suffix `_FILE`.
 `SERVICE_TOKEN_FILE` and `GATEWAY_KEY_FILE` name the file a secret is read
 from. A secret given directly wins over its file.
 
-Settings of one agent, such as `INVOICES_FOLDER`, `INVOICES_SUPPLIERS_FILE`,
+Settings of one agent, such as `INVOICES_FOLDERS`, `INVOICES_SUBFOLDER`,
 `REPLY_DAYS`, `INQUIRIES_PATTERNS_FILE` and `SORTING_FILE`, are named in its
 section. The
 `.env` file is `config/benethos-mailbox-agent/.env` below the working

@@ -160,19 +160,20 @@ class Invoices(Agent):
         return self._file(message, folder)
 
     def summarize(self, shown: list[Shown]) -> list[str]:
-        """The senders of invoices no supplier of the list was found for,
-        with how many each sent: candidates for the list."""
+        """The senders of invoices marked and left where they lay, with how
+        many each sent: candidates for a group of ``sorting``, so their
+        invoices reach a folder of their own."""
         counted = Counter(
             item.sender.lower()
             for item in shown
             if item.sender
             and item.decision.label == "invoice"
             and item.decision.actionable
-            and "supplier" not in item.decision.fields
+            and not any(action == "move_to_folder" for action, _ in item.actions)
         )
         if not counted:
             return []
-        return ["candidates for the supplier list:"] + [
+        return ["invoices marked and not moved, by sender:"] + [
             f"  {sender} ({count} invoice{'s' if count > 1 else ''})"
             for sender, count in counted.most_common()
         ]

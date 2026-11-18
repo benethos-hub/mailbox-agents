@@ -7,8 +7,8 @@ itself is fetched by its id when the evaluation runs, so a gold file holds
 ids and labels only. A line that starts with ``#`` and an empty line are
 skipped. See docs/specs/evaluation.md.
 
-    {"account_id": "acc1", "message_id": "m1", "label": "invoice",
-     "fields": {"supplier": "CloudHost"}}
+    {"account_id": "acc1", "message_id": "m1", "label": "other",
+     "fields": {"near_miss": "reminder"}}
 
 A gold file that points at real mail lives under ``data/`` and is never
 versioned.

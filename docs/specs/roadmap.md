@@ -40,7 +40,9 @@ Answered, all on 2026-11-17:
 
 - **Licence.** MIT.
 - **What `invoices` covers.** [invoices](agents/invoices.md): invoices and invoice notices
-  from suppliers, one folder per listed supplier, others marked only.
+  from suppliers. Since version 4 an invoice moves into the subfolder of
+  the folder it lies in, and [sorting](agents/sorting.md) files mail by
+  its sender before.
 - **Order of the agents.** `invoices`, `awaiting_reply`, `inquiries`.
 - **Metrics.** The `prometheus-client` package.
 - **Settings.** pydantic-settings.

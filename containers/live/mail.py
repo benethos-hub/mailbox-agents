@@ -12,12 +12,11 @@ from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 from email.utils import format_datetime
 
-__all__ = ["FOLDERS", "GOLD", "SUPPLIER_FOLDERS", "messages"]
+__all__ = ["FOLDERS", "GOLD", "SUB_FOLDERS", "messages"]
 
-# The parent of the supplier folders and one folder per listed supplier,
-# as suppliers.json beside this file names them.
-SUPPLIER_FOLDERS = ("Invoices/CloudHost", "Invoices/Telco")
-FOLDERS = ("Invoices", *SUPPLIER_FOLDERS)
+# A folder at the top and two below it, for the checks of the folders.
+SUB_FOLDERS = ("Invoices/CloudHost", "Invoices/Telco")
+FOLDERS = ("Invoices", *SUB_FOLDERS)
 
 NOW = datetime.now(UTC).replace(microsecond=0)
 PDF = b"%PDF-1.4\n% invented, not a real document\n%%EOF\n"
@@ -273,55 +272,55 @@ def messages(me: str) -> Iterator[tuple[str, str, EmailMessage]]:
 # What each invented message is, per agent: the label and the fields, by
 # the local part of its Message-ID. live/gold.py writes the gold files of
 # the test account from it.
-_NO_SUPPLIER = {"supplier": None, "near_miss": None}
+_NO_NEAR_MISS = {"near_miss": None}
 
 GOLD: dict[str, dict[str, tuple[str, dict[str, str | None]]]] = {
     "inv-cloudhost-1": {
-        "invoices": ("invoice", {"supplier": "CloudHost", "near_miss": None}),
+        "invoices": ("invoice", {"near_miss": None}),
         "inquiries": ("other", {}),
     },
     "inv-telco-1": {
-        "invoices": ("invoice", {"supplier": "Telco", "near_miss": None}),
+        "invoices": ("invoice", {"near_miss": None}),
         "inquiries": ("other", {}),
     },
     "inv-paperworks-1": {
-        "invoices": ("invoice", _NO_SUPPLIER),
+        "invoices": ("invoice", _NO_NEAR_MISS),
         "inquiries": ("other", {}),
     },
     "inv-receipt-1": {
-        "invoices": ("invoice", _NO_SUPPLIER),
+        "invoices": ("invoice", _NO_NEAR_MISS),
         "inquiries": ("other", {}),
     },
     "near-reminder-1": {
-        "invoices": ("other", {"supplier": None, "near_miss": "reminder"}),
+        "invoices": ("other", {"near_miss": "reminder"}),
         "inquiries": ("other", {}),
     },
     "near-quote-1": {
-        "invoices": ("other", {"supplier": None, "near_miss": "quotation"}),
+        "invoices": ("other", {"near_miss": "quotation"}),
         "inquiries": ("other", {}),
     },
     "near-order-1": {
-        "invoices": ("other", {"supplier": None, "near_miss": "order_confirmation"}),
+        "invoices": ("other", {"near_miss": "order_confirmation"}),
         "inquiries": ("other", {}),
     },
     "near-receipt-1": {
-        "invoices": ("other", {"supplier": None, "near_miss": "payment_receipt"}),
+        "invoices": ("other", {"near_miss": "payment_receipt"}),
         "inquiries": ("other", {}),
     },
     "inquiry-1": {
-        "invoices": ("other", _NO_SUPPLIER),
+        "invoices": ("other", _NO_NEAR_MISS),
         "inquiries": ("inquiry", {}),
     },
     "newsletter-1": {
-        "invoices": ("other", _NO_SUPPLIER),
+        "invoices": ("other", _NO_NEAR_MISS),
         "inquiries": ("other", {}),
     },
     "reply-partner": {
-        "invoices": ("other", _NO_SUPPLIER),
+        "invoices": ("other", _NO_NEAR_MISS),
         "inquiries": ("other", {}),
     },
     "autoreply-office": {
-        "invoices": ("other", _NO_SUPPLIER),
+        "invoices": ("other", _NO_NEAR_MISS),
         "inquiries": ("other", {}),
     },
     "sent-asked-answered": {"awaiting_reply": ("expects_reply", {})},

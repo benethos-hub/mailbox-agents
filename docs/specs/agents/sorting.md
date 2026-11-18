@@ -105,12 +105,11 @@ write `*@domain` or `*@*.domain`.
 ### When the list is read
 
 - Once, at the start of the agent. A wrong list stops the start and
-  `status` names what is wrong, as with the supplier list today.
+  `status` names what is wrong.
 - A changed list takes effect at the next start.
-- `sorting` reads and matches it with code of its own. `invoices` keeps
-  its supplier list until its rebuild removes it (step I5): an agent is
-  self-contained, and the rules differ, as `sorting` refuses a domain and
-  knows a pattern for subdomains.
+- `sorting` reads and matches it with code of its own. The supplier list
+  of `invoices` version 3, whose rules differed, is gone with its rebuild
+  (step I5).
 
 ## 3. What happens to a message
 
@@ -156,11 +155,11 @@ folder and the move below it in the same effect, so both are recorded.
 
 - The decision: the label is the name of the group or `none`, its source is
   `rules`, its details name the kind of rule. No quote and no sender is
-  stored, as for the supplier of a rule today.
+  stored.
 - No model step. The decision is stored under an empty model alias.
 - The group is looked up again when the agent acts, against the list as it
   is then. So a sender added to the list reaches older mail through
-  `backfill --again`, as a supplier does today.
+  `backfill --again`.
 
 ## 4. The new action `create_folder` (decided 2026-11-18)
 

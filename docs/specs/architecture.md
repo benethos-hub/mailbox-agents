@@ -74,7 +74,7 @@ src/benethos_mailbox_agent/
       baseline.py # for an agent that asks a model: the question by rules
       prompts/    # for an agent that asks a model: its system prompts as
                   # Markdown, each with a version
-      ...         # modules of its own, such as invoices/suppliers.py,
+      ...         # modules of its own, such as sorting/groups.py,
                   # inquiries/patterns.py, awaiting_reply/text.py
 tests/            # offline: REST and gateway through httpx.MockTransport
 live/             # run by hand, outside testpaths: smoke against a test

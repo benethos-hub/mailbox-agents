@@ -21,7 +21,7 @@ def test_the_invented_gold_set_loads_and_names_invented_mail() -> None:
     assert len(items) == 10
     assert {item.message_id for item in items} == ids
     assert items[0].ref == MessageRef(account_id=ACCOUNT, message_id="inv-cloudhost")
-    assert items[0].fields == {"supplier": "CloudHost", "near_miss": None}
+    assert items[0].fields == {"near_miss": None}
 
 
 def _gold(tmp_path: Path, *lines: str) -> Path:

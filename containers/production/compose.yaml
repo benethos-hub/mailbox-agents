@@ -52,10 +52,8 @@ services:
     env_file: ./agents/invoices/.env
     environment:
       <<: *secrets
-      MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE: /config/suppliers.json
     volumes:
       - invoices-data:/data
-      - ./agents/invoices:/config:ro
       - ./secrets/invoices:/run/secrets:ro
     ports:
       - "127.0.0.1:${INVOICES_METRICS_PORT:-9471}:9464"

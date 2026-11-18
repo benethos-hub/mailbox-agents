@@ -46,7 +46,7 @@ PDFS = sum(
     for part in message.iter_attachments()
     if part.get_content_type() == "application/pdf"
 )
-SUPPLIER_FOLDER = mail.SUPPLIER_FOLDERS[0]
+SUB_FOLDER = mail.SUB_FOLDERS[0]
 
 
 class Skip(Exception):  # noqa: N818 - a reason to skip, not an error
@@ -76,9 +76,9 @@ async def folders(live: Live) -> str:
     missing = {"inbox", "sent"} - {f.role for f in found.values()}
     if missing:
         raise AssertionError(f"no folder with the roles {sorted(missing)}")
-    if SUPPLIER_FOLDER not in {f.path for f in found.values()}:
-        raise AssertionError(f"the supplier folder {SUPPLIER_FOLDER} is missing")
-    return f"{len(found)} folders, inbox and sent, {SUPPLIER_FOLDER}"
+    if SUB_FOLDER not in {f.path for f in found.values()}:
+        raise AssertionError(f"the folder {SUB_FOLDER} is missing")
+    return f"{len(found)} folders, inbox and sent, {SUB_FOLDER}"
 
 
 async def recent(live: Live) -> str:

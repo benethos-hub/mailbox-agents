@@ -190,9 +190,6 @@ def test_status_names_a_folder_that_is_missing(
     monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
     monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
     monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
-    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDER", "Invoices")
-    live = Path(__file__).resolve().parent.parent / "containers" / "live"
-    monkeypatch.setenv(f"{PREFIX}INVOICES_SUPPLIERS_FILE", str(live / "suppliers.json"))
     monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*,Missing/*")
 
     assert main(["status"]) == 0
@@ -211,9 +208,6 @@ def test_status_says_why_folders_were_not_checked(
     monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
     monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
     monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
-    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDER", "Invoices")
-    live = Path(__file__).resolve().parent.parent / "containers" / "live"
-    monkeypatch.setenv(f"{PREFIX}INVOICES_SUPPLIERS_FILE", str(live / "suppliers.json"))
     monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
 
     assert main(["status"]) == 0
