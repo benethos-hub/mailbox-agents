@@ -59,6 +59,10 @@ Stalwart, on the test account:
   `404 not_found`. `list_all_messages` takes a role only and answers a
   folder id with `422 validation_error`. So a backfill of a folder looks up
   the folder's id first and asks each account by itself.
+- `list_messages` of a folder named, in one run of 2026-11-18, one or two
+  messages that `get_message` then answered with `404`: messages moved out
+  of that folder shortly before **(to verify why)**. The runtime takes such
+  a message as gone and ends it as `skipped`.
 
 Rights. Each agent has a user of its own in the service:
 

@@ -1,7 +1,8 @@
 # The agent `invoices`
 
 > **Status: version 4, rebuilt on 2026-11-18 after [sorting](sorting.md),
-> steps I1 to I5 of the plan at the end.
+> steps I1 to I6 of the plan at the end, evaluated on the invented mail of
+> the test account and run there in `shadow` beside `sorting`.
 > Not run on a real mailbox in this version.**
 
 **Question:** is this message an invoice?
@@ -165,6 +166,28 @@ action `create_folder` and the measurements. Each step is one commit.
 | I3 | `admit` by folder, the supplier taken out of schema, baseline and decision, prompt `v4` | done 2026-11-18 |
 | I4 | The open item and the look at an updated message | done 2026-11-18 |
 | I5 | `report` and the evaluation without the supplier, the old settings and the supplier list removed | done 2026-11-18 |
-| I6 | Evaluation of `v4` on the gold set, then `shadow` on the test account beside `sorting` | a report under `reports/invoices/` |
+| I6 | Evaluation of `v4` on the gold set, then `shadow` on the test account beside `sorting` | done 2026-11-18, below |
 
 A run on the owner's account is the owner's decision, in `shadow` first.
+
+## Measured, version 4
+
+On the 11 invented messages of the test account, 2026-11-18, the reports
+in `reports/invoices/`. Numbers on invented mail say that the agent works
+as built, not how well it sorts real mail.
+
+| Model | Right | Invoices found | Near miss invented | Tokens in per message |
+|---|---|---|---|---|
+| `mail-classifier` (Claude Haiku 5.5) | 11 of 11 | 3 of 3 | 1 | 1081 |
+| `mail-classifier-gpu` (local) | 11 of 11 | 3 of 3 | 2 | 495 |
+| the rules alone | 10 of 11 | 3 of 3, and one more | | |
+
+`live/invoices.py` ran `invoices` in `shadow` with `Providers/*` and
+`{folder}/Rechnungen` beside `sorting` in `full`, in both orders.
+`invoices` first: it marked the three invoices in the inbox and opened an
+item for each. Once `sorting` had moved two of them, their updates reached
+`invoices` through the feed after about 23 seconds, and it recorded the
+folders and the moves into `Rechnungen` with no further model call. The
+third, of a held group, stayed in the inbox with its item open. `sorting`
+first: `backfill` found the two in the folders of their groups, and
+`invoices` recorded the same. The mail was put back.
