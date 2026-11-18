@@ -98,6 +98,22 @@ def messages(me: str) -> Iterator[tuple[str, str, EmailMessage]]:
             pdf="INV-77.pdf",
         ),
     )
+    # A receipt that carries the invoice: an invoice, not a payment receipt.
+    yield (
+        inbox,
+        "",
+        _message(
+            sender="Platform Billing <billing@platform.example>",
+            to=me,
+            subject="Your receipt from Platform Billing #2210-4471",
+            body="Thank you for your payment of 21.42 EUR for your Platform "
+            "subscription.\n\nThe invoice for this payment is attached.\n\n"
+            "Platform Billing",
+            days_ago=1,
+            message_id="inv-receipt-1",
+            pdf="Invoice-2210-4471.pdf",
+        ),
+    )
 
     # --- near misses
     yield (
@@ -269,6 +285,10 @@ GOLD: dict[str, dict[str, tuple[str, dict[str, str | None]]]] = {
         "inquiries": ("other", {}),
     },
     "inv-paperworks-1": {
+        "invoices": ("invoice", _NO_SUPPLIER),
+        "inquiries": ("other", {}),
+    },
+    "inv-receipt-1": {
         "invoices": ("invoice", _NO_SUPPLIER),
         "inquiries": ("other", {}),
     },

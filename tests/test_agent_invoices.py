@@ -95,7 +95,7 @@ def mail(world: Wired, message_id: str) -> dict[str, Any]:
 
 def decision(world: Wired, message_id: str) -> dict[str, Any]:
     ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    found = world.store.step(ref, "decision", "v1", "alias")
+    found = world.store.step(ref, "decision", Invoices.prompt_version, "alias")
     assert found is not None
     return found.result
 
@@ -438,6 +438,15 @@ def test_the_content_names_sender_subject_and_files() -> None:
 
 def test_the_prompt_names_the_suppliers() -> None:
     assert '"CloudHost", "Telco"' in agent().system
+
+
+def test_a_receipt_that_carries_its_invoice_is_an_invoice_to_the_model() -> None:
+    """The owner's receipts carry the invoice (decided 2026-11-18): only a
+    payment confirmation without one is the near miss."""
+    system = agent().system
+
+    assert "a receipt or payment confirmation that carries the invoice" in system
+    assert "with no\n  invoice attached" in system
 
 
 def test_readiness_names_what_is_missing(tmp_path: Path) -> None:

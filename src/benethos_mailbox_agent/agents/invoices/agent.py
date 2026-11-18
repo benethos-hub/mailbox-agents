@@ -61,7 +61,7 @@ class Invoices(Agent):
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
     requires = Requires(settings=("invoices_folder", "invoices_suppliers_file"))
     default_keyword = "invoice"
-    prompt_version = "v1"
+    prompt_version = "v2"
 
     # -- what it reads besides its settings -----------------------------------
 

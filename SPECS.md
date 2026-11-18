@@ -493,7 +493,11 @@ supplier with a folder of its own?
 
 **What counts (decided 2026-11-17).** An invoice is a message that carries
 an invoice a supplier sent, or that tells one is ready to be fetched. The
-second kind matters: many suppliers send a notice and no file.
+second kind matters: many suppliers send a notice and no file. A receipt
+that carries the invoice for its payment is an invoice too, whatever it
+calls itself. Only a confirmation of a payment with no invoice is the
+near miss `payment_receipt` (decided 2026-11-18: the owner's receipts of a
+subscription carry the invoice, and prompt `v1` left them out).
 
 **One folder per supplier, under one parent (decided 2026-11-17).** The
 parent is named in `MAILBOX_AGENT_INVOICES_FOLDER`. The supplier list is a
@@ -554,7 +558,7 @@ content of a mail can at worst give an invoice of an unlisted sender the
 name of a listed supplier. It moves nothing, since only an address or a
 pattern rule moves.
 
-The prompt is `prompts/system.v1.md`, version `v1`. The model is given the
+The prompt is `prompts/system.v2.md`, version `v2`. The model is given the
 sender, the subject, the names and types of the attachments and the first
 6000 characters of the text.
 
