@@ -49,6 +49,15 @@ Stalwart, on the test account:
   before it makes one.
 - `delete_folder` is refused, `403 forbidden`, to a user with `mail.read`
   and `mail.write`. A folder an agent made is removed by the owner.
+- A message that arrives straight in a folder other than the inbox, as one
+  a mail server files by a rule of its own, reaches the feed as
+  `message.created`, here about 20 seconds after it arrived, and is read
+  in that folder.
+- `list_messages` of one account lists the messages of a folder named by
+  its id, with `after` for a day. Named by its path it answers
+  `404 not_found`. `list_all_messages` takes a role only and answers a
+  folder id with `422 validation_error`. So a backfill of a folder looks up
+  the folder's id first and asks each account by itself.
 
 Rights. Each agent has a user of its own in the service:
 

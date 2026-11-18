@@ -165,12 +165,15 @@ invoice has no deadline.
 The gold set there is serves: its labels stay, its supplier field is no
 longer scored. The agent version becomes 4, and it starts in `shadow`.
 
-### To measure first
+### Measured first
 
-1. Whether the change feed names a message that arrives in a folder other
-   than the inbox, such as one the mail server filed by a rule of its own.
-2. Whether `backfill` can list the messages of a folder by its path. Today
-   it lists by the role of a folder.
+Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
+[mailbox service](../mailbox-service.md).
+
+1. A message that arrives in a folder other than the inbox reaches the
+   feed as `message.created`.
+2. `backfill` can list the messages of a folder by its id, account by
+   account, not by its path. It looks the id up first.
 
 ### Order of the build
 
