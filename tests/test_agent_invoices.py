@@ -24,14 +24,24 @@ from benethos_mailbox_agents.agents.invoices.schema import (
     render,
 )
 from benethos_mailbox_agents.contract import Action
-from benethos_mailbox_agents.errors import ConfigError, MailboxUnavailableError
+from benethos_mailbox_agents.errors import ConfigError
 from benethos_mailbox_agents.evaluation.gold import load_gold
 from benethos_mailbox_agents.llm.gateway import strict_schema
 from benethos_mailbox_agents.records import MailMessage, MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.readiness import readiness, start
 from fakes import ACCOUNT, invented, wire_message
-from helpers import Wired, settings, wired
+from helpers import (
+    Wired,
+    actions,
+    decision,
+    item,
+    mail,
+    run,
+    settings,
+    wired,
+    worker,
+)
 
 GOLD = Path(__file__).resolve().parent / "data" / "gold-invoices.jsonl"
 MESSAGES = {m["id"]: m for m in invented()}
@@ -81,38 +91,6 @@ async def world(tmp_path: Path) -> AsyncIterator[Wired]:
         yield found
 
 
-async def run(world: Wired, message_id: str, the_agent: Invoices | None = None) -> str:
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    worker = Worker(
-        agent=the_agent or agent(),
-        store=world.store,
-        mailbox=world.mailbox,
-        gateway=world.gateway,
-        now=world.clock,
-    )
-    world.store.enqueue(ref, world.clock())
-    await worker.process_due()
-    row = world.store.message(ref)
-    assert row is not None
-    return row.state
-
-
-def mail(world: Wired, message_id: str) -> dict[str, Any]:
-    return world.service.messages[(ACCOUNT, message_id)]
-
-
-def decision(world: Wired, message_id: str) -> dict[str, Any]:
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    found = world.store.step(ref, "decision", Invoices.prompt_version, "alias")
-    assert found is not None
-    return found.result
-
-
-def actions(world: Wired, message_id: str) -> list[tuple[str, str, bool]]:
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    return [(a.action, a.argument, a.executed) for a in world.store.actions(ref)]
-
-
 # -- the table of docs/specs/agents/invoices.md -----------------------------------
 
 
@@ -133,7 +111,7 @@ async def test_a_message_in_no_folder_it_looks_in_is_skipped(
 async def test_an_invoice_in_a_folder_moves_to_its_subfolder(world: Wired) -> None:
     world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-77"))
 
-    assert await run(world, "filed") == "done"
+    assert await run(world, "filed", agent()) == "done"
 
     assert world.service.made() == [{"name": "Rechnungen", "parent_id": "inv-hosting"}]
     assert mail(world, "filed")["folder_ids"] == ["inv-hosting/Rechnungen"]
@@ -160,7 +138,7 @@ async def test_an_invoice_gone_while_it_is_filed_is_skipped(
     monkeypatch.setattr(world.service, "_create_folder", and_gone)
     world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-77"))
 
-    assert await run(world, "filed") == "skipped"
+    assert await run(world, "filed", agent()) == "skipped"
 
     assert world.service.made() == [{"name": "Rechnungen", "parent_id": "inv-hosting"}]
 
@@ -171,7 +149,7 @@ async def test_a_subfolder_that_is_there_is_not_made_again(world: Wired) -> None
     )
     world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-77"))
 
-    await run(world, "filed")
+    await run(world, "filed", agent())
 
     assert world.service.made() == []
     assert mail(world, "filed")["folder_ids"] == ["hz-re"]
@@ -185,16 +163,6 @@ async def test_star_takes_in_every_folder_at_the_top(world: Wired) -> None:
     assert mail(world, "at-top")["folder_ids"] == ["inv/Rechnungen"]
 
 
-async def again(world: Wired, message_id: str, the_agent: Invoices) -> str:
-    """Take a message up anew, as ``backfill`` does, and run it."""
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    world.store.enqueue(ref, world.clock(), again=True)
-    await worker(world, the_agent).process_due()
-    row = world.store.message(ref)
-    assert row is not None
-    return row.state
-
-
 async def test_a_filed_invoice_in_a_folder_named_too_is_not_filed_again(
     world: Wired,
 ) -> None:
@@ -204,7 +172,7 @@ async def test_a_filed_invoice_in_a_folder_named_too_is_not_filed_again(
     assert mail(world, "at-top")["folder_ids"] == ["inv/Rechnungen"]
     made = world.service.made()
 
-    assert await again(world, "at-top", named) == "skipped"
+    assert await run(world, "at-top", named, again=True) == "skipped"
 
     assert world.service.made() == made
     assert mail(world, "at-top")["folder_ids"] == ["inv/Rechnungen"]
@@ -218,7 +186,7 @@ async def test_an_invoice_in_the_inbox_folder_is_not_filed_again(
     await run(world, "inv-unlisted", top)
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inv"]
 
-    assert await again(world, "inv-unlisted", top) == "skipped"
+    assert await run(world, "inv-unlisted", top, again=True) == "skipped"
 
     assert world.service.made() == []
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inv"]
@@ -239,7 +207,7 @@ async def test_without_a_subfolder_an_invoice_is_marked_and_stays(
 async def test_an_invoice_in_the_inbox_is_marked_and_stays(world: Wired) -> None:
     world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
 
-    assert await run(world, "inv-unlisted") == "done"
+    assert await run(world, "inv-unlisted", agent()) == "done"
 
     assert mail(world, "inv-unlisted")["keywords"] == ["agent-invoice"]
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inbox"]
@@ -270,7 +238,7 @@ async def test_a_notice_without_a_file_counts(world: Wired) -> None:
         answer("invoice", "Ihre Rechnung für November steht ab sofort im Kundenportal")
     )
 
-    assert await run(world, "inv-telco-notice") == "done"
+    assert await run(world, "inv-telco-notice", agent()) == "done"
 
     assert mail(world, "inv-telco-notice")["keywords"] == ["agent-invoice"]
 
@@ -289,7 +257,7 @@ async def test_a_near_miss_is_not_an_invoice(
 ) -> None:
     world.fake_gateway.answer(answer("other", quote, near_miss))
 
-    assert await run(world, message_id) == "done"
+    assert await run(world, message_id, agent()) == "done"
 
     assert mail(world, message_id)["keywords"] == []
     assert mail(world, message_id)["folder_ids"] == ["inbox"]
@@ -306,7 +274,7 @@ async def test_an_answer_that_names_a_supplier_or_folder_is_refused(
         {**answer("invoice", "invoice INV-77"), "folder": "Trash"}
     )
 
-    assert await run(world, "inv-unlisted") == "pending"
+    assert await run(world, "inv-unlisted", agent()) == "pending"
 
     assert mail(world, "inv-unlisted")["keywords"] == []
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inbox"]
@@ -324,7 +292,7 @@ async def test_an_instruction_in_the_mail_is_not_acted_on(world: Wired) -> None:
     )
     world.fake_gateway.answer(answer("invoice", "This is an invoice from the bank"))
 
-    assert await run(world, "inject") == "decided"
+    assert await run(world, "inject", agent()) == "decided"
 
     assert mail(world, "inject")["keywords"] == []
     assert mail(world, "inject")["folder_ids"] == ["inbox"]
@@ -538,7 +506,7 @@ def test_the_folders_it_expects() -> None:
 async def test_a_gateway_that_is_away_leaves_the_invoice_pending(world: Wired) -> None:
     world.fake_gateway.answer(httpx.Response(503))
 
-    assert await run(world, "inv-cloudhost") == "pending"
+    assert await run(world, "inv-cloudhost", agent()) == "pending"
 
     row = world.store.message(
         MessageRef(account_id=ACCOUNT, message_id="inv-cloudhost")
@@ -557,8 +525,8 @@ async def test_the_report_names_invoices_marked_and_not_moved(world: Wired) -> N
         answer("invoice", "please find attached invoice INV-77"),
         answer("invoice", "Ihre Rechnung R-77"),
     )
-    await run(world, "inv-unlisted")
-    await run(world, "filed")
+    await run(world, "inv-unlisted", agent())
+    await run(world, "filed", agent())
 
     entries = await collect(world.store, world.mailbox, limit=10)
     lines = render(entries) + summary(agent(), entries)
@@ -668,7 +636,7 @@ def test_an_answer_that_copies_the_mail_does_not_fit(
 async def test_a_long_quote_is_refused_as_schema(world: Wired) -> None:
     world.fake_gateway.answer(answer("invoice", "y" * 1000))
 
-    assert await run(world, "inv-cloudhost") == "pending"
+    assert await run(world, "inv-cloudhost", agent()) == "pending"
 
     assert mail(world, "inv-cloudhost")["keywords"] == []
 
@@ -676,52 +644,10 @@ async def test_a_long_quote_is_refused_as_schema(world: Wired) -> None:
 # -- the open item: an invoice marked in the inbox, moved later ----------------------
 
 
-def item(world: Wired, message_id: str) -> Any:
-    return world.store.item(MessageRef(account_id=ACCOUNT, message_id=message_id))
-
-
-def worker(world: Wired, the_agent: Invoices | None = None) -> Worker:
-    return Worker(
-        agent=the_agent or agent(),
-        store=world.store,
-        mailbox=world.mailbox,
-        gateway=world.gateway,
-        now=world.clock,
-    )
-
-
-async def sort(world: Wired, tmp_path: Path, message_id: str) -> None:
-    """The agent sorting, with a state file of its own, moves the mail of
-    accounts@paperworks.example into Invoices/Hosting."""
-    from benethos_mailbox_agents.agents.sorting.agent import Sorting
-    from benethos_mailbox_agents.runtime.model import NoModel
-    from benethos_mailbox_agents.store import Store
-
-    listed = tmp_path / "sorting.json"
-    listed.write_text(
-        '{"groups": [{"name": "Paperworks", "folder": "Invoices/Hosting",'
-        ' "senders": ["*@paperworks.example"]}]}',
-        encoding="utf-8",
-    )
-    sorting = Sorting(settings(stage="full", sorting_file=listed))
-    with Store.open(tmp_path / "sorting.db") as store:
-        moving = Worker(
-            agent=sorting,
-            store=store,
-            mailbox=world.mailbox,
-            gateway=NoModel(),
-            now=world.clock,
-        )
-        store.enqueue(
-            MessageRef(account_id=ACCOUNT, message_id=message_id), world.clock()
-        )
-        await moving.process_due()
-
-
 async def test_an_invoice_in_the_inbox_gets_an_open_item(world: Wired) -> None:
     world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
 
-    await run(world, "inv-unlisted")
+    await run(world, "inv-unlisted", agent())
 
     found = item(world, "inv-unlisted")
     assert found is not None and found.is_open
@@ -738,7 +664,7 @@ async def test_the_item_closes_when_it_reaches_the_inbox_folder(world: Wired) ->
     await marking.run_pass()
 
     await run(world, "inv-unlisted", into_o2)
-    await run(world, "filed")
+    await run(world, "filed", agent())
     world.service.change("message.updated", "inv-unlisted")
     await marking.run_pass()
 
@@ -749,89 +675,13 @@ async def test_the_item_closes_when_it_reaches_the_inbox_folder(world: Wired) ->
     assert world.service.made() == [{"name": "Rechnungen", "parent_id": "inv-hosting"}]
 
 
-async def test_invoices_first_then_sorting_moves_it_on(
-    world: Wired, tmp_path: Path
-) -> None:
-    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
-    marking = worker(world)
-    await marking.run_pass()
-    await run(world, "inv-unlisted")
-
-    await sort(world, tmp_path, "inv-unlisted")
-    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting"]
-    world.service.change("message.updated", "inv-unlisted")
-    await marking.run_pass()
-
-    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
-    assert sorted(mail(world, "inv-unlisted")["keywords"]) == [
-        "agent-invoice",
-        "agent-sorted",
-    ]
-    found = item(world, "inv-unlisted")
-    assert found is not None and (found.is_open, found.reason) == (False, "filed")
-    assert len(world.fake_gateway.requests) == 1
-
-
-async def test_an_invoice_not_moved_into_a_missing_inbox_folder_is_filed_later(
-    world: Wired, tmp_path: Path
-) -> None:
-    missing = agent(invoices_inbox_folder="Missing")
-    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
-    marking = worker(world, missing)
-    await marking.run_pass()
-    await run(world, "inv-unlisted", missing)
-
-    found = item(world, "inv-unlisted")
-    assert found is not None and found.is_open
-    await sort(world, tmp_path, "inv-unlisted")
-    world.service.change("message.updated", "inv-unlisted")
-    await marking.run_pass()
-
-    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
-    found = item(world, "inv-unlisted")
-    assert found is not None and found.reason == "filed"
-
-
-async def test_a_filing_cut_short_by_the_service_is_done_on_the_next_pass(
-    world: Wired, tmp_path: Path
-) -> None:
-    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
-    marking = worker(world)
-    await marking.run_pass()
-    await run(world, "inv-unlisted")
-    await sort(world, tmp_path, "inv-unlisted")
-    world.service.change("message.updated", "inv-unlisted")
-    world.service.write_refusal = (503, "unavailable")
-
-    with pytest.raises(MailboxUnavailableError):
-        await marking.run_pass()
-    world.service.write_refusal = None
-    await marking.run_pass()
-
-    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
-    found = item(world, "inv-unlisted")
-    assert found is not None and (found.is_open, found.reason) == (False, "filed")
-
-
-async def test_sorting_first_then_invoices_moves_it_on(
-    world: Wired, tmp_path: Path
-) -> None:
-    await sort(world, tmp_path, "inv-unlisted")
-    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
-
-    assert await run(world, "inv-unlisted") == "done"
-
-    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
-    assert item(world, "inv-unlisted") is None
-
-
 async def test_an_invoice_moved_elsewhere_closes_its_item_and_stays(
     world: Wired,
 ) -> None:
     world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
-    marking = worker(world)
+    marking = worker(world, agent())
     await marking.run_pass()
-    await run(world, "inv-unlisted")
+    await run(world, "inv-unlisted", agent())
 
     mail(world, "inv-unlisted")["folder_ids"] = ["inv"]
     world.service.change("message.updated", "inv-unlisted")
@@ -844,9 +694,9 @@ async def test_an_invoice_moved_elsewhere_closes_its_item_and_stays(
 
 async def test_an_update_in_the_inbox_leaves_the_item_open(world: Wired) -> None:
     world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
-    marking = worker(world)
+    marking = worker(world, agent())
     await marking.run_pass()
-    await run(world, "inv-unlisted")
+    await run(world, "inv-unlisted", agent())
 
     world.service.change("message.updated", "inv-unlisted")
     await marking.run_pass()
@@ -859,7 +709,7 @@ async def test_an_update_in_the_inbox_leaves_the_item_open(world: Wired) -> None
 async def test_an_update_of_a_message_without_an_item_does_nothing(
     world: Wired,
 ) -> None:
-    marking = worker(world)
+    marking = worker(world, agent())
     await marking.run_pass()
     mail(world, "plain")["folder_ids"] = ["inv-hosting"]
     world.service.change("message.updated", "plain")
@@ -874,7 +724,7 @@ async def test_an_update_of_a_message_without_an_item_does_nothing(
 
 
 async def test_backfill_takes_up_the_folders_it_looks_in(world: Wired) -> None:
-    taken = await worker(world).backfill(30)
+    taken = await worker(world, agent()).backfill(30)
 
     pending = {row.ref.message_id for row in world.store.messages("pending", 100)}
     assert "filed" in pending
@@ -885,7 +735,7 @@ async def test_backfill_takes_up_the_folders_it_looks_in(world: Wired) -> None:
 async def test_backfill_reads_the_inbox_once(world: Wired) -> None:
     """The inbox, which invoices always looks in, is read with sent mail by
     its role, and not once more as a folder it looks in."""
-    taken = await worker(world).backfill(30)
+    taken = await worker(world, agent()).backfill(30)
 
     pending = [row.ref for row in world.store.messages("pending", 100)]
     assert taken == len(pending) == len(set(pending))
@@ -914,7 +764,7 @@ async def test_backfill_without_accounts_asks_every_account_for_its_folders(
             change=None,
         )
 
-        taken = await worker(found).backfill(30)
+        taken = await worker(found, agent()).backfill(30)
 
     assert taken == 1
 

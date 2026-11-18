@@ -13,10 +13,9 @@ from benethos_mailbox_agents.agents.sorting.agent import Sorting
 from benethos_mailbox_agents.contract import Action
 from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
-from benethos_mailbox_agents.runtime.model import NoModel
 from benethos_mailbox_agents.runtime.readiness import readiness
 from fakes import ACCOUNT, wire_message
-from helpers import Wired, settings, wired
+from helpers import Wired, actions, decision, mail, run, settings, wired
 
 GROUPS: list[dict[str, Any]] = [
     {
@@ -77,41 +76,6 @@ async def world(tmp_path: Path) -> AsyncIterator[Wired]:
             change=None,
         )
         yield found
-
-
-async def run(
-    world: Wired, message_id: str, the_agent: Sorting, *, again: bool = False
-) -> str:
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    worker = Worker(
-        agent=the_agent,
-        store=world.store,
-        mailbox=world.mailbox,
-        gateway=NoModel(),
-        now=world.clock,
-    )
-    world.store.enqueue(ref, world.clock(), again=again)
-    await worker.process_due()
-    row = world.store.message(ref)
-    assert row is not None
-    return row.state
-
-
-def mail(world: Wired, message_id: str) -> dict[str, Any]:
-    return world.service.messages[(ACCOUNT, message_id)]
-
-
-def decision(world: Wired, message_id: str) -> dict[str, Any]:
-    """The decision stored last for the message."""
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    found = [s for s in world.store.steps(ref) if s.step == "decision"]
-    assert found
-    return found[-1].result
-
-
-def actions(world: Wired, message_id: str) -> list[tuple[str, str, bool]]:
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    return [(a.action, a.argument, a.executed) for a in world.store.actions(ref)]
 
 
 # -- section 3: what happens to a message -------------------------------------------

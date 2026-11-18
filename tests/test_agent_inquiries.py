@@ -17,9 +17,8 @@ from benethos_mailbox_agents.evaluation.gold import load_gold
 from benethos_mailbox_agents.evaluation.report import build
 from benethos_mailbox_agents.evaluation.run import evaluate
 from benethos_mailbox_agents.records import Address, MailMessage, MessageRef
-from benethos_mailbox_agents.runtime.loop import Worker
 from fakes import ACCOUNT, invented
-from helpers import Wired, settings, wired
+from helpers import Wired, run, settings, wired
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = Path(__file__).resolve().parent / "data"
@@ -141,22 +140,6 @@ def test_a_wrong_patterns_file_stops_the_start(tmp_path: Path) -> None:
 # -- the label -----------------------------------------------------------------------
 
 
-async def run(world: Wired, message_id: str) -> str:
-    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
-    worker = Worker(
-        agent=agent(),
-        store=world.store,
-        mailbox=world.mailbox,
-        gateway=world.gateway,
-        now=world.clock,
-    )
-    world.store.enqueue(ref, world.clock())
-    await worker.process_due()
-    row = world.store.message(ref)
-    assert row is not None
-    return row.state
-
-
 def keywords(world: Wired, message_id: str) -> list[str]:
     return world.service.messages[(ACCOUNT, message_id)]["keywords"]
 
@@ -164,21 +147,21 @@ def keywords(world: Wired, message_id: str) -> list[str]:
 async def test_an_inquiry_is_marked(world: Wired) -> None:
     world.fake_gateway.answer(said("inquiry", "suchen wir ab 01.02.2027"))
 
-    assert await run(world, "inq-staffing") == "done"
+    assert await run(world, "inq-staffing", agent()) == "done"
     assert keywords(world, "inq-staffing") == ["agent-inquiry"]
 
 
 async def test_another_message_is_not(world: Wired) -> None:
     world.fake_gateway.answer(said("other", "10 neue Jobs für Sie"))
 
-    assert await run(world, "job-digest") == "done"
+    assert await run(world, "job-digest", agent()) == "done"
     assert keywords(world, "job-digest") == []
 
 
 async def test_a_label_without_its_quote_is_not_acted_on(world: Wired) -> None:
     world.fake_gateway.answer(said("inquiry", "a great project for you"))
 
-    assert await run(world, "personal") == "decided"
+    assert await run(world, "personal", agent()) == "decided"
     assert keywords(world, "personal") == []
 
 
@@ -236,7 +219,7 @@ async def test_each_field_with_its_quote(world: Wired) -> None:
         )
     )
 
-    assert await run(world, "inq-staffing") == "done"
+    assert await run(world, "inq-staffing", agent()) == "done"
 
     ref = MessageRef(account_id=ACCOUNT, message_id="inq-staffing")
     found = world.store.step(ref, "decision", "v3", "alias")
@@ -255,7 +238,7 @@ async def test_another_message_has_no_fields(world: Wired) -> None:
         said("other", "10 neue Jobs für Sie", role=("Data Engineer", "Data Engineer"))
     )
 
-    await run(world, "job-digest")
+    await run(world, "job-digest", agent())
 
     ref = MessageRef(account_id=ACCOUNT, message_id="job-digest")
     found = world.store.step(ref, "decision", "v3", "alias")

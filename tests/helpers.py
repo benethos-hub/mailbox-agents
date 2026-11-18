@@ -1,5 +1,6 @@
-"""What the runtime tests share: an agent for the tests, a clock, and the
-pieces wired over the fakes of ``fakes.py``."""
+"""What the runtime and agent tests share: an agent for the tests, a clock,
+the pieces wired over the fakes of ``fakes.py``, and a look at what became
+of a message."""
 
 from __future__ import annotations
 
@@ -8,7 +9,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import pytest
 from pydantic import BaseModel
@@ -28,12 +29,14 @@ from benethos_mailbox_agents.records import (
     Event,
     Evidence,
     MailMessage,
+    MessageRef,
+    OpenItem,
 )
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.settings import Settings
 from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
 from benethos_mailbox_agents.store import Store
-from fakes import FakeGateway, FakeService
+from fakes import ACCOUNT, FakeGateway, FakeService
 
 START = datetime(2026, 11, 17, 9, 0, tzinfo=UTC)
 
@@ -164,3 +167,41 @@ def worker(world: Wired, agent: Agent | None = None, **values: object) -> Worker
         gateway=world.gateway,
         now=world.clock,
     )
+
+
+async def run(
+    world: Wired, message_id: str, agent: Agent, *, again: bool = False
+) -> str:
+    """Take the message up, anew with ``again`` as ``backfill`` does, run
+    its steps with ``agent``, and answer the state it is left in."""
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    world.store.enqueue(ref, world.clock(), again=again)
+    await worker(world, agent).process_due()
+    row = world.store.message(ref)
+    assert row is not None
+    return row.state
+
+
+def mail(world: Wired, message_id: str) -> dict[str, Any]:
+    """The message as the fake service holds it."""
+    return world.service.messages[(ACCOUNT, message_id)]
+
+
+def decision(world: Wired, message_id: str) -> dict[str, Any]:
+    """The decision stored last for the message."""
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    found = [s for s in world.store.steps(ref) if s.step == "decision"]
+    assert found
+    return found[-1].result
+
+
+def actions(world: Wired, message_id: str) -> list[tuple[str, str, bool]]:
+    """Each action stored for the message: what, on what, and whether it
+    was carried out."""
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    return [(a.action, a.argument, a.executed) for a in world.store.actions(ref)]
+
+
+def item(world: Wired, message_id: str) -> OpenItem | None:
+    """The item of the message, open or closed."""
+    return world.store.item(MessageRef(account_id=ACCOUNT, message_id=message_id))
