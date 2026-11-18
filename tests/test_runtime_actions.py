@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator, Callable, Mapping
 from pathlib import Path
 from typing import get_args
@@ -470,6 +471,64 @@ async def test_a_folder_deleted_since_it_was_read_is_made_again(world: Wired) ->
 
     assert world.service.made() == [{"name": "Providers"}, {"name": "Providers"}]
     assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["Providers"]
+
+
+async def test_a_move_to_a_folder_gone_meanwhile_is_refused_not_gone(
+    world: Wired, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    update = world.service._update
+
+    def deleted_first(request: httpx.Request, parts: list[str]) -> httpx.Response:
+        # The owner deletes the folder between its listing and the move.
+        world.service.folders[ACCOUNT] = [
+            f for f in world.service.folders[ACCOUNT] if f["id"] != "inv-hosting"
+        ]
+        return update(request, parts)
+
+    monkeypatch.setattr(world.service, "_update", deleted_first)
+
+    assert await executor(world)([MOVE, ADD]) == [Outcome.REFUSED]
+
+    assert world.store.actions() == []
+    assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
+
+
+async def test_a_folder_below_one_gone_meanwhile_is_refused_not_gone(
+    world: Wired, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    make_folder = world.service._create_folder
+
+    def parent_gone(request: httpx.Request, parts: list[str]) -> httpx.Response:
+        # The owner deletes the folder above between its listing and the
+        # folder made below it, which the service answers as not found.
+        if json.loads(request.content).get("parent_id") == "Providers":
+            return httpx.Response(
+                404, json={"error": {"code": "not_found", "message": "gone"}}
+            )
+        return make_folder(request, parts)
+
+    monkeypatch.setattr(world.service, "_create_folder", parent_gone)
+
+    outcomes = await maker(world)([make("Providers"), make("Providers/CloudHost")])
+
+    assert outcomes == [Outcome.DONE, Outcome.REFUSED]
+    assert [a.argument for a in world.store.actions(REF)] == ["Providers"]
+
+
+async def test_a_move_of_a_message_gone_meanwhile_is_still_gone(
+    world: Wired, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    update = world.service._update
+
+    def deleted_first(request: httpx.Request, parts: list[str]) -> httpx.Response:
+        del world.service.messages[(ACCOUNT, "m1")]
+        return update(request, parts)
+
+    monkeypatch.setattr(world.service, "_update", deleted_first)
+
+    with pytest.raises(MessageGoneError):
+        await executor(world)([MOVE])
+    assert world.store.actions() == []
 
 
 def test_every_stage_has_a_row() -> None:

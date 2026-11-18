@@ -239,3 +239,6 @@ commit that makes the change. Design decisions live in
 - A folder the owner deleted or renamed while the worker runs is made
   again for the next move into it. The worker took it as there until it
   was restarted, and each move into it failed.
+- A move into a folder deleted in the moment before it, and a folder made
+  below one, are refused and logged as refused. The message was ended as
+  `skipped`, as if it had been deleted.

@@ -78,7 +78,9 @@ one is made after it, each as an action of its own, recorded under the
 message whose move needs it. Before the folders and the move of a
 message, the runtime reads the account's folders anew, so a folder the
 owner deleted or renamed since the last look is made again, not taken as
-there. `create_folder` is the one action without a
+there. One deleted between that look and the write refuses the folder or
+the move, and the message stays where it is, not ended as gone.
+`create_folder` is the one action without a
 reverse of its own. It is accepted because it changes no message
 (decided 2026-11-18). An
 action whose result is already there is not taken again. A write whose

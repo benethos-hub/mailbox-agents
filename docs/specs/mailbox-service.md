@@ -54,8 +54,11 @@ Stalwart, on the test account:
 - A folder deleted or renamed at IMAP is no longer listed by its old id.
   A move through `update_message` to that id answers `404 not_found`,
   the same status and code as a message that is gone, and the message
-  stays where it was. So the runtime reads the folders anew before the
-  folders and the move of a message.
+  stays where it was. `create_folder` below a parent deleted so answers
+  `404 not_found` as well. So the runtime reads the folders anew before
+  the folders and the move of a message, and after such an answer to a
+  folder or a move it asks for the message again: when it answers, the
+  action is refused, and the message is not ended as gone.
 - A message that arrives straight in a folder other than the inbox, as one
   a mail server files by a rule of its own, reaches the feed as
   `message.created`, here about 20 seconds after it arrived, and is read

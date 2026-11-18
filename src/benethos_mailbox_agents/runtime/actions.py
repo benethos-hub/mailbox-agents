@@ -223,7 +223,7 @@ class Executor:
                 await self._take(request, target)
             except MailboxRefusedError as exc:
                 self._store.drop_action(recorded)
-                return self._refused(request, exc)
+                return self._refused(request, await self._folder_gone(request, exc))
             except MailboxUnavailableError:
                 await self._settle(request, target, recorded)
                 raise
@@ -242,6 +242,25 @@ class Executor:
             )
         )
         return Outcome.DONE if executed else Outcome.RECORDED
+
+    async def _folder_gone(
+        self, request: ActionRequest, exc: MailboxRefusedError
+    ) -> ActionRefusedError | MailboxRefusedError:
+        """The refusal of a write, as it counts. The service answers a move
+        to a folder deleted or renamed since it was read, and a folder
+        made below one, as it answers a message that is gone (measured
+        2026-11-18). So after a folder or a move answered so, the message
+        is asked for again: when it answers, the folder is gone and the
+        action is refused, and the message is not ended as gone."""
+        if not isinstance(exc, MessageGoneError):
+            return exc
+        if request.action not in _FOLDER_ACTIONS:
+            return exc
+        try:
+            await self._mailbox.message(request.ref)
+        except MessageGoneError:
+            return exc
+        return ActionRefusedError("the folder is not there any more")
 
     def _refused(
         self, request: ActionRequest, exc: ActionRefusedError | MailboxRefusedError
