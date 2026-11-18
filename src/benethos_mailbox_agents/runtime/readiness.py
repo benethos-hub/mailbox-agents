@@ -19,6 +19,7 @@ __all__ = [
     "readiness",
     "required",
     "start",
+    "uses_model",
 ]
 
 # What every agent needs, and what an agent that asks the model needs too.
