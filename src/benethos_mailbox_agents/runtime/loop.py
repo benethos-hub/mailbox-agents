@@ -59,6 +59,8 @@ class Upstream(Reader, Writer, Protocol):
         self, account_id: str, folder_id: str, since: date
     ) -> list[MessageRef]: ...
 
+    async def accounts(self) -> tuple[str, ...]: ...
+
 
 class Worker:
     """The loop of one agent over one state file."""
@@ -300,7 +302,7 @@ class Worker:
         now = self._now()
         added = 0
         refs = await self._mailbox.recent(since, self.accounts)
-        refs += await self._in_folders(since, refs)
+        refs += await self._in_folders(since)
         for ref in dict.fromkeys(refs):
             event = Event(type="message.created", ref=ref, at=now)
             if (
@@ -311,13 +313,12 @@ class Worker:
         record(feed.Backfilled(agent=self.agent.name, messages=added, days=days))
         return added
 
-    async def _in_folders(
-        self, since: date, found: list[MessageRef]
-    ) -> list[MessageRef]:
+    async def _in_folders(self, since: date) -> list[MessageRef]:
         """The messages of the folders the agent wants in a backfill besides
         the inbox and sent mail, in each account it works on: those the
-        settings name, or else those the inbox and sent mail came from."""
-        accounts = self.accounts or sorted({ref.account_id for ref in found})
+        settings name, or else every account the user is granted, so one
+        whose inbox and sent mail are empty is looked in too."""
+        accounts = self.accounts or list(await self._mailbox.accounts())
         refs: list[MessageRef] = []
         for account in accounts:
             folders = await self._mailbox.folders(account)

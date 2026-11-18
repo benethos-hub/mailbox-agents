@@ -881,6 +881,27 @@ async def test_backfill_takes_up_the_folders_it_looks_in(world: Wired) -> None:
     assert taken == len(pending)
 
 
+async def test_backfill_without_accounts_asks_every_account_for_its_folders(
+    tmp_path: Path,
+) -> None:
+    """An account whose inbox and sent mail are empty, as sorting leaves
+    one, still has its folders looked in when no account is named."""
+    async with wired(tmp_path) as found:
+        found.service.add(
+            wire_message(
+                "filed",
+                folder_ids=["inv-hosting"],
+                subject="Ihre Rechnung R-77",
+                text="Ihre Rechnung R-77 liegt bei.",
+            ),
+            change=None,
+        )
+
+        taken = await worker(found).backfill(30)
+
+    assert taken == 1
+
+
 async def test_backfill_of_an_agent_that_wants_no_folder(world: Wired) -> None:
     from benethos_mailbox_agents.agents.counting.agent import Counting
 

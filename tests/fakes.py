@@ -172,10 +172,21 @@ class FakeService:
             ("GET", "thread"): self._thread,
             ("PATCH", "message"): self._update,
             ("POST", "folders"): self._create_folder,
+            ("GET", "me"): self._me,
         }.get((request.method, _kind(parts)))
         if route is None:
             return _error(404, "not_found", "no such path")
         return route(request, parts)
+
+    def _me(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
+        """The caller, granted every account that has folders."""
+        accounts = [
+            {"id": account, "email": f"{account}@example.test"}
+            for account in sorted(self.folders)
+        ]
+        return httpx.Response(
+            200, json={"user_id": "usr1", "name": "agents", "accounts": accounts}
+        )
 
     def _changes(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
         since = request.url.params.get("since")
@@ -315,6 +326,8 @@ def _kind(parts: list[str]) -> str:
     """Which route ``parts``, the path below /v1, names."""
     if parts == ["changes"]:
         return "changes"
+    if parts == ["me"]:
+        return "me"
     if parts == ["messages"]:
         return "messages"
     if len(parts) == 3 and parts[0] == "accounts" and parts[2] == "messages":

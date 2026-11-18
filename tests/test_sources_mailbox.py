@@ -257,6 +257,14 @@ async def test_http_to_another_machine_needs_allowing() -> None:
         assert isinstance(mailbox, Mailbox)
 
 
+async def test_accounts_are_the_ids_the_user_is_granted(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    service.folders["acc2"] = []
+
+    assert await mailbox.accounts() == (ACCOUNT, "acc2")
+
+
 async def test_recent_in_lists_one_folder_of_one_account(
     service: FakeService, mailbox: Mailbox
 ) -> None:

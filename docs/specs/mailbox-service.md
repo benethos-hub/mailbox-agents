@@ -13,6 +13,7 @@ Operation names below are the service's `operationId`s.
 | Make a folder, below a parent or at the top | `create_folder` |
 | The messages received since a day, for `backfill` | `list_all_messages`, once for the inbox and once for sent mail |
 | The messages of one folder since a day, for `backfill` | `list_messages` of one account, the folder by its id |
+| The accounts to look in for those folders, without `ACCOUNTS` | `get_me` |
 
 `sources/mailbox.py` offers these and nothing else: no send, no delete, no
 trash. Which folder an agent may make is the runtime's to decide
@@ -63,6 +64,12 @@ Stalwart, on the test account:
   messages that `get_message` then answered with `404`: messages moved out
   of that folder shortly before **(to verify why)**. The runtime takes such
   a message as gone and ends it as `skipped`.
+- `get_me` answers the agents' user exactly the one account it is
+  granted, the test account (measured 2026-11-18). `list_accounts` answers it `200` with no
+  account at all: it belongs to the group `accounts.read`, which an agent
+  is not granted. So the accounts an agent works on come from `get_me`.
+  Without `ACCOUNTS` a backfill looks in the folders of each of them, so
+  an account whose inbox and sent mail are empty is not left out.
 
 Rights. Each agent has a user of its own in the service:
 

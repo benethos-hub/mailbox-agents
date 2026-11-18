@@ -233,3 +233,6 @@ commit that makes the change. Design decisions live in
   `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` is set. When that folder is
   missing or the stage is below `full`, an invoice `sorting` moves later
   is filed into its subfolder, where it stayed unfiled before.
+- `backfill` without `MAILBOX_AGENTS_ACCOUNTS` looks in the folders of
+  every account the agent's user is granted. An account whose inbox and
+  sent mail were empty, as `sorting` leaves one, was left out before.

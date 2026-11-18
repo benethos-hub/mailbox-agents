@@ -1,10 +1,10 @@
 """The mailbox service: the only module that imports benethos_mailbox_client.
 
 It offers what the agents need of the service and nothing else: the change
-feed, the messages of the last days for a backfill, a message, a thread,
-the folders, a keyword set or taken off, a move, and a folder made. There
-is no way here to send, delete or trash, so the runtime cannot do any of it
-whatever an agent asks. Which folder may be made is the runtime's to
+feed, the messages of the last days for a backfill, the accounts, a
+message, a thread, the folders, a keyword set or taken off, a move, and a
+folder made. There is no way here to send, delete or trash, so the runtime
+cannot do any of it whatever an agent asks. Which folder may be made is the runtime's to
 decide. Every answer is turned into a record of :mod:`records`, and every
 failure into an error of :mod:`errors`. See docs/specs/mailbox-service.md.
 """
@@ -205,6 +205,13 @@ class Mailbox:
                 return refs
 
     # -- reading ---------------------------------------------------------------------
+
+    async def accounts(self) -> tuple[str, ...]:
+        """The ids of the accounts the user is granted, as ``get_me``
+        answers them. ``list_accounts`` answers a user with ``mail.read``
+        and ``mail.write`` alone no account (measured 2026-11-18)."""
+        found = await _call(self._client.get_me())
+        return tuple(account.id for account in found.accounts)
 
     async def folders(
         self, account_id: str, *, fresh: bool = False
