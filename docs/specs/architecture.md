@@ -115,7 +115,8 @@ assets/           # brand/: icon.svg and the PNGs build.py renders from it
   `sources/mailbox.py` and `llm/gateway.py` are the only places that know
   them. A test in the suite holds the import order, as in a layered project.
 - **Agents are self-contained.** Prompt, schema and baseline belong to one
-  agent and are never shared. What several agents need lives in `runtime/`.
+  agent and are never shared. What several agents need lives in `runtime/`,
+  or in `contract/` and `records/` where an agent needs it.
 - **State stays where it is authoritative.** Mail stays in the mailbox. The
   state file holds ids, decisions and what was done, not copies of mail.
 - **A backend that is away is a normal condition.** A model may run on a

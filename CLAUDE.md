@@ -132,7 +132,8 @@ uv lock --check
   imports it, as `~=X.Y.Z` at the version tested. Dev tools go into
   `[dependency-groups]`.
 - **Agents are self-contained.** Prompt, schema and baseline belong to one
-  agent and are never shared. What several agents need lives in `runtime/`.
+  agent and are never shared. What several agents need lives in `runtime/`,
+  or in `contract/` and `records/` where an agent needs it.
 - **A prompt has a version.** Changing a prompt changes its version, and
   the step runner treats it as new work.
 - **A migration is never changed once released.** A change of the schema is
