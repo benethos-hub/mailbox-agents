@@ -39,8 +39,5 @@ class StoredItems:
     async def due(self, now: datetime) -> list[OpenItem]:
         return self._store.due_items(now, self._stage)
 
-    async def mark_keyword(self, ref: MessageRef, keyword_set: bool) -> None:
-        self._store.mark_keyword(ref, keyword_set)
-
     async def close(self, ref: MessageRef, reason: str) -> None:
         self._store.close_item(ref, reason, self._now())
