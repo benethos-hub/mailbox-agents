@@ -88,6 +88,11 @@ class Supplier(BaseModel):
             _kind(rule)
         return found
 
+    @property
+    def domains(self) -> tuple[str, ...]:
+        """The domains its sender rules name, each once."""
+        return tuple(dict.fromkeys(rule.rpartition("@")[2] for rule in self.senders))
+
 
 @dataclass(frozen=True)
 class Match:

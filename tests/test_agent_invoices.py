@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 import pytest
 
-from benethos_mailbox_agent.agents.invoices.agent import Invoices
+from benethos_mailbox_agent.agents.invoices.agent import Invoices, _mentions
 from benethos_mailbox_agent.agents.invoices.schema import render
 from benethos_mailbox_agent.errors import ConfigError
 from benethos_mailbox_agent.evaluation.gold import load_gold
@@ -202,6 +202,39 @@ async def test_the_model_may_name_a_listed_supplier_with_a_quote(world: Wired) -
     found = decision(world, "inv-platform")
     assert found["details"] == {"supplier_source": "model"}
     assert found["fields"] == {"supplier": "CloudHost"}
+
+
+async def test_a_supplier_whose_quote_does_not_name_it_is_dropped(
+    world: Wired,
+) -> None:
+    world.fake_gateway.answer(
+        answer(
+            "invoice",
+            "invoice number P-3301",
+            supplier="CloudHost",
+            supplier_quote="invoice number P-3301",
+        )
+    )
+
+    assert await run(world, "inv-platform") == "done"
+
+    assert mail(world, "inv-platform")["folder_ids"] == ["inbox"]
+    found = decision(world, "inv-platform")
+    assert found["fields"] == {}
+    assert found["details"] == {
+        "supplier_source": "none",
+        "model_supplier": "CloudHost",
+    }
+
+
+@pytest.mark.parametrize("quote", ["CloudHost Storage", "cloudhost storage"])
+def test_a_quote_names_a_supplier_by_name_or_domain(quote: str) -> None:
+    named = agent().suppliers.named("CloudHost")
+    assert named is not None
+
+    assert _mentions(named, quote)
+    assert _mentions(named, "billed via CLOUDHOST.EXAMPLE")
+    assert not _mentions(named, "invoice number P-3301")
 
 
 async def test_a_supplier_whose_quote_is_not_in_the_mail_moves_nothing(

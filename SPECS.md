@@ -496,8 +496,10 @@ its start and `status` names what is wrong.
 matches, it decides the supplier and the model cannot overrule it: what the
 model named instead is recorded as `model_supplier` and not used. When no
 rule matches, the model may name a supplier of the list, as an enum in the
-schema, with a quote that the code finds in the mail. Without that quote
-the supplier is dropped and the invoice gets the keyword only. The
+schema, with a quote that the code finds in the mail and that names the
+supplier or a domain of its sender rules, case aside (decided
+2026-11-17). Without that quote the supplier is dropped, its name kept as
+`model_supplier`, and the invoice gets the keyword only. The
 decision records the source of its supplier as `supplier_source`: `rule`,
 `model` or `none`, and `report` and the evaluation tell them apart. So the
 content of a mail can at worst move an invoice of an unlisted sender into

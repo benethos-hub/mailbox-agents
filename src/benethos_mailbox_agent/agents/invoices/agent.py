@@ -12,6 +12,7 @@ names the sender as a candidate for the list. See SPECS.md section 10.1.
 
 from __future__ import annotations
 
+import unicodedata
 from collections import Counter
 from functools import cached_property
 
@@ -30,9 +31,16 @@ from ...errors import ConfigError
 from ...records import LABEL, Decision, Event, Evidence, MailMessage
 from .baseline import baseline
 from .schema import Answer, answer_schema, parts, render
-from .suppliers import Suppliers, load_suppliers
+from .suppliers import Supplier, Suppliers, load_suppliers
 
 __all__ = ["Invoices"]
+
+
+def _mentions(supplier: Supplier, quote: str) -> bool:
+    """Whether ``quote`` names ``supplier`` or one of its sender domains:
+    what a quote must do to back the model's choice of a supplier."""
+    said = " ".join(unicodedata.normalize("NFC", quote).split()).casefold()
+    return any(name.casefold() in said for name in (supplier.name, *supplier.domains))
 
 
 class Invoices(Agent):
@@ -134,11 +142,14 @@ class Invoices(Agent):
                 Evidence(field="supplier", value=rule.supplier.name, quote=sender or "")
             ]
         said = answer.supplier_quote
-        if named and said and self.suppliers.named(named) is not None:
-            fields["supplier"] = named
+        chosen = self.suppliers.named(named) if named else None
+        if chosen is not None and said and _mentions(chosen, said):
+            fields["supplier"] = chosen.name
             details["supplier_source"] = "model"
-            return [Evidence(field="supplier", value=named, quote=said)]
+            return [Evidence(field="supplier", value=chosen.name, quote=said)]
         details["supplier_source"] = "none"
+        if named:
+            details["model_supplier"] = named
         return []
 
     async def effect(
