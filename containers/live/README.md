@@ -81,7 +81,8 @@ or a way out of the network `models`, which they share with the gateway
 alone.
 
 The files are fetched by a script into `models/`, which is not versioned
-and survives a new setup:
+and survives a new setup. Each comes from a fixed revision of its
+repository and is checked against the sha256 the script names:
 
 ```
 sh containers/live/fetch-models.sh list        # the models it knows

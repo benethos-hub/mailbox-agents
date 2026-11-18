@@ -9,7 +9,7 @@ name: mailbox-agent-live
 
 services:
   stalwart:
-    image: stalwartlabs/stalwart:v1.1.1
+    image: stalwartlabs/stalwart:v1.1.1@sha256:5ebdf474b237161742fe4309396af4ae8797c938e8e6eb7e2d4837332c4f9851
     init: true
     restart: unless-stopped
     environment:
@@ -28,7 +28,7 @@ services:
       - stalwart-data:/var/lib/stalwart
 
   mailbox-service:
-    image: ghcr.io/benethos-hub/benethos-mailbox-service:0.7.5
+    image: ghcr.io/benethos-hub/benethos-mailbox-service:0.7.5@sha256:d7106ff4318aa2f3736442f114c774e64e0cc484653606ebfd5ae173e48607aa
     restart: unless-stopped
     read_only: true
     tmpfs:
