@@ -82,7 +82,9 @@ src/benethos_mailbox_agents/
 tests/            # offline: REST and gateway through httpx.MockTransport
 live/             # run by hand, outside testpaths: smoke, sorting and
                   # invoices against the test account, gold files from
-                  # its labels, common.py their settings from the file
+                  # its labels, common.py what they share: the settings
+                  # from the file, the mailbox, the gateway, sorting over
+                  # the test account, the run of the checks
 containers/
   images/mailbox-agents/Dockerfile
   production/     # the published image, one service per agent, each

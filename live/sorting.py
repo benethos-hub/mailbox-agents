@@ -17,118 +17,79 @@ failed. Never point it at an account that is not a test account.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import sys
 import tempfile
 from collections import Counter
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
-from common import live_settings  # beside this script, not a package
+from common import (  # beside this script, not a package
+    Snapshot,
+    connect_mailbox,
+    inbox_snapshot,
+    parse_settings,
+    put_back,
+    run_checks,
+    sort_test_account,
+)
 
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
-from benethos_mailbox_agents.records import MessageRef
-from benethos_mailbox_agents.runtime.loop import Worker
-from benethos_mailbox_agents.runtime.model import NoModel
 from benethos_mailbox_agents.settings import Settings
-from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
-from benethos_mailbox_agents.store import ActionRow, Store
-
-ROOT = Path(__file__).resolve().parent.parent
-LIVE = ROOT / "containers" / "live"
-ENV = LIVE / "secrets" / "agent.env"
-LIST = LIVE / "sorting.json"
+from benethos_mailbox_agents.sources.mailbox import Mailbox
+from benethos_mailbox_agents.store import ActionRow
 
 # What the list makes of the invented mail of containers/live/mail.py.
 MOVED = {"CloudHost": 3, "Telco": 1}
 HELD = {"Paperworks": 2}
 FOLDERS = ("Providers", "Providers/CloudHost", "Providers/Telco")
-KEYWORD = Sorting.default_keyword
 
 
 @dataclass
 class Live:
     settings: Settings
     mailbox: Mailbox
-    before: dict[MessageRef, tuple[tuple[str, ...], tuple[str, ...]]] = field(
-        default_factory=dict
-    )
+    before: Snapshot = field(default_factory=dict)
     folders_before: set[str] = field(default_factory=set)
     moved: list[ActionRow] = field(default_factory=list)
+    putting_back: bool = False
 
     @property
     def account(self) -> str:
         return self.settings.accounts[0]
 
+    @property
+    def keyword(self) -> str:
+        """The keyword sorting sets with these settings."""
+        return Sorting(self.settings).keyword
 
-async def snapshot(
-    live: Live,
-) -> dict[MessageRef, tuple[tuple[str, ...], tuple[str, ...]]]:
-    """Each message of the inbox: its folders and keywords."""
-    since = date.today() - timedelta(days=30)
-    refs = await live.mailbox.recent(since, live.settings.accounts, roles=("inbox",))
-    found = {}
-    for ref in refs:
-        message = await live.mailbox.message(ref)
-        found[ref] = (
-            tuple(sorted(f.id for f in message.folders)),
-            tuple(sorted(message.keywords)),
-        )
-    return found
+    async def sort(
+        self, stage: str, folder: Path
+    ) -> tuple[list[ActionRow], Counter[str]]:
+        return await sort_test_account(self.settings, self.mailbox, stage, folder)
 
-
-async def sort(
-    live: Live, stage: str, folder: Path
-) -> tuple[list[ActionRow], Counter[str]]:
-    """The agent over the mail of the last weeks in ``stage``: its actions
-    and how many messages it decided for each label."""
-    settings = live.settings.model_copy(
-        update={"stage": stage, "sorting_file": LIST, "data_dir": folder}
-    )
-    agent = Sorting(settings)
-    agent.prepare()
-    with Store.open(folder / "sorting.db") as store:
-        worker = Worker(
-            agent=agent,
-            store=store,
-            mailbox=live.mailbox,
-            gateway=NoModel(),
-            now=lambda: datetime.now(UTC),
-        )
-        await worker.backfill(30)
-        await worker.drain()
-        labels: Counter[str] = Counter()
-        for row in store.messages(None, 1000):
-            steps = [s for s in store.steps(row.ref) if s.step == "decision"]
-            if steps:
-                labels[str(steps[-1].result["label"])] += 1
-        return store.actions(), labels
+    async def folders(self) -> set[str]:
+        found = await self.mailbox.folders(self.account, fresh=True)
+        return {f.path for f in found.values()}
 
 
 async def before(live: Live) -> str:
-    live.before = await snapshot(live)
-    live.folders_before = {
-        f.path for f in (await live.mailbox.folders(live.account, fresh=True)).values()
-    }
+    live.before = await inbox_snapshot(live.mailbox, live.settings)
+    live.folders_before = await live.folders()
     return f"{len(live.before)} messages in the inbox"
 
 
 async def shadow(live: Live) -> str:
     with tempfile.TemporaryDirectory() as folder:
-        actions, labels = await sort(live, "shadow", Path(folder))
+        actions, labels = await live.sort("shadow", Path(folder))
     for name, count in {**MOVED, **HELD}.items():
         if labels[name] != count:
             raise AssertionError(f"{labels[name]} messages of {name}, {count} expected")
     if any(a.executed for a in actions):
         raise AssertionError("an action was carried out in shadow")
-    after = await snapshot(live)
-    folders = {
-        f.path for f in (await live.mailbox.folders(live.account, fresh=True)).values()
-    }
-    if after != live.before or folders != live.folders_before:
+    after = await inbox_snapshot(live.mailbox, live.settings)
+    if after != live.before or await live.folders() != live.folders_before:
         raise AssertionError("the mailbox changed in shadow")
     moves = sum(a.action == "move_to_folder" for a in actions)
     made = sorted({a.argument for a in actions if a.action == "create_folder"})
@@ -140,11 +101,9 @@ async def shadow(live: Live) -> str:
 
 async def full(live: Live) -> str:
     with tempfile.TemporaryDirectory() as folder:
-        actions, labels = await sort(live, "full", Path(folder))
+        actions, _ = await live.sort("full", Path(folder))
     live.moved = [a for a in actions if a.action == "move_to_folder" and a.executed]
-    folders = {
-        f.path for f in (await live.mailbox.folders(live.account, fresh=True)).values()
-    }
+    folders = await live.folders()
     missing = [path for path in FOLDERS if path not in folders]
     if missing:
         raise AssertionError(f"the folders {missing} were not made")
@@ -158,7 +117,7 @@ async def full(live: Live) -> str:
         message = await live.mailbox.message(action.ref)
         if [f.path for f in message.folders] != [action.argument]:
             raise AssertionError("a message is not in the folder it was moved to")
-        if KEYWORD not in {k.casefold() for k in message.keywords}:
+        if live.keyword.casefold() not in {k.casefold() for k in message.keywords}:
             raise AssertionError("a moved message lacks the keyword")
     made = sorted((folders - live.folders_before) & set(FOLDERS))
     return (
@@ -167,11 +126,10 @@ async def full(live: Live) -> str:
     )
 
 
-async def put_back(live: Live) -> str:
-    for action in live.moved:
-        await live.mailbox.move(action.ref, action.before["folders"][0])
-        await live.mailbox.remove_keyword(action.ref, KEYWORD)
-    after = await snapshot(live)
+async def put_back_check(live: Live) -> str:
+    live.putting_back = True
+    await put_back(live.mailbox, live.moved, live.keyword)
+    after = await inbox_snapshot(live.mailbox, live.settings)
     if after != live.before:
         changed = sum(after.get(ref) != was for ref, was in live.before.items())
         raise AssertionError(f"{changed} messages are not as they were")
@@ -182,34 +140,20 @@ CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
     ("the inbox before", before),
     ("sorting in shadow", shadow),
     ("sorting in full", full),
-    ("the mail put back", put_back),
+    ("the mail put back", put_back_check),
 ]
 
 
 async def run(settings: Settings) -> int:
-    failed = 0
-    async with connect(
-        settings.service_url or "",
-        settings.secret("service_token"),
-        allow_http=settings.service_allow_http,
-    ) as mailbox:
+    async with connect_mailbox(settings) as mailbox:
         live = Live(settings, mailbox)
-        for name, check in CHECKS:
-            try:
-                said = await check(live)
-            except Exception as exc:
-                failed += 1
-                print(f"FAILED   {name}: {type(exc).__name__}: {exc}")
-                if check is full and live.moved:
-                    print(f"         {await put_back(live)}")
-                break
-            print(f"ok       {name}: {said}")
+        failed = await run_checks(live, CHECKS, stop=True)
+        if failed and live.moved and not live.putting_back:
+            await put_back(live.mailbox, live.moved, live.keyword)
+            print(f"         {len(live.moved)} messages back in the inbox")
     return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="The live check of sorting.")
-    parser.add_argument("--env-file", type=Path, default=ENV)
-    args = parser.parse_args()
-    found = live_settings(args.env_file, "sorting")
+    found = parse_settings("sorting", "The live check of sorting.")
     sys.exit(asyncio.run(run(found)))

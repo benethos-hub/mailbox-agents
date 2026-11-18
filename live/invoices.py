@@ -23,7 +23,6 @@ it at an account that is not a test account.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import sys
 import tempfile
@@ -31,32 +30,59 @@ import time
 from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from email.utils import parseaddr
 from pathlib import Path
 
-from common import live_settings  # beside this script, not a package
+from common import (  # beside this script, not a package
+    DAYS,
+    LIST,
+    Snapshot,
+    connect_mailbox,
+    inbox_snapshot,
+    labels,
+    mail,
+    open_gateway,
+    parse_settings,
+    put_back,
+    run_checks,
+    sort_test_account,
+    worker,
+)
 
 from benethos_mailbox_agents.agents.invoices.agent import Invoices
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
+from benethos_mailbox_agents.agents.sorting.groups import load_groups
 from benethos_mailbox_agents.llm.gateway import Gateway
-from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
-from benethos_mailbox_agents.runtime.model import NoModel
 from benethos_mailbox_agents.settings import Settings
-from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agents.sources.mailbox import Mailbox
 from benethos_mailbox_agents.store import ActionRow, Store
 
-ROOT = Path(__file__).resolve().parent.parent
-LIVE = ROOT / "containers" / "live"
-ENV = LIVE / "secrets" / "agent.env"
-LIST = LIVE / "sorting.json"
-
-# What the list and the labels make of the invented mail of mail.py: the
-# invoices of CloudHost and Telco are sorted, the one of Paperworks, a held
-# group, stays in the inbox.
-FILED = {"Providers/CloudHost/Rechnungen", "Providers/Telco/Rechnungen"}
-INVOICES = 3
+SUBFOLDER = "Rechnungen"
 WAIT = 120
+
+
+def _invoices() -> tuple[int, set[str]]:
+    """What the list and the labels make of the invented mail of mail.py:
+    how many invoices lie in the inbox, and the subfolders of those that
+    sorting moves. The invoice of a held group or of a sender in no group
+    stays in the inbox."""
+    groups = load_groups(LIST)
+    count, filed = 0, set()
+    for folder, _, message in mail.messages("me@invented.example"):
+        local = str(message["Message-ID"]).strip("<>").partition("@")[0]
+        label = mail.GOLD.get(local, {}).get("invoices", ("", {}))[0]
+        if folder != "inbox" or label != "invoice":
+            continue
+        count += 1
+        match = groups.match(parseaddr(str(message["From"]))[1])
+        group = match.group if match else None
+        if group is not None and not group.hold:
+            filed.add(f"{group.folder}/{SUBFOLDER}")
+    return count, filed
+
+
+INVOICES, FILED = _invoices()
 
 
 @dataclass
@@ -65,62 +91,35 @@ class Live:
     mailbox: Mailbox
     gateway: Gateway
     folder: Path
-    before: dict[MessageRef, tuple[str, ...]] = field(default_factory=dict)
+    before: Snapshot = field(default_factory=dict)
     sorted_moves: list[ActionRow] = field(default_factory=list)
+    putting_back: bool = False
 
     @property
-    def account(self) -> str:
-        return self.settings.accounts[0]
+    def keyword(self) -> str:
+        """The keyword sorting sets with these settings."""
+        return Sorting(self.settings).keyword
 
     def invoices(self, name: str) -> tuple[Worker, Store]:
         settings = self.settings.model_copy(
             update={
                 "stage": "shadow",
                 "invoices_folders": ["Providers/*"],
-                "invoices_subfolder": "{folder}/Rechnungen",
+                "invoices_subfolder": "{folder}/" + SUBFOLDER,
                 "data_dir": self.folder,
             }
         )
         agent = Invoices(settings)
         agent.prepare()
         store = Store.open(self.folder / f"invoices-{name}.db")
-        worker = Worker(
-            agent=agent,
-            store=store,
-            mailbox=self.mailbox,
-            gateway=self.gateway,
-            now=lambda: datetime.now(UTC),
+        return worker(agent, store, self.mailbox, self.gateway), store
+
+    async def sort(self) -> None:
+        actions, _ = await sort_test_account(
+            self.settings, self.mailbox, "full", self.folder
         )
-        return worker, store
-
-
-async def inbox(live: Live) -> dict[MessageRef, tuple[str, ...]]:
-    since = date.today() - timedelta(days=30)
-    refs = await live.mailbox.recent(since, live.settings.accounts, roles=("inbox",))
-    return {
-        ref: tuple(sorted(f.id for f in (await live.mailbox.message(ref)).folders))
-        for ref in refs
-    }
-
-
-async def sort(live: Live) -> None:
-    settings = live.settings.model_copy(
-        update={"stage": "full", "sorting_file": LIST, "data_dir": live.folder}
-    )
-    agent = Sorting(settings)
-    agent.prepare()
-    with Store.open(live.folder / "sorting.db") as store:
-        worker = Worker(
-            agent=agent,
-            store=store,
-            mailbox=live.mailbox,
-            gateway=NoModel(),
-            now=lambda: datetime.now(UTC),
-        )
-        await worker.backfill(30)
-        await worker.drain()
-        live.sorted_moves = [
-            a for a in store.actions() if a.action == "move_to_folder" and a.executed
+        self.sorted_moves = [
+            a for a in actions if a.action == "move_to_folder" and a.executed
         ]
 
 
@@ -132,37 +131,29 @@ def recorded_moves(store: Store) -> set[str]:
     }
 
 
-def invoices_decided(store: Store) -> int:
-    count = 0
-    for row in store.messages(None, 1000):
-        steps = [s for s in store.steps(row.ref) if s.step == "decision"]
-        if steps and steps[-1].result["label"] == "invoice":
-            count += 1
-    return count
-
-
 async def before(live: Live) -> str:
-    live.before = await inbox(live)
+    live.before = await inbox_snapshot(live.mailbox, live.settings)
     return f"{len(live.before)} messages in the inbox"
 
 
 async def invoices_first(live: Live) -> str:
-    worker, store = live.invoices("first")
+    marking, store = live.invoices("first")
     with store:
-        await worker.run_pass()
-        await worker.backfill(30)
-        await worker.drain()
-        if invoices_decided(store) != INVOICES:
-            raise AssertionError(f"{invoices_decided(store)} invoices decided")
+        await marking.run_pass()
+        await marking.backfill(DAYS)
+        await marking.drain()
+        decided = labels(store)["invoice"]
+        if decided != INVOICES:
+            raise AssertionError(f"{decided} invoices decided")
         opened = [i for i in (store.item(r) for r in live.before) if i and i.is_open]
         if len(opened) != INVOICES:
             raise AssertionError(f"{len(opened)} open items, {INVOICES} expected")
         steps = len(store.actions())
-        await sort(live)
+        await live.sort()
         started = time.monotonic()
         while recorded_moves(store) != FILED and time.monotonic() - started < WAIT:
             await asyncio.sleep(5)
-            await worker.run_pass()
+            await marking.run_pass()
         found = recorded_moves(store)
         if found != FILED:
             raise AssertionError(
@@ -185,28 +176,29 @@ async def invoices_first(live: Live) -> str:
 
 
 async def sorting_first(live: Live) -> str:
-    worker, store = live.invoices("second")
+    marking, store = live.invoices("second")
     with store:
-        taken = await worker.backfill(30)
-        await worker.drain()
+        taken = await marking.backfill(DAYS)
+        await marking.drain()
         found = recorded_moves(store)
         if found != FILED:
             raise AssertionError(
                 f"recorded moves {sorted(found)}, {sorted(FILED)} expected"
             )
-        decided = invoices_decided(store)
+        decided = labels(store)["invoice"]
         made = sorted(
             {a.argument for a in store.actions() if a.action == "create_folder"}
         )
     return f"{taken} taken up, {decided} invoices, folders recorded {made}"
 
 
-async def put_back(live: Live) -> str:
-    for action in live.sorted_moves:
-        await live.mailbox.move(action.ref, action.before["folders"][0])
-        await live.mailbox.remove_keyword(action.ref, Sorting.default_keyword)
-    after = await inbox(live)
-    if after != live.before:
+async def put_back_check(live: Live) -> str:
+    live.putting_back = True
+    await put_back(live.mailbox, live.sorted_moves, live.keyword)
+    after = await inbox_snapshot(live.mailbox, live.settings)
+    if {r: f for r, (f, _) in after.items()} != {
+        r: f for r, (f, _) in live.before.items()
+    }:
         raise AssertionError("the inbox is not as it was")
     return f"{len(live.sorted_moves)} messages back in the inbox"
 
@@ -215,47 +207,23 @@ CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
     ("the inbox before", before),
     ("invoices first, then sorting", invoices_first),
     ("sorting first, then invoices", sorting_first),
-    ("the mail put back", put_back),
+    ("the mail put back", put_back_check),
 ]
 
 
 async def run(settings: Settings) -> int:
-    failed = 0
     async with AsyncExitStack() as stack:
-        mailbox = await stack.enter_async_context(
-            connect(
-                settings.service_url or "",
-                settings.secret("service_token"),
-                allow_http=settings.service_allow_http,
-            )
-        )
-        gateway = await stack.enter_async_context(
-            Gateway(
-                settings.gateway_url or "",
-                settings.secret("gateway_key"),
-                settings.model or "",
-                timeout=settings.gateway_timeout_seconds,
-                allow_http=settings.gateway_allow_http,
-            )
-        )
+        mailbox = await stack.enter_async_context(connect_mailbox(settings))
+        gateway = await stack.enter_async_context(open_gateway(settings))
         folder = Path(stack.enter_context(tempfile.TemporaryDirectory()))
         live = Live(settings, mailbox, gateway, folder)
-        for name, check in CHECKS:
-            try:
-                said = await check(live)
-            except Exception as exc:
-                failed += 1
-                print(f"FAILED   {name}: {type(exc).__name__}: {exc}")
-                if live.sorted_moves:
-                    print(f"         {await put_back(live)}")
-                break
-            print(f"ok       {name}: {said}")
+        failed = await run_checks(live, CHECKS, stop=True)
+        if failed and live.sorted_moves and not live.putting_back:
+            await put_back(live.mailbox, live.sorted_moves, live.keyword)
+            print(f"         {len(live.sorted_moves)} messages back in the inbox")
     return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="The live check of invoices.")
-    parser.add_argument("--env-file", type=Path, default=ENV)
-    args = parser.parse_args()
-    found = live_settings(args.env_file, "invoices")
+    found = parse_settings("invoices", "The live check of invoices.")
     sys.exit(asyncio.run(run(found)))

@@ -13,32 +13,30 @@ Never point it at an account that is not a test account.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import sys
 import tempfile
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
-from common import live_settings  # beside this script, not a package
+from common import (  # beside this script, not a package
+    DAYS,
+    Skip,
+    connect_mailbox,
+    mail,
+    parse_settings,
+    run_checks,
+    worker,
+)
 
 from benethos_mailbox_agents.agents.counting.agent import Counting
 from benethos_mailbox_agents.records import MailMessage, MessageRef
-from benethos_mailbox_agents.runtime.loop import Worker
-from benethos_mailbox_agents.runtime.model import NoModel
 from benethos_mailbox_agents.settings import Settings
-from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agents.sources.mailbox import Mailbox
 from benethos_mailbox_agents.store import Store
-
-ROOT = Path(__file__).resolve().parent.parent
-LIVE = ROOT / "containers" / "live"
-ENV = LIVE / "secrets" / "agent.env"
-sys.path.insert(0, str(LIVE))
-
-import mail  # noqa: E402 - beside the setup, not a package
 
 # What containers/live/mail.py puts into the test account.
 INVENTED = len(list(mail.messages("me@invented.example")))
@@ -49,10 +47,6 @@ PDFS = sum(
     if part.get_content_type() == "application/pdf"
 )
 SUB_FOLDER = mail.SUB_FOLDERS[0]
-
-
-class Skip(Exception):  # noqa: N818 - a reason to skip, not an error
-    pass
 
 
 @dataclass
@@ -86,7 +80,7 @@ async def folders(live: Live) -> str:
 async def recent(live: Live) -> str:
     """The service syncs the account after it was connected: wait for it."""
     end = time.monotonic() + 120
-    since = date.today() - timedelta(days=30)
+    since = date.today() - timedelta(days=DAYS)
     while True:
         live.refs = await live.mailbox.recent(
             since, live.accounts, roles=("inbox", "sent")
@@ -137,16 +131,10 @@ async def counting(live: Live) -> str:
     with tempfile.TemporaryDirectory() as folder:
         agent = Counting(live.settings.model_copy(update={"data_dir": Path(folder)}))
         with Store.open(Path(folder) / "counting.db") as store:
-            worker = Worker(
-                agent=agent,
-                store=store,
-                mailbox=live.mailbox,
-                gateway=NoModel(),
-                now=lambda: datetime.now(UTC),
-            )
-            await worker.run_pass()
-            taken = await worker.backfill(30)
-            await worker.drain()
+            counter = worker(agent, store, live.mailbox)
+            await counter.run_pass()
+            taken = await counter.backfill(DAYS)
+            await counter.drain()
             counts = store.counts()
     if counts["done"] != taken or taken < INVENTED:
         raise AssertionError(f"{taken} taken up, counts {counts}")
@@ -165,29 +153,11 @@ CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
 
 
 async def run(settings: Settings) -> int:
-    failed = 0
-    async with connect(
-        settings.service_url or "",
-        settings.secret("service_token"),
-        allow_http=settings.service_allow_http,
-    ) as mailbox:
-        live = Live(settings, mailbox)
-        for name, check in CHECKS:
-            try:
-                said = await check(live)
-            except Skip as skip:
-                print(f"skipped  {name}: {skip}")
-            except Exception as exc:
-                failed += 1
-                print(f"FAILED   {name}: {type(exc).__name__}: {exc}")
-            else:
-                print(f"ok       {name}: {said}")
+    async with connect_mailbox(settings) as mailbox:
+        failed = await run_checks(Live(settings, mailbox), CHECKS)
     return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="The read-only live check.")
-    parser.add_argument("--env-file", type=Path, default=ENV)
-    args = parser.parse_args()
-    found = live_settings(args.env_file, "smoke")
+    found = parse_settings("smoke", "The read-only live check.")
     sys.exit(asyncio.run(run(found)))
