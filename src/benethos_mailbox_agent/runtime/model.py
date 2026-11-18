@@ -17,13 +17,13 @@ from typing import Protocol, TypeVar
 from pydantic import BaseModel
 
 from ..contract import Limits
-from ..errors import AnswerRefusedError, LimitReachedError
+from ..errors import AnswerRefusedError, ConfigError, LimitReachedError
 from ..llm.gateway import Reply
 from ..records import MessageRef, StepResult
 from ..store import Store
 from .metrics import Metrics
 
-__all__ = ["Asker", "Calls", "start_of_day"]
+__all__ = ["Asker", "Calls", "NoModel", "start_of_day"]
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -34,6 +34,15 @@ class Asker(Protocol):
     model: str
 
     async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]: ...
+
+
+class NoModel:
+    """The gateway of an agent that asks no model."""
+
+    model = ""
+
+    async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]:
+        raise ConfigError("this agent asks no model")
 
 
 def start_of_day(moment: datetime) -> datetime:

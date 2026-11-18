@@ -141,6 +141,20 @@ def test_every_layer_has_a_row() -> None:
     assert layers == set(MAY_IMPORT)
 
 
+LIVE = SOURCE.parent.parent / "live"
+
+
+@pytest.mark.parametrize("path", sorted(LIVE.glob("*.py")), ids=lambda p: p.name)
+def test_a_live_script_imports_nothing_of_the_command_line(path: Path) -> None:
+    """A live script works with the runtime, as the command line does, not
+    through it."""
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert not node.module.startswith("benethos_mailbox_agent.cli"), (
+                f"{path.name} imports {node.module}"
+            )
+
+
 # Where an HTTP status may be read: the modules of the upstreams, and the
 # error that carries it.
 HTTP_HOMES = frozenset({"sources", "llm", "errors"})

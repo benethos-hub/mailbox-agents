@@ -19,11 +19,11 @@ from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
 from ..runtime.health import check
-from ..runtime.readiness import MAILBOX_SETTINGS, readiness
+from ..runtime.readiness import MAILBOX_SETTINGS, readiness, start
 from ..settings import DEFAULT_ENV_FILE, Settings
 from ..store import STATES, Store, path_for
 from .report import report as make_report
-from .session import now, session, start_agent, upstreams
+from .session import now, session, upstreams
 
 __all__ = [
     "backfill",
@@ -201,7 +201,7 @@ def evaluate(args: argparse.Namespace, settings: Settings) -> int:
 async def _evaluate(
     cls: type[Agent], items: list[GoldItem], settings: Settings
 ) -> dict[str, Any]:
-    agent = start_agent(cls, settings)
+    agent = start(cls, settings)
     async with upstreams(agent, settings) as (mailbox, gateway):
         with tempfile.TemporaryDirectory() as folder:
             with Store.open(Path(folder) / "evaluation.db") as store:

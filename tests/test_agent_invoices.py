@@ -29,12 +29,11 @@ from benethos_mailbox_agent.agents.invoices.suppliers import (
     Suppliers,
     load_suppliers,
 )
-from benethos_mailbox_agent.cli.session import start_agent
 from benethos_mailbox_agent.errors import ConfigError
 from benethos_mailbox_agent.evaluation.gold import load_gold
 from benethos_mailbox_agent.records import MailMessage, MessageRef
 from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.runtime.readiness import readiness
+from benethos_mailbox_agent.runtime.readiness import readiness, start
 from fakes import ACCOUNT, invented, wire_message
 from helpers import Wired, settings, wired
 
@@ -483,7 +482,7 @@ def test_starting_reads_the_list_once(monkeypatch: pytest.MonkeyPatch) -> None:
         "gateway_key": "k",
     }
 
-    started = start_agent(Invoices, agent(**values).settings)
+    started = start(Invoices, agent(**values).settings)
 
     assert started.suppliers.names == ("CloudHost", "Telco")
     assert read == [SUPPLIERS]
@@ -501,7 +500,7 @@ def test_a_wrong_list_stops_the_start(tmp_path: Path) -> None:
     }
 
     with pytest.raises(ConfigError, match="^invoices is not ready: "):
-        start_agent(Invoices, agent(**values).settings)
+        start(Invoices, agent(**values).settings)
 
 
 def test_an_unset_list_is_a_config_error() -> None:

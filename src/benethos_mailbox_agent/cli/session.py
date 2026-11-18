@@ -15,21 +15,19 @@ from typing import Any, TypeVar
 from pydantic import BaseModel
 
 from ..contract import Agent
-from ..errors import ConfigError, ContractError
-from ..llm.gateway import Gateway, Reply
+from ..llm.gateway import Gateway
 from ..runtime.loop import Worker
-from ..runtime.readiness import required, uses_model
+from ..runtime.model import NoModel
+from ..runtime.readiness import start, uses_model
 from ..settings import Settings
 from ..sources.mailbox import Mailbox, connect
 from ..store import Store, path_for
 
 __all__ = [
     "TRANSPORTS",
-    "NoModel",
     "Session",
     "now",
     "session",
-    "start_agent",
     "upstreams",
 ]
 
@@ -44,15 +42,6 @@ def now() -> datetime:
     return datetime.now(UTC)
 
 
-class NoModel:
-    """The gateway of an agent that asks no model."""
-
-    model = ""
-
-    async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]:
-        raise ConfigError("this agent asks no model")
-
-
 class Session:
     """What one command works with."""
 
@@ -63,20 +52,6 @@ class Session:
         self.store = store
         self.mailbox = mailbox
         self.worker = worker
-
-
-def start_agent(cls: type[Agent], settings: Settings) -> Agent:
-    """The agent, once its settings and its preparation are found ready.
-    It is built and prepared once, what it reads besides read once."""
-    missing = settings.missing(required(cls))
-    if missing:
-        raise ConfigError(f"{cls.name} misses settings: {', '.join(missing)}")
-    try:
-        agent = cls(settings)
-        agent.prepare()
-    except (ConfigError, ContractError) as exc:
-        raise ConfigError(f"{cls.name} is not ready: {exc.message}") from None
-    return agent
 
 
 def mailbox_for(settings: Settings) -> AbstractAsyncContextManager[Mailbox]:
@@ -113,7 +88,7 @@ async def upstreams(
 
 @asynccontextmanager
 async def session(cls: type[Agent], settings: Settings) -> AsyncIterator[Session]:
-    agent = start_agent(cls, settings)
+    agent = start(cls, settings)
     async with AsyncExitStack() as stack:
         mailbox, gateway = await stack.enter_async_context(upstreams(agent, settings))
         store = stack.enter_context(Store.open(path_for(settings.data_dir, agent.name)))

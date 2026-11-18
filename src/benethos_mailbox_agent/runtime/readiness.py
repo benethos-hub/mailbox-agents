@@ -1,7 +1,7 @@
 """Whether an agent can start: its settings, and what it reads besides.
 
-``status`` asks this of every agent without starting one, ``worker`` asks
-it before it starts. See SPECS.md section 7.
+``status`` asks this of every agent without starting one. :func:`start`
+builds the agent a command runs, once. See SPECS.md section 7.
 """
 
 from __future__ import annotations
@@ -12,7 +12,14 @@ from ..contract import Agent
 from ..errors import ConfigError, ContractError
 from ..settings import Settings
 
-__all__ = ["MAILBOX_SETTINGS", "MODEL_SETTINGS", "Readiness", "readiness", "required"]
+__all__ = [
+    "MAILBOX_SETTINGS",
+    "MODEL_SETTINGS",
+    "Readiness",
+    "readiness",
+    "required",
+    "start",
+]
 
 # What every agent needs, and what an agent that asks the model needs too.
 MAILBOX_SETTINGS = ("service_url", "service_token")
@@ -52,3 +59,17 @@ def readiness(agent: type[Agent], settings: Settings) -> Readiness:
         except (ConfigError, ContractError) as exc:
             problem = exc.message
     return Readiness(agent.name, agent.version, missing, problem)
+
+
+def start(cls: type[Agent], settings: Settings) -> Agent:
+    """The agent, once its settings and its preparation are found ready.
+    It is built and prepared once, what it reads besides read once."""
+    missing = settings.missing(required(cls))
+    if missing:
+        raise ConfigError(f"{cls.name} misses settings: {', '.join(missing)}")
+    try:
+        agent = cls(settings)
+        agent.prepare()
+    except (ConfigError, ContractError) as exc:
+        raise ConfigError(f"{cls.name} is not ready: {exc.message}") from None
+    return agent
