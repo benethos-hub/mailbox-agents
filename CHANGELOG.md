@@ -87,3 +87,6 @@ commit that makes the change. Design decisions live in
   an item is recorded once per stage, a refused keyword is offered again,
   and after `shadow` the stage `keyword` sets it. The state file gets
   migration 2.
+- `invoices` applies the sender rules again when it acts, so a supplier
+  added to the list reaches an invoice decided before on
+  `backfill --again`, without a new model call.

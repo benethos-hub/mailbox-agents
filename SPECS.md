@@ -500,6 +500,12 @@ subdomain of it. So only an address or a pattern rule moves an invoice
 into a supplier's folder. A domain rule and the model's choice mark only
 (decided 2026-11-17).
 
+The sender rule is applied again when the agent acts, against the list
+as it is then. A supplier added to the list reaches an invoice decided
+before once `backfill --again` takes it up, without a new model call.
+The decision keeps who chose the supplier at the time (decided
+2026-11-17).
+
 | The message is | What happens |
 |---|---|
 | an invoice from a listed supplier, by an address or pattern rule | the keyword, and in stage `full` a move to the supplier's folder |

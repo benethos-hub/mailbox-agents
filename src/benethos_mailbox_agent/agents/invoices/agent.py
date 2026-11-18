@@ -31,23 +31,14 @@ from ...errors import ConfigError
 from ...records import LABEL, Decision, Event, Evidence, MailMessage
 from .baseline import baseline
 from .schema import Answer, answer_schema, parts, render
-from .suppliers import Supplier, Suppliers, load_suppliers
+from .suppliers import Kind, Supplier, Suppliers, load_suppliers
 
 __all__ = ["Invoices"]
 
 
 # The sender rules that move an invoice. From is not authenticated, so a
 # domain rule and the model's choice mark only (decided 2026-11-17).
-_MOVING_RULES = frozenset({"address", "pattern"})
-
-
-def _moves(decision: Decision) -> bool:
-    """Whether the supplier of ``decision`` came from a rule that moves."""
-    details = decision.details
-    return (
-        details.get("supplier_source") == "rule"
-        and details.get("supplier_rule") in _MOVING_RULES
-    )
+_MOVING_RULES = frozenset({Kind.ADDRESS, Kind.PATTERN})
 
 
 def _mentions(supplier: Supplier, quote: str) -> bool:
@@ -178,13 +169,17 @@ class Invoices(Agent):
                 Action.ADD_KEYWORD, message.ref, keyword=self.keyword, why="invoice"
             )
         ]
-        supplier = self.suppliers.named(decision.fields.get("supplier", ""))
-        if supplier is not None and _moves(decision):
+        # The rule is applied anew against the list as it is now, so a
+        # supplier added since reaches an invoice decided before (decided
+        # 2026-11-17). The decision keeps who chose at the time.
+        sender = message.sender.email if message.sender else None
+        rule = self.suppliers.match(sender)
+        if rule is not None and rule.kind in _MOVING_RULES:
             requests.append(
                 ActionRequest(
                     Action.MOVE_TO_FOLDER,
                     message.ref,
-                    folder=f"{self.parent}/{supplier.folder}",
+                    folder=f"{self.parent}/{rule.supplier.folder}",
                     why="supplier",
                 )
             )

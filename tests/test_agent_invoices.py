@@ -39,14 +39,8 @@ MESSAGES = {m["id"]: m for m in invented()}
 
 
 def agent(stage: str = "full", **values: Any) -> Invoices:
-    return Invoices(
-        settings(
-            stage=stage,
-            invoices_folder="Invoices",
-            invoices_suppliers_file=SUPPLIERS,
-            **values,
-        )
-    )
+    found = {"invoices_folder": "Invoices", "invoices_suppliers_file": SUPPLIERS}
+    return Invoices(settings(stage=stage, **{**found, **values}))
 
 
 def answer(
@@ -219,6 +213,39 @@ async def test_the_model_may_name_a_listed_supplier_and_marks_only(
     found = decision(world, "inv-platform")
     assert found["details"] == {"supplier_source": "model"}
     assert found["fields"] == {"supplier": "CloudHost"}
+
+
+async def test_a_supplier_added_since_reaches_a_decided_invoice(
+    world: Wired, tmp_path: Path
+) -> None:
+    listed = tmp_path / "suppliers.json"
+    listed.write_text(SUPPLIERS.read_text(encoding="utf-8"), encoding="utf-8")
+    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
+    assert (
+        await run(world, "inv-unlisted", agent(invoices_suppliers_file=listed))
+        == "done"
+    )
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inbox"]
+
+    found = json.loads(listed.read_text(encoding="utf-8"))
+    found["suppliers"].append(
+        {
+            "name": "Paperworks",
+            "folder": "Hosting",
+            "senders": ["accounts@paperworks.example"],
+        }
+    )
+    listed.write_text(json.dumps(found), encoding="utf-8")
+    ref = MessageRef(account_id=ACCOUNT, message_id="inv-unlisted")
+    world.store.enqueue(ref, world.clock(), again=True)
+
+    assert (
+        await run(world, "inv-unlisted", agent(invoices_suppliers_file=listed))
+        == "done"
+    )
+
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting"]
+    assert len(world.fake_gateway.requests) == 1
 
 
 async def test_a_domain_rule_marks_only(world: Wired) -> None:
