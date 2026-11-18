@@ -232,7 +232,17 @@ class Worker:
             except MailboxAgentError as exc:
                 logbook.pass_failed(self.agent.name, exc)
                 wait = self._wait_after(exc)
+            await self._sleep(wait, stop)
+
+    async def _sleep(self, wait: float, stop: asyncio.Event) -> None:
+        """Wait ``wait`` seconds or until ``stop``, in slices of at most one
+        poll interval, writing progress after each. A loop that waits long
+        for its gateway is alive, and the health check must see it so."""
+        left = wait
+        while left > 0 and not stop.is_set():
+            step = min(left, self.settings.poll_seconds)
             try:
-                await asyncio.wait_for(stop.wait(), timeout=wait)
+                await asyncio.wait_for(stop.wait(), timeout=step)
             except TimeoutError:
-                pass
+                self.store.set_last_pass(self._now())
+            left -= step

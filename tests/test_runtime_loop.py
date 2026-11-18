@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -19,6 +20,7 @@ from benethos_mailbox_agent.contract import (
 )
 from benethos_mailbox_agent.errors import MailboxUnavailableError
 from benethos_mailbox_agent.records import Event, MailMessage, MessageRef
+from benethos_mailbox_agent.runtime.health import check
 from benethos_mailbox_agent.runtime.loop import Worker
 from fakes import ACCOUNT, wire_message
 from helpers import Echo, Wired, settings, wired
@@ -250,6 +252,44 @@ async def test_the_loop_runs_until_stopped(world: Wired) -> None:
     await asyncio.wait_for(asyncio.gather(run.run(stop), stopper()), timeout=5)
 
     assert world.store.cursor() == "0"
+
+
+async def test_a_long_wait_for_the_gateway_stays_healthy(world: Wired) -> None:
+    def now() -> datetime:
+        return datetime.now(UTC)
+
+    agent = Echo(
+        settings(
+            stage="full",
+            poll_seconds=0.05,
+            gateway_timeout_seconds=0.05,
+            backoff_ceiling_seconds=10,
+        )
+    )
+    run = Worker(
+        agent=agent,
+        store=world.store,
+        mailbox=world.mailbox,
+        gateway=world.gateway,
+        now=now,
+    )
+    await run.run_pass()
+    world.service.add(wire_message("m1", subject="Your invoice"))
+    world.fake_gateway.answer(*[httpx.Response(503)] * 50)
+    stop = asyncio.Event()
+    seen: list[bool] = []
+
+    async def watch() -> None:
+        started = time.monotonic()
+        while time.monotonic() - started < 1.5:
+            seen.append(check(world.store, agent.settings, now()).healthy)
+            await asyncio.sleep(0.01)
+        stop.set()
+
+    await asyncio.wait_for(asyncio.gather(run.run(stop), watch()), timeout=10)
+
+    assert len(world.fake_gateway.requests) >= 3
+    assert all(seen)
 
 
 async def test_a_config_error_does_not_end_the_loop(world: Wired) -> None:

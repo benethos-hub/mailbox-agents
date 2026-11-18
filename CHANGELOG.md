@@ -72,3 +72,6 @@ commit that makes the change. Design decisions live in
   does not take, and a message an agent reads for its actions that was
   deleted since, no longer stop the agent before its cursor. The refusal
   is logged and the next messages are taken up.
+- A worker that waits long for its gateway or mailbox service stays
+  healthy: it waits in slices of one poll interval and writes its progress
+  after each.
