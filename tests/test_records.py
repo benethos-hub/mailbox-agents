@@ -35,6 +35,13 @@ def test_a_message_knows_its_folder_roles() -> None:
     assert not message.in_role("sent")
 
 
+def test_a_keyword_is_found_in_any_case() -> None:
+    message = MailMessage(ref=REF, keywords=("agent-x",))
+
+    assert message.has_keyword("Agent-X")
+    assert not message.has_keyword("agent-y")
+
+
 def test_records_are_frozen_and_strict() -> None:
     with pytest.raises(ValidationError):
         REF.message_id = "m2"  # type: ignore[misc]

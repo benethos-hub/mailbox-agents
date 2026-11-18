@@ -112,10 +112,7 @@ class Sorting(Agent):
     def admit(self, message: MailMessage) -> bool:
         """A message in the inbox the agent has not sorted before: one that
         carries its keyword was put back there by a person."""
-        if not message.in_role("inbox"):
-            return False
-        own = self.keyword.casefold()
-        return all(k.casefold() != own for k in message.keywords)
+        return message.in_role("inbox") and not message.has_keyword(self.keyword)
 
     def baseline(self, message: MailMessage) -> Decision:
         sender = message.sender.email if message.sender else None

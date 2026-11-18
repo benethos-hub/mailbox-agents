@@ -99,6 +99,13 @@ class MailMessage(_Record):
         """Whether the message is in a folder of ``role``, such as ``inbox``."""
         return any(folder.role == role for folder in self.folders)
 
+    def has_keyword(self, keyword: str) -> bool:
+        """Whether the message carries ``keyword``, in any case. IMAP
+        keywords ignore case, and a service may answer them in lower case
+        (measured 2026-11-18 at Stalwart through service 0.7.5)."""
+        wanted = keyword.casefold()
+        return any(k.casefold() == wanted for k in self.keywords)
+
 
 class Thread(_Record):
     """A conversation, its messages oldest first."""

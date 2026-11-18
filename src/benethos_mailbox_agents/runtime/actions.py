@@ -324,10 +324,7 @@ class Executor:
         if request.action is Action.CREATE_FOLDER:
             return await self._plan_folder(account, request.folder)
         keyword = self.agent.keyword
-        # IMAP keywords ignore case, and a service may answer them in lower
-        # case (measured 2026-11-18 at Stalwart through service 0.7.5).
-        present = keyword.casefold() in {k.casefold() for k in message.keywords}
-        if (request.action is Action.ADD_KEYWORD) == present:
+        if (request.action is Action.ADD_KEYWORD) == message.has_keyword(keyword):
             return None
         return Plan(keyword, {"keywords": list(message.keywords)}, keyword)
 
@@ -419,8 +416,7 @@ class Executor:
         message = await self._mailbox.message(request.ref)
         if request.action is Action.MOVE_TO_FOLDER:
             return [f.id for f in message.folders] == [target]
-        present = target.casefold() in {k.casefold() for k in message.keywords}
-        return present == (request.action is Action.ADD_KEYWORD)
+        return message.has_keyword(target) == (request.action is Action.ADD_KEYWORD)
 
     async def _take(self, request: ActionRequest, target: str) -> None:
         if request.action is Action.ADD_KEYWORD:
