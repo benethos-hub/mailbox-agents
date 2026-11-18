@@ -79,27 +79,37 @@ another.
 | Kind | Written | Covers |
 |---|---|---|
 | address | `service@bank-two.example` | that address |
-| pattern | `*@cloudhost.example`, `mailbox*@telco.example` | every address the `*` fits. `*` stands before the `@` only |
+| pattern | `*@cloudhost.example`, `mailbox*@telco.example` | every address of that domain the `*` fits. `*` stands before the `@` |
+| pattern for subdomains | `*@*.shop.example` | every address of every subdomain of `shop.example`, not of `shop.example` itself |
 | domain | `cloudhost.example` | refused, see below |
 
 - Case is ignored.
-- The most specific rule wins: an address before a pattern.
+- The most specific rule wins: an address before a pattern before a
+  pattern for subdomains.
 - Two groups whose rules of the same kind both match leave the sender
   unmatched. Nothing is guessed.
-- A pattern covers one domain. Every subdomain a sender writes from is a
-  rule of its own.
+- A pattern covers one domain. The subdomains are a rule of their own,
+  `*@*.domain` for all of them (decided 2026-11-18). Such a rule is no less
+  trusted than `*@domain`, since the sender is not authenticated anyway,
+  only broader.
+- The domain after `*.` has two names at least: `*@*.example` is refused
+  as too broad. Whether two names are a registered domain, such as
+  `co.uk`, is not checked.
 
-**A domain rule is refused (proposal).** In `invoices` today a domain rule
-marks and does not move. `sorting` sets no keyword, so such a rule would do
-nothing. The message says to write `*@domain`.
+**A domain rule is refused (decided 2026-11-18).** In `invoices` today a
+domain rule marks and does not move. `sorting` sets no keyword a domain
+could mark with, so such a rule would do nothing. The message says to
+write `*@domain` or `*@*.domain`.
 
 ### When the list is read
 
 - Once, at the start of the agent. A wrong list stops the start and
   `status` names what is wrong, as with the supplier list today.
 - A changed list takes effect at the next start.
-- The code that reads and matches it moves from `invoices` into `sorting`.
-  `invoices` needs no sender rules once it is rebuilt.
+- `sorting` reads and matches it with code of its own. `invoices` keeps
+  its supplier list until its rebuild removes it (step I5): an agent is
+  self-contained, and the rules differ, as `sorting` refuses a domain and
+  knows a pattern for subdomains.
 
 ## 3. What happens to a message
 
@@ -176,9 +186,10 @@ sender (SPF, DKIM, DMARC), which the server writes into the message. The
 mailbox service exposes no header of a message (measured 2026-11-17 against
 0.7.5). The need was handed to that project on 2026-11-18.
 
-Until then **a group can be held (proposal)**: `"hold": true` records its
-moves as `shadow` does, whatever the stage of the agent, and `report` shows
-them. It is meant for a group whose folder would lend trust.
+Until then **a group can be held (decided 2026-11-18)**: `"hold": true`
+records its moves as `shadow` does, whatever the stage of the agent, and
+`report` shows them. It is meant for a group whose folder would lend trust.
+Left out, a group is not held.
 
 Once the service answers per message whether the sender's domain was
 verified, a group gets a switch that moves verified mail only.
@@ -246,7 +257,7 @@ Each step is one commit with the gates green and the specs it touches.
 | S1 | The three measurements of section 11 | their results stand in [mailbox service](../mailbox-service.md) |
 | S2 | `sources/mailbox.py`: creating a folder | offline tests against the fake service |
 | S3 | Contract and executor: `create_folder`, the folders an agent declares | tests 5 of section 10, the tables of the contract spec |
-| S4 | The list: reading, validating, matching, moved out of `invoices` | tests 3 and 4. `invoices` still green on the moved code |
+| S4 | The list: reading, validating, matching, in `agents/sorting/` | tests 3 and 4. `invoices` keeps its own list until I5 |
 | S5 | `agents/sorting/`: select, admit, baseline, decide without a model, effect | tests 1, 2, 6, 7, 8 |
 | S6 | `report` for `sorting`, the setting, the example list | section 8 shown on invented mail |
 | S7 | Live: `sorting` in `shadow` and in `full` on the test account | `live/smoke.py` extended, folders made and mail moved |
@@ -276,5 +287,3 @@ A run on the owner's account is the owner's decision, in `shadow` first.
 ## 14. Open
 
 - The switch for verified senders, once the mailbox service can answer it.
-- `hold` for a group until then.
-- Refusing a domain rule.
