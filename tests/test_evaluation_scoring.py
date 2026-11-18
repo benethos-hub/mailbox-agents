@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from benethos_mailbox_agent.evaluation.gold import GoldItem
-from benethos_mailbox_agent.evaluation.scoring import (
+from benethos_mailbox_agents.evaluation.gold import GoldItem
+from benethos_mailbox_agents.evaluation.scoring import (
     FieldScore,
     LabelScore,
     Outcome,
     same,
     score,
 )
-from benethos_mailbox_agent.records import Decision
+from benethos_mailbox_agents.records import Decision
 
 
 def gold(label: str, **fields: str | None) -> GoldItem:

@@ -50,7 +50,7 @@ Bank/
 
 ## 2. The list
 
-A JSON file named in `MAILBOX_AGENT_SORTING_FILE`, not versioned. An example
+A JSON file named in `MAILBOX_AGENTS_SORTING_FILE`, not versioned. An example
 of it is versioned as `sorting.example.json`.
 
 ```json
@@ -137,7 +137,7 @@ The keyword is asked for only in `full` and for a group not held, after the
 move, and the runtime takes nothing after a refused move, so it never
 stands without the move. The name has no `$` in front, as IMAP registers
 such keywords with meanings (`$Junk`, `$label1`), and a prefix that no mail
-client or other tool is known to use. `MAILBOX_AGENT_KEYWORD` names
+client or other tool is known to use. `MAILBOX_AGENTS_KEYWORD` names
 another.
 
 ### By stage
@@ -216,7 +216,7 @@ verified, a group gets a switch that moves verified mail only.
 
 | Setting | Meaning |
 |---|---|
-| `MAILBOX_AGENT_SORTING_FILE` | the list of section 2. Required |
+| `MAILBOX_AGENTS_SORTING_FILE` | the list of section 2. Required |
 
 The stage, the accounts and the rest are the settings of every agent
 ([configuration](../configuration.md)).

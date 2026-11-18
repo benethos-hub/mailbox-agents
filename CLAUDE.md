@@ -44,9 +44,9 @@ How to work in this repository. Read this before making changes. See
 - Windows, PowerShell or Bash, and Linux in the container. Python 3.11 to
   3.15.
 - Set up: `uv sync`.
-- Run: `uv run benethos-mailbox-agent --help`.
+- Run: `uv run benethos-mailbox-agents --help`.
 - Settings come from the environment or from a `.env` file, every name with
-  the prefix `MAILBOX_AGENT_`. `config/benethos-mailbox-agent/.env.example`
+  the prefix `MAILBOX_AGENTS_`. `config/benethos-mailbox-agents/.env.example`
   lists them all. The test suite needs none of them.
 
 ## Project layout
@@ -54,9 +54,9 @@ How to work in this repository. Read this before making changes. See
 See docs/specs/architecture.md for the full table.
 
 ```
-src/benethos_mailbox_agent/
+src/benethos_mailbox_agents/
   cli/            # the console script, its commands, the wiring of a session
-  __main__.py     # enables `python -m benethos_mailbox_agent`
+  __main__.py     # enables `python -m benethos_mailbox_agents`
   errors.py       # the error hierarchy, and redact
   settings/       # settings resolution, secrets from files
   logbook/        # every line on stderr, one activity class per line,

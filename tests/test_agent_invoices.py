@@ -10,25 +10,25 @@ import httpx
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from benethos_mailbox_agent.agents.awaiting_reply.schema import (
+from benethos_mailbox_agents.agents.awaiting_reply.schema import (
     Answer as AwaitingAnswer,
 )
-from benethos_mailbox_agent.agents.inquiries.schema import FIELDS
-from benethos_mailbox_agent.agents.inquiries.schema import (
+from benethos_mailbox_agents.agents.inquiries.schema import FIELDS
+from benethos_mailbox_agents.agents.inquiries.schema import (
     Inquiry as InquiryAnswer,
 )
-from benethos_mailbox_agent.agents.invoices.agent import Invoices
-from benethos_mailbox_agent.agents.invoices.schema import (
+from benethos_mailbox_agents.agents.invoices.agent import Invoices
+from benethos_mailbox_agents.agents.invoices.schema import (
     MAX_ANSWER_TEXT,
     Answer,
     render,
 )
-from benethos_mailbox_agent.errors import ConfigError
-from benethos_mailbox_agent.evaluation.gold import load_gold
-from benethos_mailbox_agent.llm.gateway import strict_schema
-from benethos_mailbox_agent.records import MailMessage, MessageRef
-from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.runtime.readiness import readiness, start
+from benethos_mailbox_agents.errors import ConfigError
+from benethos_mailbox_agents.evaluation.gold import load_gold
+from benethos_mailbox_agents.llm.gateway import strict_schema
+from benethos_mailbox_agents.records import MailMessage, MessageRef
+from benethos_mailbox_agents.runtime.loop import Worker
+from benethos_mailbox_agents.runtime.readiness import readiness, start
 from fakes import ACCOUNT, invented, wire_message
 from helpers import Wired, settings, wired
 
@@ -493,7 +493,7 @@ async def test_a_gateway_that_is_away_leaves_the_invoice_pending(world: Wired) -
 
 
 async def test_the_report_names_invoices_marked_and_not_moved(world: Wired) -> None:
-    from benethos_mailbox_agent.cli.report import collect, render, summary
+    from benethos_mailbox_agents.cli.report import collect, render, summary
 
     world.fake_gateway.answer(
         answer("invoice", "please find attached invoice INV-77"),
@@ -512,8 +512,8 @@ async def test_the_report_names_invoices_marked_and_not_moved(world: Wired) -> N
 
 
 def test_summarize_counts_invoices_left_where_they_lay() -> None:
-    from benethos_mailbox_agent.contract import Shown
-    from benethos_mailbox_agent.records import Decision
+    from benethos_mailbox_agents.contract import Shown
+    from benethos_mailbox_agents.records import Decision
 
     invoice = Decision(label="invoice", source="model")
     refused = invoice.model_copy(update={"refused": "evidence"})
@@ -635,9 +635,9 @@ def worker(world: Wired, the_agent: Invoices | None = None) -> Worker:
 async def sort(world: Wired, tmp_path: Path, message_id: str) -> None:
     """The agent sorting, with a state file of its own, moves the mail of
     accounts@paperworks.example into Invoices/Hosting."""
-    from benethos_mailbox_agent.agents.sorting.agent import Sorting
-    from benethos_mailbox_agent.runtime.model import NoModel
-    from benethos_mailbox_agent.store import Store
+    from benethos_mailbox_agents.agents.sorting.agent import Sorting
+    from benethos_mailbox_agents.runtime.model import NoModel
+    from benethos_mailbox_agents.store import Store
 
     listed = tmp_path / "sorting.json"
     listed.write_text(
@@ -776,7 +776,7 @@ async def test_backfill_takes_up_the_folders_it_looks_in(world: Wired) -> None:
 
 
 async def test_backfill_of_an_agent_that_wants_no_folder(world: Wired) -> None:
-    from benethos_mailbox_agent.agents.counting.agent import Counting
+    from benethos_mailbox_agents.agents.counting.agent import Counting
 
     counting = Worker(
         agent=Counting(settings()),

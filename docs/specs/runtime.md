@@ -43,7 +43,7 @@ Rules:
 - **A new prompt or model does not rewrite history.** `backfill` runs old
   messages again under the new version and keeps both results.
 
-Rollout stage, per agent, in `MAILBOX_AGENT_STAGE`:
+Rollout stage, per agent, in `MAILBOX_AGENTS_STAGE`:
 
 | Stage | What the agent does |
 |---|---|
@@ -73,7 +73,7 @@ and `paths` start no agent and change nothing.
 
 ## Report
 
-`benethos-mailbox-agent report --agent <name>` shows what an agent decided
+`benethos-mailbox-agents report --agent <name>` shows what an agent decided
 and did, or in `shadow` would have done: per message the subject and sender,
 the decision, the evidence and the action (decided 2026-11-17). The state
 file holds ids only, so subject and sender are fetched from the mailbox

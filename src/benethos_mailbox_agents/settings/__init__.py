@@ -1,6 +1,6 @@
 """Settings resolution, secrets from files.
 
-Every setting carries the prefix ``MAILBOX_AGENT_`` and comes from the
+Every setting carries the prefix ``MAILBOX_AGENTS_`` and comes from the
 environment or from one ``.env`` file, read with pydantic-settings. A
 process runs one agent, so one environment describes one agent. The
 service token and the gateway key may be given as a file instead, named
@@ -29,11 +29,11 @@ __all__ = [
 # Characters an IMAP keyword may not carry: it is one atom.
 KEYWORD_FORBIDDEN = frozenset(' \t()[]{}"\\%*')
 
-PREFIX = "MAILBOX_AGENT_"
+PREFIX = "MAILBOX_AGENTS_"
 
 # Where the .env file is looked for when none is named, relative to the
 # working directory. The example beside it lists every setting.
-DEFAULT_ENV_FILE = Path("config/benethos-mailbox-agent/.env")
+DEFAULT_ENV_FILE = Path("config/benethos-mailbox-agents/.env")
 
 Stage = Literal["shadow", "keyword", "full"]
 

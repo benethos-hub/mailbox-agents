@@ -90,7 +90,7 @@ class Limits:
 @dataclass(frozen=True)
 class Requires:
     """Settings that must be present before the agent starts, by their
-    field names in :class:`~benethos_mailbox_agent.settings.Settings`."""
+    field names in :class:`~benethos_mailbox_agents.settings.Settings`."""
 
     settings: tuple[str, ...] = ()
 
@@ -137,7 +137,7 @@ class Agent(ABC):
     actions: ClassVar[frozenset[Action]]
     limits: ClassVar[Limits] = Limits()
     requires: ClassVar[Requires] = Requires()
-    # The keyword the agent sets when MAILBOX_AGENT_KEYWORD is unset.
+    # The keyword the agent sets when MAILBOX_AGENTS_KEYWORD is unset.
     default_keyword: ClassVar[str]
     # The version of the prompt the model step runs under. A step stored
     # under the same message, prompt version and model is not run again.

@@ -10,6 +10,6 @@ from importlib.metadata import PackageNotFoundError, version
 
 try:
     # The distribution (PyPI) name, which differs from the import package name.
-    __version__ = version("benethos-mailbox-agent")
+    __version__ = version("benethos-mailbox-agents")
 except PackageNotFoundError:  # pragma: no cover - package not installed
     __version__ = "0.0.0+unknown"

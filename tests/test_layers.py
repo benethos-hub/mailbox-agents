@@ -17,10 +17,10 @@ from pathlib import Path
 
 import pytest
 
-import benethos_mailbox_agent
+import benethos_mailbox_agents
 
-PACKAGE = "benethos_mailbox_agent"
-SOURCE = Path(benethos_mailbox_agent.__file__).parent
+PACKAGE = "benethos_mailbox_agents"
+SOURCE = Path(benethos_mailbox_agents.__file__).parent
 
 # Which layers a layer may import, besides itself and the package root,
 # which every module may read ``__version__`` from. Each row allows what the
@@ -94,7 +94,7 @@ CONFINED: dict[str, frozenset[str]] = {
 
 
 def _layer(module: str) -> str:
-    """``benethos_mailbox_agent.store.store`` is in the layer ``store``."""
+    """``benethos_mailbox_agents.store.store`` is in the layer ``store``."""
     parts = module.split(".")
     return parts[1] if len(parts) > 1 else ""
 
@@ -186,7 +186,7 @@ def test_a_live_script_imports_nothing_of_the_command_line(path: Path) -> None:
     through it."""
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         if isinstance(node, ast.ImportFrom) and node.module:
-            assert not node.module.startswith("benethos_mailbox_agent.cli"), (
+            assert not node.module.startswith("benethos_mailbox_agents.cli"), (
                 f"{path.name} imports {node.module}"
             )
 
@@ -264,7 +264,7 @@ def test_the_check_finds_a_relative_import(
 
     found = [module for module, _ in _imports(probe)]
 
-    assert found == ["benethos_mailbox_agent.store"]
+    assert found == ["benethos_mailbox_agents.store"]
     assert _layer(found[0]) not in MAY_IMPORT["records"]
 
 

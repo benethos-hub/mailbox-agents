@@ -93,7 +93,7 @@ wheels = [
 ]
 
 [[package]]
-name = "benethos-mailbox-agent"
+name = "benethos-mailbox-agents"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

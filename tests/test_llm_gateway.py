@@ -9,12 +9,12 @@ import httpx
 import pytest
 from pydantic import BaseModel
 
-from benethos_mailbox_agent.errors import (
+from benethos_mailbox_agents.errors import (
     AnswerRefusedError,
     ConfigError,
     GatewayUnavailableError,
 )
-from benethos_mailbox_agent.llm.gateway import Gateway, strict_schema
+from benethos_mailbox_agents.llm.gateway import Gateway, strict_schema
 from fakes import FakeGateway
 
 OTHER = '{"label": "other", "quote": "q", "supplier": null}'
@@ -185,7 +185,7 @@ async def test_a_gateway_url_that_keeps_the_key_safe(url: str, allow: bool) -> N
     "url", ["http://gw.example.com/v1", "http://10.0.0.5/v1", "ftp://gw/v1", "x"]
 )
 def test_http_to_another_machine_is_refused(url: str) -> None:
-    with pytest.raises(ConfigError, match="MAILBOX_AGENT_GATEWAY"):
+    with pytest.raises(ConfigError, match="MAILBOX_AGENTS_GATEWAY"):
         Gateway(url, "k", "m", timeout=120.0)
 
 

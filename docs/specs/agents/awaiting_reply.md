@@ -8,7 +8,7 @@
 | Baseline | a question mark or a request phrase in the last paragraph written |
 | Model | whether the message expects a reply, yes or no |
 | Actions | `add_keyword`, `remove_keyword`, both on the sent message |
-| Deadline | `MAILBOX_AGENT_REPLY_DAYS` working days, Monday to Friday, 3 by default (decided 2026-11-17, public holidays kept as a later option) |
+| Deadline | `MAILBOX_AGENTS_REPLY_DAYS` working days, Monday to Friday, 3 by default (decided 2026-11-17, public holidays kept as a later option) |
 
 A sent message that expects a reply becomes an open item. It closes when:
 

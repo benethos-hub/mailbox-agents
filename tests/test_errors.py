@@ -6,7 +6,7 @@ from collections.abc import Iterator
 
 import pytest
 
-from benethos_mailbox_agent import errors
+from benethos_mailbox_agents import errors
 
 
 @pytest.fixture(autouse=True)

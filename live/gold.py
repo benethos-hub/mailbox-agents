@@ -7,7 +7,7 @@ fetches the messages of the test account, finds each by its Message-ID and
 writes containers/live/secrets/gold-<agent>.jsonl, so an agent can be
 evaluated against it:
 
-    uv run benethos-mailbox-agent --env-file containers/live/secrets/agent.env \
+    uv run benethos-mailbox-agents --env-file containers/live/secrets/agent.env \
         eval --agent invoices --gold containers/live/secrets/gold-invoices.jsonl \
         --reports containers/live/secrets/reports
 
@@ -23,8 +23,8 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from benethos_mailbox_agent.settings import Settings, load_settings
-from benethos_mailbox_agent.sources.mailbox import connect
+from benethos_mailbox_agents.settings import Settings, load_settings
+from benethos_mailbox_agents.sources.mailbox import connect
 
 ROOT = Path(__file__).resolve().parent.parent
 LIVE = ROOT / "containers" / "live"

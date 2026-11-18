@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from benethos_mailbox_agent.records import (
+from benethos_mailbox_agents.records import (
     LABEL,
     Address,
     Decision,

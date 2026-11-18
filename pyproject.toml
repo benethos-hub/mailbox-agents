@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "benethos-mailbox-agent"
+name = "benethos-mailbox-agents"
 version = "0.1.0"
 description = "Agents that read and sort a mailbox: one narrow question each, one reversible action, measured against labelled mail."
 readme = "README.md"
@@ -45,8 +45,8 @@ dependencies = [
 
 [project.scripts]
 # One name only, identical to the distribution name, so every identifier
-# matches and `uvx benethos-mailbox-agent` works.
-benethos-mailbox-agent = "benethos_mailbox_agent.cli:main"
+# matches and `uvx benethos-mailbox-agents` works.
+benethos-mailbox-agents = "benethos_mailbox_agents.cli:main"
 
 [dependency-groups]
 dev = [
@@ -58,7 +58,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/benethos_mailbox_agent"]
+packages = ["src/benethos_mailbox_agents"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -75,7 +75,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["benethos_mailbox_agent"]
+source = ["benethos_mailbox_agents"]
 branch = true
 
 [tool.coverage.report]

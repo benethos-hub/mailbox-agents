@@ -1,7 +1,7 @@
 """``awaiting_reply``: does this sent message expect an answer, and has one come?
 
 A sent message the model finds expecting a reply becomes an open item due
-after MAILBOX_AGENT_REPLY_DAYS working days, Monday to Friday. It closes
+after MAILBOX_AGENTS_REPLY_DAYS working days, Monday to Friday. It closes
 when a later message from another sender arrives in its thread, an
 automatic answer not counted, or when a person takes the keyword off. A
 new message of the sender in the same thread restarts the deadline and

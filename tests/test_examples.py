@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agent.agents.inquiries.patterns import load_patterns
-from benethos_mailbox_agent.agents.sorting.groups import load_groups
+from benethos_mailbox_agents.agents.inquiries.patterns import load_patterns
+from benethos_mailbox_agents.agents.sorting.groups import load_groups
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = sorted(

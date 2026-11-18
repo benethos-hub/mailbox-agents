@@ -9,11 +9,11 @@ from pathlib import Path
 import httpx
 import pytest
 
-from benethos_mailbox_agent.cli import main
-from benethos_mailbox_agent.errors import GatewayUnavailableError
-from benethos_mailbox_agent.evaluation.gold import GoldItem
-from benethos_mailbox_agent.evaluation.report import build, render, write
-from benethos_mailbox_agent.evaluation.run import evaluate
+from benethos_mailbox_agents.cli import main
+from benethos_mailbox_agents.errors import GatewayUnavailableError
+from benethos_mailbox_agents.evaluation.gold import GoldItem
+from benethos_mailbox_agents.evaluation.report import build, render, write
+from benethos_mailbox_agents.evaluation.run import evaluate
 from fakes import ACCOUNT, FakeService, wire_message
 from helpers import Echo, configure, settings, wired
 

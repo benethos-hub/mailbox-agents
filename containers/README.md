@@ -5,7 +5,7 @@ The image, and the places it runs in, each in a folder of its own.
 ```
 containers/
   images/
-    mailbox-agent/
+    mailbox-agents/
       Dockerfile          # the one image of every agent, built with the
                           # repository root as context
   production/             # in operation, the published image:
@@ -22,9 +22,9 @@ containers/
 
 | Folder | For | Image | Ports | Compose project |
 |---|---|---|---|---|
-| `production/` | running the agents, without a clone of the repository | from the GitHub container registry, the version named in `.env` | metrics on 9470 to 9474, 127.0.0.1 | `benethos-mailbox-agent` |
-| `development/` | trying a change in a container | built from this checkout | metrics on 9480 to 9482, 127.0.0.1 | `benethos-mailbox-agent-dev` |
-| `live/` | the test account | Stalwart and the published mailbox service | 38080, 38081, 38465, 38993, 127.0.0.1 | `mailbox-agent-live` |
+| `production/` | running the agents, without a clone of the repository | from the GitHub container registry, the version named in `.env` | metrics on 9470 to 9474, 127.0.0.1 | `benethos-mailbox-agents` |
+| `development/` | trying a change in a container | built from this checkout | metrics on 9480 to 9482, 127.0.0.1 | `benethos-mailbox-agents-dev` |
+| `live/` | the test account | Stalwart and the published mailbox service | 38080, 38081, 38465, 38993, 127.0.0.1 | `mailbox-agents-live` |
 
 Each folder has its own volumes, so a trial in `development/` never
 reaches the state of an installation in `production/`, and nothing in
@@ -36,26 +36,26 @@ reaches the state of an installation in `production/`, and nothing in
 sh containers/live/setup.sh                 # once: the test account
 cd containers/development
 docker compose up -d --build                # the agent counting
-docker compose exec counting benethos-mailbox-agent report --agent counting
+docker compose exec counting benethos-mailbox-agents report --agent counting
 docker compose down -v                      # stop, and forget the volumes
 ```
 
 An agent that asks a model needs the gateway: `GATEWAY_URL`,
-`GATEWAY_KEY` and `MODEL`, each with the prefix `MAILBOX_AGENT_`, in an
+`GATEWAY_KEY` and `MODEL`, each with the prefix `MAILBOX_AGENTS_`, in an
 `.env` beside `development/compose.yaml`, which is not versioned.
 
 ## The image
 
-`ghcr.io/benethos-hub/benethos-mailbox-agent`, built from the repository
+`ghcr.io/benethos-hub/benethos-mailbox-agents`, built from the repository
 root:
 
 ```sh
-docker build -f containers/images/mailbox-agent/Dockerfile -t benethos-mailbox-agent:local .
-docker run --rm benethos-mailbox-agent:local --version
+docker build -f containers/images/mailbox-agents/Dockerfile -t benethos-mailbox-agents:local .
+docker run --rm benethos-mailbox-agents:local --version
 ```
 
 It runs as uid 10001, keeps the state file in the volume `/data`, serves
 metrics on 9464 and holds no secret. A container runs one agent, named in
 its command: `worker --agent <name>`. Its health check is
-`benethos-mailbox-agent health --agent <name>`, set per service in
+`benethos-mailbox-agents health --agent <name>`, set per service in
 compose. No image is published yet.

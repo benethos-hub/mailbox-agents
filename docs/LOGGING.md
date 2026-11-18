@@ -1,7 +1,7 @@
 # The log
 
 What an agent writes to its log, at which level, in which shape, and what
-never goes into a line. The code is `src/benethos_mailbox_agent/logbook/`.
+never goes into a line. The code is `src/benethos_mailbox_agents/logbook/`.
 [specs/safety.md](specs/safety.md) holds the rule behind it: nothing of a
 mail in a log line.
 
@@ -22,7 +22,7 @@ host may drop the log, the state file stays.
 
 ## 2. Levels
 
-`MAILBOX_AGENT_LOG_LEVEL` sets the level of the agent's own lines,
+`MAILBOX_AGENTS_LOG_LEVEL` sets the level of the agent's own lines,
 `INFO` by default. Every other logger, a library's, writes at `WARNING`
 and above only. `httpx` and `httpcore` are held there whatever the level
 says, since they name each request with its whole URL.
@@ -42,7 +42,7 @@ says, since they name each request with its whole URL.
 A line holds the time, the level, the source and the message:
 
 ```
-2026-11-18T10:12:22.123+01:00 INFO     benethos_mailbox_agent.activity.actions.recorded: invoices recorded add_keyword on message m1 in stage shadow without carrying it out: invoice
+2026-11-18T10:12:22.123+01:00 INFO     benethos_mailbox_agents.activity.actions.recorded: invoices recorded add_keyword on message m1 in stage shadow without carrying it out: invoice
 ```
 
 - **The time** is ISO 8601, the local time of the machine, to the
@@ -119,7 +119,7 @@ written as if there were no redaction.
 Each activity has a name, set in its class, not taken from the class's
 name, so a class renamed in the code keeps its name in the log and in an
 operator's filters. It writes under the logger
-`benethos_mailbox_agent.activity.<area>.<name>`.
+`benethos_mailbox_agents.activity.<area>.<name>`.
 
 - **The area is the module** of the catalogue: `process`, `worker`,
   `feed`, `messages`, `actions`.

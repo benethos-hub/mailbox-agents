@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 
-from benethos_mailbox_agent.agents.sorting.groups import Groups, Kind, load_groups
-from benethos_mailbox_agent.errors import ConfigError
+from benethos_mailbox_agents.agents.sorting.groups import Groups, Kind, load_groups
+from benethos_mailbox_agents.errors import ConfigError
 
 
 def groups(*entries: dict[str, Any]) -> Groups:

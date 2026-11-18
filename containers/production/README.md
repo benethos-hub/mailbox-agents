@@ -29,7 +29,7 @@ This folder is all it needs, no clone of the repository.
 
    ```sh
    docker compose --profile counting up -d
-   docker compose exec counting benethos-mailbox-agent report --agent counting --limit 5
+   docker compose exec counting benethos-mailbox-agents report --agent counting --limit 5
    docker compose --profile invoices up -d
    ```
 
@@ -39,7 +39,7 @@ its stage.
 
 ## Update
 
-Change `MAILBOX_AGENT_VERSION` in `.env`, then:
+Change `MAILBOX_AGENTS_VERSION` in `.env`, then:
 
 ```sh
 docker compose --profile invoices pull

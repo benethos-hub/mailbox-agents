@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agent import errors
-from benethos_mailbox_agent.cli import session
-from benethos_mailbox_agent.settings import PREFIX
+from benethos_mailbox_agents import errors
+from benethos_mailbox_agents.cli import session
+from benethos_mailbox_agents.settings import PREFIX
 from fakes import FakeGateway, FakeService
 from helpers import Wired, wired
 

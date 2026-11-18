@@ -10,7 +10,7 @@
         +-------------^--------------+
                       | REST, benethos-mailbox-client
         +-------------+--------------+
-        | mailbox-agent              |   one image,
+        | mailbox-agents             |   one image,
         |   invoices        + SQLite |   one process per agent,
         |   awaiting_reply  + SQLite |   one state file per agent
         |   inquiries       + SQLite |
@@ -41,10 +41,10 @@ tick (clock)     this mine?       2. model, one call,       keyword
 ## Modules
 
 ```
-src/benethos_mailbox_agent/
+src/benethos_mailbox_agents/
   cli/            # the console script: worker, run, backfill, report, eval,
                   # status, paths, health, and the wiring of one session
-  __main__.py     # enables `python -m benethos_mailbox_agent`
+  __main__.py     # enables `python -m benethos_mailbox_agents`
   errors.py       # the error hierarchy, and redact
   settings/       # settings resolution, secrets from files
   logbook/        # every line on stderr as an activity of its catalogue,
@@ -80,7 +80,7 @@ tests/            # offline: REST and gateway through httpx.MockTransport
 live/             # run by hand, outside testpaths: smoke against a test
                   # account, the evaluation against the gold set
 containers/
-  images/mailbox-agent/Dockerfile
+  images/mailbox-agents/Dockerfile
   production/     # the published image, one service per agent, each
                   # behind a profile of its name
   development/    # built from the checkout, against the test account

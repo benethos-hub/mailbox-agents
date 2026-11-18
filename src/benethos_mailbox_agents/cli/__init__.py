@@ -1,4 +1,4 @@
-"""The console script ``benethos-mailbox-agent``.
+"""The console script ``benethos-mailbox-agents``.
 
 Each command is a function in :mod:`.commands`. The command line reads the
 settings once, sets up the log and turns an error of this package into a
@@ -21,7 +21,7 @@ from . import commands
 
 __all__ = ["PROG", "build_parser", "main"]
 
-PROG = "benethos-mailbox-agent"
+PROG = "benethos-mailbox-agents"
 
 
 def _agent(parser: argparse.ArgumentParser) -> None:

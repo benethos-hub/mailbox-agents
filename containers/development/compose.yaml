@@ -6,12 +6,12 @@
 #   docker compose up -d --build                    the agent counting
 #   docker compose --profile invoices up -d         an agent that asks a model,
 #                                                   with the gateway in ./.env
-#   docker compose exec counting benethos-mailbox-agent report --agent counting
+#   docker compose exec counting benethos-mailbox-agents report --agent counting
 #   docker compose down -v                          stop, and forget the volumes
 #
 # Why each setting is what it is: ../production/compose.yaml.
 
-name: benethos-mailbox-agent-dev
+name: benethos-mailbox-agents-dev
 
 x-logging: &logging
   driver: json-file
@@ -22,8 +22,8 @@ x-logging: &logging
 x-agent: &agent
   build:
     context: ../..
-    dockerfile: containers/images/mailbox-agent/Dockerfile
-  image: benethos-mailbox-agent:local
+    dockerfile: containers/images/mailbox-agents/Dockerfile
+  image: benethos-mailbox-agents:local
   restart: unless-stopped
   logging: *logging
   read_only: true
@@ -46,12 +46,12 @@ x-agent: &agent
   environment: &environment
     # The service by its name on the live network, over http between two
     # containers, which the client refuses unless it is allowed.
-    MAILBOX_AGENT_SERVICE_URL: http://mailbox-service:8080
-    MAILBOX_AGENT_SERVICE_ALLOW_HTTP: "true"
+    MAILBOX_AGENTS_SERVICE_URL: http://mailbox-service:8080
+    MAILBOX_AGENTS_SERVICE_ALLOW_HTTP: "true"
     # The gateway too, when ./.env names it by its name on the network.
-    MAILBOX_AGENT_GATEWAY_ALLOW_HTTP: "true"
-    MAILBOX_AGENT_DATA_DIR: /data
-    MAILBOX_AGENT_POLL_SECONDS: "15"
+    MAILBOX_AGENTS_GATEWAY_ALLOW_HTTP: "true"
+    MAILBOX_AGENTS_DATA_DIR: /data
+    MAILBOX_AGENTS_POLL_SECONDS: "15"
 
 services:
   counting:
@@ -62,7 +62,7 @@ services:
     ports:
       - "127.0.0.1:${COUNTING_METRICS_PORT:-9480}:9464"
     healthcheck:
-      test: ["CMD", "benethos-mailbox-agent", "health", "--agent", "counting"]
+      test: ["CMD", "benethos-mailbox-agents", "health", "--agent", "counting"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -77,7 +77,7 @@ services:
     ports:
       - "127.0.0.1:${INVOICES_METRICS_PORT:-9481}:9464"
     healthcheck:
-      test: ["CMD", "benethos-mailbox-agent", "health", "--agent", "invoices"]
+      test: ["CMD", "benethos-mailbox-agents", "health", "--agent", "invoices"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -90,14 +90,14 @@ services:
     command: ["worker", "--agent", "sorting"]
     environment:
       <<: *environment
-      MAILBOX_AGENT_SORTING_FILE: /config/sorting.json
+      MAILBOX_AGENTS_SORTING_FILE: /config/sorting.json
     volumes:
       - sorting-data:/data
       - ../live/sorting.json:/config/sorting.json:ro
     ports:
       - "127.0.0.1:${SORTING_METRICS_PORT:-9482}:9464"
     healthcheck:
-      test: ["CMD", "benethos-mailbox-agent", "health", "--agent", "sorting"]
+      test: ["CMD", "benethos-mailbox-agents", "health", "--agent", "sorting"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -105,7 +105,7 @@ services:
 
 networks:
   live:
-    name: mailbox-agent-live_live
+    name: mailbox-agents-live_live
     external: true
 
 volumes:

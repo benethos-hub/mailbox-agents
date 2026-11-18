@@ -58,7 +58,7 @@ if [ -n "$anthropic_key" ]; then
 fi
 
 say "a test CA and a certificate for mail.agents.test"
-openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=mailbox-agent live test CA" \
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=mailbox-agents live test CA" \
     -keyout "$secrets/tls/ca.key" -out "$secrets/tls/ca.pem" 2>/dev/null
 openssl req -newkey rsa:2048 -nodes -subj "/CN=mail.agents.test" \
     -keyout "$secrets/tls/server.key" -out "$secrets/tls/server.csr" 2>/dev/null

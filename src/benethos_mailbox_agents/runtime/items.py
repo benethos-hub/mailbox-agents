@@ -12,7 +12,7 @@ __all__ = ["StoredItems"]
 
 
 class StoredItems:
-    """:class:`~benethos_mailbox_agent.contract.Items` over a state file."""
+    """:class:`~benethos_mailbox_agents.contract.Items` over a state file."""
 
     def __init__(
         self,

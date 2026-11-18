@@ -8,7 +8,7 @@ request stays visible, storable and mockable.
 - **One key per agent.** The key names the models the agent may use and a
   budget. An agent whose key lists only local models cannot send mail
   content to a hosted one through a configuration mistake.
-- **A model is named by an alias.** The setting `MAILBOX_AGENT_MODEL` holds
+- **A model is named by an alias.** The setting `MAILBOX_AGENTS_MODEL` holds
   an alias the gateway resolves. Changing the model behind it is a change at
   the gateway followed by an evaluation run. The model the gateway reports
   in its answer is stored with every step.

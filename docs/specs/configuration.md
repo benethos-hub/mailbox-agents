@@ -1,6 +1,6 @@
 # Configuration
 
-All settings carry the prefix `MAILBOX_AGENT_` and come from the environment
+All settings carry the prefix `MAILBOX_AGENTS_` and come from the environment
 or from one `.env` file, read with pydantic-settings (decided 2026-11-17).
 A process runs one agent, so one environment describes one agent. A secret
 may be given as a file with the suffix `_FILE`.
@@ -31,5 +31,5 @@ from. A secret given directly wins over its file.
 Settings of one agent, such as `INVOICES_FOLDERS`, `INVOICES_SUBFOLDER`,
 `REPLY_DAYS`, `INQUIRIES_PATTERNS_FILE` and `SORTING_FILE`, are named in its
 section. The
-`.env` file is `config/benethos-mailbox-agent/.env` below the working
+`.env` file is `config/benethos-mailbox-agents/.env` below the working
 directory unless the command line names another.

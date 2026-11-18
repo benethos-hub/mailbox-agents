@@ -33,7 +33,7 @@ What is stored: ids, decisions, evidence quotes, counts and times. What is
 not: the text of a mail, its subject, its sender or an attachment. A message
 is fetched again by its id when it is needed.
 
-One exception, off by default: `MAILBOX_AGENT_PROMPT_RETENTION_DAYS` above
+One exception, off by default: `MAILBOX_AGENTS_PROMPT_RETENTION_DAYS` above
 zero keeps the full request and answer of each model call for that many
 days, for finding an error. They are deleted after it.
 

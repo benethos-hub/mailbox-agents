@@ -12,16 +12,16 @@ from typing import Any
 import httpx
 import pytest
 
-from benethos_mailbox_agent.agents.awaiting_reply.agent import AwaitingReply
-from benethos_mailbox_agent.agents.awaiting_reply.schema import render
-from benethos_mailbox_agent.agents.awaiting_reply.text import (
+from benethos_mailbox_agents.agents.awaiting_reply.agent import AwaitingReply
+from benethos_mailbox_agents.agents.awaiting_reply.schema import render
+from benethos_mailbox_agents.agents.awaiting_reply.text import (
     add_working_days,
     asks,
     automatic,
     own_text,
 )
-from benethos_mailbox_agent.records import Address, MailMessage, MessageRef
-from benethos_mailbox_agent.runtime.loop import Worker
+from benethos_mailbox_agents.records import Address, MailMessage, MessageRef
+from benethos_mailbox_agents.runtime.loop import Worker
 from fakes import ACCOUNT, wire_message
 from helpers import Clock, Wired, settings, wired
 

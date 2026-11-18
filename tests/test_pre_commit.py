@@ -47,7 +47,7 @@ def _stage(repo: Path, name: str, content: str = "x\n") -> None:
     "name",
     [
         ".env",
-        "config/benethos-mailbox-agent/.env",
+        "config/benethos-mailbox-agents/.env",
         ".env.local",
         "data/invoices.db",
         "data/gold/invoices.jsonl",
@@ -67,7 +67,7 @@ def test_refuses_files_that_never_belong(repo: Path, name: str) -> None:
 @pytest.mark.parametrize(
     "name",
     [
-        "config/benethos-mailbox-agent/.env.example",
+        "config/benethos-mailbox-agents/.env.example",
         "data/.gitkeep",
         "data/gold/.gitkeep",
         "src/module.py",
@@ -81,7 +81,7 @@ def test_lets_the_rest_pass(repo: Path, name: str) -> None:
 
 def test_refuses_a_line_that_looks_like_a_credential(repo: Path) -> None:
     # Split, so this file does not look like a credential to the hook.
-    line = "MAILBOX_AGENT_GATEWAY_KEY=" + "abcdefghijklmnop1234\n"
+    line = "MAILBOX_AGENTS_GATEWAY_KEY=" + "abcdefghijklmnop1234\n"
     _stage(repo, "notes.txt", line)
 
     answer = _hook(repo)
@@ -97,7 +97,7 @@ def test_refuses_a_line_that_looks_like_a_credential(repo: Path) -> None:
         '{"token": "' + "mbx_" + 'abcdefghijklmnop1234"}',
         "Authorization: " + "Bearer " + "abcdefghijklmnop1234",
         "GATEWAY_KEY: " + "sk-" + "live-abcdefghijklmnop1234",
-        "MAILBOX_AGENT_GATEWAY_KEY = " + '"' + "abcdefghijklmnop1234" + '"',
+        "MAILBOX_AGENTS_GATEWAY_KEY = " + '"' + "abcdefghijklmnop1234" + '"',
         "SERVICE_TOKEN: " + "'" + "abcdefghijklmnop1234" + "'",
     ],
     ids=["json-token", "bearer", "sk-with-dash", "spaced-quoted", "yaml-quoted"],
@@ -114,7 +114,7 @@ def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
 @pytest.mark.parametrize(
     "line",
     [
-        "MAILBOX_AGENT_GATEWAY_KEY_FILE: /run/secrets/gateway_key",
+        "MAILBOX_AGENTS_GATEWAY_KEY_FILE: /run/secrets/gateway_key",
         "GATEWAY_KEY: ${GATEWAY_KEY}",
         'headers={"Authorization": f"Bearer {key}"}',
     ],

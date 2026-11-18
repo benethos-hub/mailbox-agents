@@ -1,6 +1,6 @@
 """The model as an agent reaches it: one message's calls, counted and kept.
 
-:class:`Calls` is the :class:`~benethos_mailbox_agent.contract.Model` the
+:class:`Calls` is the :class:`~benethos_mailbox_agents.contract.Model` the
 runtime hands an agent for one message. It refuses a call past the agent's
 limits, records each call as a step ``model`` with the model the gateway
 reported, its tokens and its duration, keeps the parts of the mail it sent

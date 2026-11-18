@@ -1,4 +1,4 @@
-# benethos-mailbox-agent
+# benethos-mailbox-agents
 
 Small agents that work on a mailbox continuously. Each one looks at mail as
 it arrives or leaves, decides one narrow question about it and takes one
@@ -7,7 +7,7 @@ invoices, track sent mail that still waits for a reply and recognise
 project inquiries.
 
 > **Status: nothing usable yet.** The design is written down in
-> [SPECS.md](https://github.com/benethos-hub/mailbox-agent/blob/main/SPECS.md),
+> [SPECS.md](https://github.com/benethos-hub/mailbox-agents/blob/main/SPECS.md),
 > the code is being built. Do not point it at a mailbox you care about.
 
 ## How it works
@@ -32,9 +32,9 @@ Needs [uv](https://docs.astral.sh/uv/) and Python 3.11 or newer.
 
 ```
 uv sync
-uv run benethos-mailbox-agent --version
+uv run benethos-mailbox-agents --version
 ```
 
 ## Licence
 
-MIT, see [LICENSE](https://github.com/benethos-hub/mailbox-agent/blob/main/LICENSE).
+MIT, see [LICENSE](https://github.com/benethos-hub/mailbox-agents/blob/main/LICENSE).

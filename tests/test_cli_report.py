@@ -6,9 +6,9 @@ from datetime import UTC, datetime
 
 import pytest
 
-from benethos_mailbox_agent.cli import main
-from benethos_mailbox_agent.cli.report import Entry, render
-from benethos_mailbox_agent.records import (
+from benethos_mailbox_agents.cli import main
+from benethos_mailbox_agents.cli.report import Entry, render
+from benethos_mailbox_agents.records import (
     LABEL,
     Address,
     Decision,
@@ -16,7 +16,7 @@ from benethos_mailbox_agent.records import (
     MailMessage,
     MessageRef,
 )
-from benethos_mailbox_agent.store import ActionRow, MessageRow
+from benethos_mailbox_agents.store import ActionRow, MessageRow
 from fakes import ACCOUNT, FakeService, wire_message
 from helpers import configure
 
@@ -119,7 +119,7 @@ def test_report_offline_needs_no_service(
     main(["run", "--agent", "counting"])
     service.add(wire_message("m1"))
     main(["run", "--agent", "counting"])
-    monkeypatch.delenv("MAILBOX_AGENT_SERVICE_TOKEN")
+    monkeypatch.delenv("MAILBOX_AGENTS_SERVICE_TOKEN")
     capsys.readouterr()
 
     assert main(["report", "--agent", "counting", "--offline", "--limit", "1"]) == 0
@@ -129,7 +129,7 @@ def test_report_offline_needs_no_service(
 @pytest.mark.parametrize(
     ("argv", "said"),
     [
-        (["report", "--agent", "counting"], "misses MAILBOX_AGENT_SERVICE_URL"),
+        (["report", "--agent", "counting"], "misses MAILBOX_AGENTS_SERVICE_URL"),
         (["report", "--agent", "counting", "--offline"], "no state file"),
         (["report", "--agent", "counting", "--state", "lost"], "--state is one of"),
         (["report", "--agent", "counting", "--limit", "0"], "--limit"),

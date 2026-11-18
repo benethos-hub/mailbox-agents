@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agent.contract import Action, ActionRequest
-from benethos_mailbox_agent.errors import MailboxUnavailableError
-from benethos_mailbox_agent.records import MessageRef
-from benethos_mailbox_agent.runtime.actions import Executor, Outcome
+from benethos_mailbox_agents.contract import Action, ActionRequest
+from benethos_mailbox_agents.errors import MailboxUnavailableError
+from benethos_mailbox_agents.records import MessageRef
+from benethos_mailbox_agents.runtime.actions import Executor, Outcome
 from fakes import ACCOUNT, wire_message
 from helpers import Echo, Wired, settings, wired
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from benethos_mailbox_agent.agents.counting.agent import Counting
-from benethos_mailbox_agent.contract import discover
-from benethos_mailbox_agent.records import MessageRef
-from benethos_mailbox_agent.runtime.loop import Worker
+from benethos_mailbox_agents.agents.counting.agent import Counting
+from benethos_mailbox_agents.contract import discover
+from benethos_mailbox_agents.records import MessageRef
+from benethos_mailbox_agents.runtime.loop import Worker
 from fakes import ACCOUNT, wire_message
 from helpers import settings, wired
 

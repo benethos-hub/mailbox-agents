@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from benethos_mailbox_agent.agents.invoices.folders import Places
-from benethos_mailbox_agent.errors import ConfigError
-from benethos_mailbox_agent.records import FolderRef
-from benethos_mailbox_agent.settings import Settings
+from benethos_mailbox_agents.agents.invoices.folders import Places
+from benethos_mailbox_agents.errors import ConfigError
+from benethos_mailbox_agents.records import FolderRef
+from benethos_mailbox_agents.settings import Settings
 
 
 def folder(path: str, role: str | None = None) -> FolderRef:
@@ -121,6 +121,6 @@ def test_a_wrong_setting_says_what_is_wrong(
 
 
 def test_the_folders_come_comma_separated(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MAILBOX_AGENT_INVOICES_FOLDERS", "Providers/*, *,Archive")
+    monkeypatch.setenv("MAILBOX_AGENTS_INVOICES_FOLDERS", "Providers/*, *,Archive")
 
     assert Settings().invoices_folders == ["Providers/*", "*", "Archive"]

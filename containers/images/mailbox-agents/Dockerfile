@@ -1,7 +1,7 @@
 # The image of every agent, built from the repository root, which is the
 # build context:
 #
-#   docker build -f containers/images/mailbox-agent/Dockerfile .
+#   docker build -f containers/images/mailbox-agents/Dockerfile .
 #
 # One image for all agents: a container runs one of them, named in its
 # command, `worker --agent <name>`. Two stages, after one that only holds
@@ -50,8 +50,8 @@ FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
-    MAILBOX_AGENT_DATA_DIR=/data \
-    MAILBOX_AGENT_METRICS_PORT=9464
+    MAILBOX_AGENTS_DATA_DIR=/data \
+    MAILBOX_AGENTS_METRICS_PORT=9464
 
 # A non-root user that owns what it writes.
 RUN useradd --create-home --uid 10001 agent \
@@ -69,6 +69,6 @@ EXPOSE 9464
 VOLUME ["/data"]
 
 # The health check names the agent, so it is set per service in compose:
-#   benethos-mailbox-agent health --agent <name>
-ENTRYPOINT ["benethos-mailbox-agent"]
+#   benethos-mailbox-agents health --agent <name>
+ENTRYPOINT ["benethos-mailbox-agents"]
 CMD ["--help"]

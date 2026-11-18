@@ -1,5 +1,5 @@
 # The model gateway of the live setup: LiteLLM with one alias per backend.
-# The agents name an alias in MAILBOX_AGENT_MODEL and never a model. There
+# The agents name an alias in MAILBOX_AGENTS_MODEL and never a model. There
 # is no fallback from one alias to another: a key that reads mail must not
 # reach a hosted model through a backend that was away (docs/specs/model-gateway.md).
 

@@ -10,7 +10,7 @@ Every agent package defines exactly one concrete `Agent` subclass in its
 | `actions` | the actions it may take, from the list below |
 | `limits` | model calls per message and per day |
 | `requires` | settings that must be present before it starts |
-| `default_keyword` | the keyword it sets when `MAILBOX_AGENT_KEYWORD` is unset |
+| `default_keyword` | the keyword it sets when `MAILBOX_AGENTS_KEYWORD` is unset |
 | `prompt_version` | the version of the prompt its model step runs under |
 
 **An agent's keyword is `agent-<word>` (decided 2026-11-18).** A keyword
@@ -28,7 +28,7 @@ answer keywords in lower case. The defaults:
 | `sorting` | `agent-sorted` |
 | `counting` | `agent-counted`, never set |
 
-`MAILBOX_AGENT_KEYWORD` names another keyword for one deployment.
+`MAILBOX_AGENTS_KEYWORD` names another keyword for one deployment.
 
 | Method | Meaning |
 |---|---|

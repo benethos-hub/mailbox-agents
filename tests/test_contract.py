@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from benethos_mailbox_agent.contract import (
+from benethos_mailbox_agents.contract import (
     REVERSED_BY,
     Action,
     ActionRequest,
@@ -24,9 +24,9 @@ from benethos_mailbox_agent.contract import (
     discover,
     load,
 )
-from benethos_mailbox_agent.errors import ContractError
-from benethos_mailbox_agent.records import Decision, Event, MailMessage
-from benethos_mailbox_agent.settings import Settings
+from benethos_mailbox_agents.errors import ContractError
+from benethos_mailbox_agents.records import Decision, Event, MailMessage
+from benethos_mailbox_agents.settings import Settings
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -133,8 +133,8 @@ def test_the_actions_of_the_contract_spec_are_the_code() -> None:
 
 
 AGENT_SOURCE = """
-from benethos_mailbox_agent.contract import Action, Agent, Route, Trigger
-from benethos_mailbox_agent.records import Decision
+from benethos_mailbox_agents.contract import Action, Agent, Route, Trigger
+from benethos_mailbox_agents.records import Decision
 
 
 class {cls}(Agent):

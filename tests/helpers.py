@@ -13,7 +13,7 @@ from typing import Literal
 import pytest
 from pydantic import BaseModel
 
-from benethos_mailbox_agent.contract import (
+from benethos_mailbox_agents.contract import (
     Action,
     ActionRequest,
     Agent,
@@ -21,18 +21,18 @@ from benethos_mailbox_agent.contract import (
     Route,
     Trigger,
 )
-from benethos_mailbox_agent.llm.gateway import Gateway
-from benethos_mailbox_agent.records import (
+from benethos_mailbox_agents.llm.gateway import Gateway
+from benethos_mailbox_agents.records import (
     LABEL,
     Decision,
     Event,
     Evidence,
     MailMessage,
 )
-from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.settings import Settings
-from benethos_mailbox_agent.sources.mailbox import Mailbox, connect
-from benethos_mailbox_agent.store import Store
+from benethos_mailbox_agents.runtime.loop import Worker
+from benethos_mailbox_agents.settings import Settings
+from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agents.store import Store
 from fakes import FakeGateway, FakeService
 
 START = datetime(2026, 11, 17, 9, 0, tzinfo=UTC)
@@ -151,8 +151,8 @@ def settings(**values: object) -> Settings:
 
 def configure(monkeypatch: pytest.MonkeyPatch) -> None:
     """The settings the command line needs to reach the fake service."""
-    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_URL", "https://mailbox.example.test")
-    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN", "service-token")
+    monkeypatch.setenv("MAILBOX_AGENTS_SERVICE_URL", "https://mailbox.example.test")
+    monkeypatch.setenv("MAILBOX_AGENTS_SERVICE_TOKEN", "service-token")
 
 
 def worker(world: Wired, agent: Agent | None = None, **values: object) -> Worker:

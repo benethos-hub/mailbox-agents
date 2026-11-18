@@ -5,7 +5,7 @@
 # image. setup.sh makes it, README.md says how to use it, and
 # live/smoke.py checks the package against it. Every port is on
 # 127.0.0.1 only.
-name: mailbox-agent-live
+name: mailbox-agents-live
 
 services:
   stalwart:

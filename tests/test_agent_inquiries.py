@@ -9,21 +9,21 @@ from typing import Any
 
 import pytest
 
-from benethos_mailbox_agent.agents.inquiries.agent import Inquiries
-from benethos_mailbox_agent.agents.inquiries.patterns import DATE, RATE, load_patterns
-from benethos_mailbox_agent.agents.inquiries.schema import FIELDS
-from benethos_mailbox_agent.errors import ConfigError
-from benethos_mailbox_agent.evaluation.gold import load_gold
-from benethos_mailbox_agent.evaluation.report import build
-from benethos_mailbox_agent.evaluation.run import evaluate
-from benethos_mailbox_agent.records import MailMessage, MessageRef
-from benethos_mailbox_agent.runtime.loop import Worker
+from benethos_mailbox_agents.agents.inquiries.agent import Inquiries
+from benethos_mailbox_agents.agents.inquiries.patterns import DATE, RATE, load_patterns
+from benethos_mailbox_agents.agents.inquiries.schema import FIELDS
+from benethos_mailbox_agents.errors import ConfigError
+from benethos_mailbox_agents.evaluation.gold import load_gold
+from benethos_mailbox_agents.evaluation.report import build
+from benethos_mailbox_agents.evaluation.run import evaluate
+from benethos_mailbox_agents.records import MailMessage, MessageRef
+from benethos_mailbox_agents.runtime.loop import Worker
 from fakes import ACCOUNT, invented
 from helpers import Wired, settings, wired
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = Path(__file__).resolve().parent / "data"
-PATTERNS = ROOT / "config" / "benethos-mailbox-agent" / "inquiries.example.json"
+PATTERNS = ROOT / "config" / "benethos-mailbox-agents" / "inquiries.example.json"
 MESSAGES = {m["id"]: m for m in invented("invented-inquiries.json")}
 
 

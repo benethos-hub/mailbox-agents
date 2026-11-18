@@ -23,13 +23,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
-from benethos_mailbox_agent.agents.counting.agent import Counting
-from benethos_mailbox_agent.records import MailMessage, MessageRef
-from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.runtime.model import NoModel
-from benethos_mailbox_agent.settings import Settings, load_settings
-from benethos_mailbox_agent.sources.mailbox import Mailbox, connect
-from benethos_mailbox_agent.store import Store
+from benethos_mailbox_agents.agents.counting.agent import Counting
+from benethos_mailbox_agents.records import MailMessage, MessageRef
+from benethos_mailbox_agents.runtime.loop import Worker
+from benethos_mailbox_agents.runtime.model import NoModel
+from benethos_mailbox_agents.settings import Settings, load_settings
+from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agents.store import Store
 
 ROOT = Path(__file__).resolve().parent.parent
 LIVE = ROOT / "containers" / "live"

@@ -9,10 +9,10 @@ from pathlib import Path
 import httpx
 import pytest
 
-from benethos_mailbox_agent.contract import Action, ActionRequest, Limits
-from benethos_mailbox_agent.errors import ConfigError, GatewayUnavailableError
-from benethos_mailbox_agent.records import MessageRef
-from benethos_mailbox_agent.runtime.steps import StepRunner, backoff
+from benethos_mailbox_agents.contract import Action, ActionRequest, Limits
+from benethos_mailbox_agents.errors import ConfigError, GatewayUnavailableError
+from benethos_mailbox_agents.records import MessageRef
+from benethos_mailbox_agents.runtime.steps import StepRunner, backoff
 from fakes import ACCOUNT, wire_message
 from helpers import Collected, Echo, Wired, settings, wired
 

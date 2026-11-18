@@ -38,9 +38,9 @@ looks in are a setting, and it knows nothing of groups or sender rules.
 
 | Setting | Meaning | Unset |
 |---|---|---|
-| `MAILBOX_AGENT_INVOICES_FOLDERS` | the folders it looks in, separated by commas. `Parent/*` stands for every folder directly below `Parent`, `*` for every folder at the top without a role | the inbox alone |
-| `MAILBOX_AGENT_INVOICES_SUBFOLDER` | where an invoice goes, as a pattern that starts with `{folder}/`, the folder the message lies in, such as `{folder}/Rechnungen` | an invoice is marked and stays |
-| `MAILBOX_AGENT_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there, it is not made | it is marked and stays in the inbox |
+| `MAILBOX_AGENTS_INVOICES_FOLDERS` | the folders it looks in, separated by commas. `Parent/*` stands for every folder directly below `Parent`, `*` for every folder at the top without a role | the inbox alone |
+| `MAILBOX_AGENTS_INVOICES_SUBFOLDER` | where an invoice goes, as a pattern that starts with `{folder}/`, the folder the message lies in, such as `{folder}/Rechnungen` | an invoice is marked and stays |
+| `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there, it is not made | it is marked and stays in the inbox |
 
 The inbox is always looked in. A folder is named by its path, case
 counting. A message in a folder below a named one, such as the subfolder
@@ -64,7 +64,7 @@ not stop the start, as `sorting` may make it later.
 `backfill` takes up the messages of the last days in the inbox and in every
 folder it looks in, account by account, each folder by its id.
 
-`MAILBOX_AGENT_INVOICES_FOLDER` and `MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE`
+`MAILBOX_AGENTS_INVOICES_FOLDER` and `MAILBOX_AGENTS_INVOICES_SUPPLIERS_FILE`
 are retired with the supplier list and its examples (step I5). A `.env`
 that still names them starts, as an unknown setting is ignored.
 

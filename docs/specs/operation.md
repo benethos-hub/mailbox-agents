@@ -14,15 +14,15 @@
   stuck is unhealthy. One whose gateway is away is not, its loop goes on.
 - **Metrics:** an HTTP endpoint in the Prometheus text format on
   `METRICS_PORT`, served with the `prometheus-client` package (decided
-  2026-11-17), one registry per process: `mailbox_agent_info` with agent,
-  version and stage, `mailbox_agent_messages` per state,
-  `mailbox_agent_oldest_pending_age_seconds`,
-  `mailbox_agent_last_pass_timestamp_seconds`,
-  `mailbox_agent_step_failures_total` by kind,
-  `mailbox_agent_answers_refused_total` by reason (schema, request,
-  evidence), `mailbox_agent_model_calls_total`,
-  `mailbox_agent_model_tokens_total` by direction,
-  `mailbox_agent_model_call_seconds` and `mailbox_agent_actions_total` by
+  2026-11-17), one registry per process: `mailbox_agents_info` with agent,
+  version and stage, `mailbox_agents_messages` per state,
+  `mailbox_agents_oldest_pending_age_seconds`,
+  `mailbox_agents_last_pass_timestamp_seconds`,
+  `mailbox_agents_step_failures_total` by kind,
+  `mailbox_agents_answers_refused_total` by reason (schema, request,
+  evidence), `mailbox_agents_model_calls_total`,
+  `mailbox_agents_model_tokens_total` by direction,
+  `mailbox_agents_model_call_seconds` and `mailbox_agents_actions_total` by
   action and whether it was carried out.
 - **Cost:** read at the gateway, per key.
 - **Logs:** stderr, through `logbook/` only. [docs/LOGGING.md](docs/LOGGING.md)

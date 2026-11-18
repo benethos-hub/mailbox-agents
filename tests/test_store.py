@@ -15,16 +15,16 @@ from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agent.errors import ConfigError
-from benethos_mailbox_agent.records import MessageRef, StepResult
-from benethos_mailbox_agent.store import (
+from benethos_mailbox_agents.errors import ConfigError
+from benethos_mailbox_agents.records import MessageRef, StepResult
+from benethos_mailbox_agents.store import (
     MIGRATIONS,
     SCHEMA_VERSION,
     Migrated,
     Store,
     path_for,
 )
-from benethos_mailbox_agent.store.migrations import (
+from benethos_mailbox_agents.store.migrations import (
     Migration,
     MigrationRegistry,
     versions,
@@ -315,7 +315,7 @@ class _Broken(Migration):
 def test_a_failed_migration_leaves_the_file_as_it_was(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import benethos_mailbox_agent.store.store as module
+    import benethos_mailbox_agents.store.store as module
 
     steps = [MIGRATIONS.step(n) for n in range(1, SCHEMA_VERSION + 1)]
     monkeypatch.setattr(module, "MIGRATIONS", MigrationRegistry(*steps, _Broken()))

@@ -176,17 +176,17 @@ def _check_url(url: str, allow_http: bool) -> None:
     try:
         parts = httpx.URL(url)
     except httpx.InvalidURL:
-        raise ConfigError("MAILBOX_AGENT_GATEWAY_URL is not a URL") from None
+        raise ConfigError("MAILBOX_AGENTS_GATEWAY_URL is not a URL") from None
     if parts.scheme == "https" and parts.host:
         return
     if parts.scheme != "http" or not parts.host:
-        raise ConfigError("MAILBOX_AGENT_GATEWAY_URL must be an http or https URL")
+        raise ConfigError("MAILBOX_AGENTS_GATEWAY_URL must be an http or https URL")
     if allow_http or _loopback(parts.host):
         return
     raise ConfigError(
-        f"MAILBOX_AGENT_GATEWAY_URL is http to {parts.host}, so the key and the "
+        f"MAILBOX_AGENTS_GATEWAY_URL is http to {parts.host}, so the key and the "
         "mail would travel unencrypted. Use https, or set "
-        "MAILBOX_AGENT_GATEWAY_ALLOW_HTTP=true for a network you trust, such as "
+        "MAILBOX_AGENTS_GATEWAY_ALLOW_HTTP=true for a network you trust, such as "
         "between containers."
     )
 

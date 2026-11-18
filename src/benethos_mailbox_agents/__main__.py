@@ -1,4 +1,4 @@
-"""Alias entry point for ``python -m benethos_mailbox_agent``."""
+"""Alias entry point for ``python -m benethos_mailbox_agents``."""
 
 from __future__ import annotations
 

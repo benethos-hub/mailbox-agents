@@ -8,14 +8,14 @@ from datetime import date
 import httpx
 import pytest
 
-from benethos_mailbox_agent.errors import (
+from benethos_mailbox_agents.errors import (
     ChangesExpiredError,
     ConfigError,
     MailboxRefusedError,
     MailboxUnavailableError,
 )
-from benethos_mailbox_agent.records import MessageRef
-from benethos_mailbox_agent.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agents.records import MessageRef
+from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
 from fakes import ACCOUNT, FakeService, wire_message
 
 REF = MessageRef(account_id=ACCOUNT, message_id="m1")

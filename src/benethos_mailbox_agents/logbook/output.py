@@ -57,7 +57,7 @@ _LEVEL_COLOURS = {
 
 # Marks the handler this module installed, so configuring twice replaces it
 # rather than printing every line twice.
-_MARK = "_mailbox_agent_logbook"
+_MARK = "_mailbox_agents_logbook"
 
 
 def log_time(value: datetime) -> str:

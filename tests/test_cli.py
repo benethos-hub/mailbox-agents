@@ -12,16 +12,16 @@ from pathlib import Path
 import httpx
 import pytest
 
-from benethos_mailbox_agent import __version__
-from benethos_mailbox_agent.cli import PROG, main, session
-from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.settings import PREFIX
+from benethos_mailbox_agents import __version__
+from benethos_mailbox_agents.cli import PROG, main, session
+from benethos_mailbox_agents.runtime.loop import Worker
+from benethos_mailbox_agents.settings import PREFIX
 from fakes import FakeService, wire_message
 from helpers import configure
 
 
 def test_version_is_the_distributions() -> None:
-    assert __version__ == version("benethos-mailbox-agent")
+    assert __version__ == version("benethos-mailbox-agents")
 
 
 def test_version_flag_prints_name_and_version(
@@ -45,7 +45,7 @@ def test_status_names_what_is_missing(
     assert main(["status"]) == 0
 
     out = capsys.readouterr().out
-    assert "counting 1: misses MAILBOX_AGENT_SERVICE_URL" in out
+    assert "counting 1: misses MAILBOX_AGENTS_SERVICE_URL" in out
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Windows keeps no Unix rights")

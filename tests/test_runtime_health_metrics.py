@@ -10,10 +10,10 @@ from datetime import timedelta
 import httpx
 import pytest
 
-from benethos_mailbox_agent.cli import main
-from benethos_mailbox_agent.runtime.health import check, window
-from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.runtime.metrics import Metrics
+from benethos_mailbox_agents.cli import main
+from benethos_mailbox_agents.runtime.health import check, window
+from benethos_mailbox_agents.runtime.loop import Worker
+from benethos_mailbox_agents.runtime.metrics import Metrics
 from fakes import FakeService, wire_message
 from helpers import Echo, Wired, configure, settings
 
@@ -64,22 +64,23 @@ async def test_a_pass_fills_the_metrics(world: Wired) -> None:
     await worker.run_pass()
 
     m = worker.metrics
-    assert sample(m, "mailbox_agent_messages", state="done") == 1
-    assert sample(m, "mailbox_agent_messages", state="decided") == 1
-    assert sample(m, "mailbox_agent_messages", state="pending") == 1
-    assert sample(m, "mailbox_agent_oldest_pending_age_seconds") == 0
-    assert sample(m, "mailbox_agent_model_calls_total") == 2
-    assert sample(m, "mailbox_agent_model_tokens_total", direction="in") == 240
-    assert sample(m, "mailbox_agent_answers_refused_total", reason="evidence") == 1
-    assert sample(m, "mailbox_agent_answers_refused_total", reason="schema") == 1
+    assert sample(m, "mailbox_agents_messages", state="done") == 1
+    assert sample(m, "mailbox_agents_messages", state="decided") == 1
+    assert sample(m, "mailbox_agents_messages", state="pending") == 1
+    assert sample(m, "mailbox_agents_oldest_pending_age_seconds") == 0
+    assert sample(m, "mailbox_agents_model_calls_total") == 2
+    assert sample(m, "mailbox_agents_model_tokens_total", direction="in") == 240
+    assert sample(m, "mailbox_agents_answers_refused_total", reason="evidence") == 1
+    assert sample(m, "mailbox_agents_answers_refused_total", reason="schema") == 1
     assert (
-        sample(m, "mailbox_agent_actions_total", action="add_keyword", executed="yes")
+        sample(m, "mailbox_agents_actions_total", action="add_keyword", executed="yes")
         == 1
     )
     assert (
-        sample(m, "mailbox_agent_info", agent="echo", version="1", stage="keyword") == 1
+        sample(m, "mailbox_agents_info", agent="echo", version="1", stage="keyword")
+        == 1
     )
-    assert b"mailbox_agent_last_pass_timestamp_seconds" in m.text()
+    assert b"mailbox_agents_last_pass_timestamp_seconds" in m.text()
 
 
 async def test_an_upstream_away_is_counted(world: Wired) -> None:
@@ -99,7 +100,7 @@ async def test_an_upstream_away_is_counted(world: Wired) -> None:
     assert (
         sample(
             worker.metrics,
-            "mailbox_agent_step_failures_total",
+            "mailbox_agents_step_failures_total",
             kind="gateway_unavailable",
         )
         == 1
@@ -122,7 +123,7 @@ def test_the_metrics_are_served() -> None:
     ):
         body = answer.read()
 
-    assert b'mailbox_agent_info{agent="echo"' in body
+    assert b'mailbox_agents_info{agent="echo"' in body
     with pytest.raises(OSError):
         urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics", timeout=1)
 
@@ -140,8 +141,8 @@ def test_health_on_the_command_line(
     assert main(["health", "--agent", "counting"]) == 0
     assert "counting: healthy" in capsys.readouterr().out
 
-    monkeypatch.setenv("MAILBOX_AGENT_POLL_SECONDS", "0.001")
-    monkeypatch.setenv("MAILBOX_AGENT_GATEWAY_TIMEOUT_SECONDS", "0.001")
+    monkeypatch.setenv("MAILBOX_AGENTS_POLL_SECONDS", "0.001")
+    monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_TIMEOUT_SECONDS", "0.001")
     asyncio.run(asyncio.sleep(0.05))
     assert main(["health", "--agent", "counting"]) == 1
 
@@ -152,7 +153,7 @@ def test_the_worker_serves_metrics_while_it_runs(
 ) -> None:
     configure(monkeypatch)
     port = _free_port()
-    monkeypatch.setenv("MAILBOX_AGENT_METRICS_PORT", str(port))
+    monkeypatch.setenv("MAILBOX_AGENTS_METRICS_PORT", str(port))
     seen: list[bytes] = []
 
     async def one_pass(self: Worker, stop: asyncio.Event) -> None:
@@ -164,4 +165,4 @@ def test_the_worker_serves_metrics_while_it_runs(
     monkeypatch.setattr(Worker, "run", one_pass)
 
     assert main(["worker", "--agent", "counting"]) == 0
-    assert b"mailbox_agent_messages" in seen[0]
+    assert b"mailbox_agents_messages" in seen[0]

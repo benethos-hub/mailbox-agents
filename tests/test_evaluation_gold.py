@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agent.errors import ConfigError
-from benethos_mailbox_agent.evaluation.gold import load_gold
-from benethos_mailbox_agent.records import MessageRef
+from benethos_mailbox_agents.errors import ConfigError
+from benethos_mailbox_agents.evaluation.gold import load_gold
+from benethos_mailbox_agents.records import MessageRef
 from fakes import ACCOUNT, invented
 
 DATA = Path(__file__).resolve().parent / "data"

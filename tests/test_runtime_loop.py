@@ -9,18 +9,18 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from benethos_mailbox_agent.contract import (
+from benethos_mailbox_agents.contract import (
     Action,
     ActionRequest,
     Context,
     Route,
     Trigger,
 )
-from benethos_mailbox_agent.errors import MailboxUnavailableError
-from benethos_mailbox_agent.records import Event, MailMessage, MessageRef
-from benethos_mailbox_agent.runtime.health import check
-from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.runtime.model import Calls
+from benethos_mailbox_agents.errors import MailboxUnavailableError
+from benethos_mailbox_agents.records import Event, MailMessage, MessageRef
+from benethos_mailbox_agents.runtime.health import check
+from benethos_mailbox_agents.runtime.loop import Worker
+from benethos_mailbox_agents.runtime.model import Calls
 from fakes import ACCOUNT, wire_message
 from helpers import Echo, Wired, settings, worker
 

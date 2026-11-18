@@ -28,7 +28,7 @@ from ..store import Store
 
 __all__ = ["Metrics"]
 
-_PREFIX = "mailbox_agent"
+_PREFIX = "mailbox_agents"
 
 
 class Metrics:

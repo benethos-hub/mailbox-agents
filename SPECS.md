@@ -60,14 +60,17 @@ that only read and sort have been measured.
 
 ## Naming
 
+The name is plural (decided 2026-11-18): the project holds several agents
+on one runtime, and each process runs one of them.
+
 | Where | Name |
 |---|---|
-| Repository | `mailbox-agent` |
-| PyPI distribution | `benethos-mailbox-agent` |
-| Import package | `benethos_mailbox_agent` |
-| Console script | `benethos-mailbox-agent` |
-| Container image | `ghcr.io/benethos-hub/benethos-mailbox-agent` |
-| Settings prefix | `MAILBOX_AGENT_` |
+| Repository | `mailbox-agents` |
+| PyPI distribution | `benethos-mailbox-agents` |
+| Import package | `benethos_mailbox_agents` |
+| Console script | `benethos-mailbox-agents` |
+| Container image | `ghcr.io/benethos-hub/benethos-mailbox-agents` |
+| Settings prefix | `MAILBOX_AGENTS_` |
 | Agent names | lowercase letters, digits and `_`: `invoices`, `awaiting_reply`, `inquiries` |
 
 ## What matters most

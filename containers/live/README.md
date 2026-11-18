@@ -117,7 +117,7 @@ docker compose -f containers/live/compose.yaml --profile gpu up -d llama-gpu
 
 ```
 uv run python live/gold.py
-MAILBOX_AGENT_MODEL=claude/haiku-5-5 uv run benethos-mailbox-agent \
+MAILBOX_AGENTS_MODEL=claude/haiku-5-5 uv run benethos-mailbox-agents \
     --env-file containers/live/secrets/agent.env \
     eval --agent invoices --gold containers/live/secrets/gold-invoices.jsonl \
     --reports containers/live/secrets/reports
@@ -227,8 +227,8 @@ prompt and no answer.
 uv run python live/smoke.py
 uv run python live/sorting.py
 uv run python live/invoices.py
-uv run benethos-mailbox-agent --env-file containers/live/secrets/agent.env status
-uv run benethos-mailbox-agent --env-file containers/live/secrets/agent.env run --agent counting
+uv run benethos-mailbox-agents --env-file containers/live/secrets/agent.env status
+uv run benethos-mailbox-agents --env-file containers/live/secrets/agent.env run --agent counting
 ```
 
 `agent.env` sets the stage `shadow`. An agent that may change a message

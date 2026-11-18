@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agent import errors
-from benethos_mailbox_agent.settings import PREFIX, Settings, load_settings
+from benethos_mailbox_agents import errors
+from benethos_mailbox_agents.settings import PREFIX, Settings, load_settings
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -40,9 +40,9 @@ def test_the_defaults() -> None:
 
 
 def test_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MAILBOX_AGENT_STAGE", "keyword")
-    monkeypatch.setenv("MAILBOX_AGENT_ACCOUNTS", "acc1, acc2,")
-    monkeypatch.setenv("MAILBOX_AGENT_LOG_LEVEL", "debug")
+    monkeypatch.setenv("MAILBOX_AGENTS_STAGE", "keyword")
+    monkeypatch.setenv("MAILBOX_AGENTS_ACCOUNTS", "acc1, acc2,")
+    monkeypatch.setenv("MAILBOX_AGENTS_LOG_LEVEL", "debug")
 
     found = load_settings()
 
@@ -53,15 +53,15 @@ def test_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_from_a_named_env_file(tmp_path: Path) -> None:
     env = tmp_path / "agent.env"
-    env.write_text("MAILBOX_AGENT_MODEL=classifier\n", encoding="utf-8")
+    env.write_text("MAILBOX_AGENTS_MODEL=classifier\n", encoding="utf-8")
 
     assert load_settings(env).model == "classifier"
 
 
 def test_the_default_env_file_is_read_when_it_exists(tmp_path: Path) -> None:
-    folder = tmp_path / "config" / "benethos-mailbox-agent"
+    folder = tmp_path / "config" / "benethos-mailbox-agents"
     folder.mkdir(parents=True)
-    (folder / ".env").write_text("MAILBOX_AGENT_POLL_SECONDS=5\n", encoding="utf-8")
+    (folder / ".env").write_text("MAILBOX_AGENTS_POLL_SECONDS=5\n", encoding="utf-8")
 
     assert load_settings().poll_seconds == 5
 
@@ -76,7 +76,7 @@ def test_a_secret_from_a_file_is_read_and_registered(
 ) -> None:
     secret = tmp_path / "token"
     secret.write_text("service-token-value\n", encoding="utf-8")
-    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN_FILE", str(secret))
+    monkeypatch.setenv("MAILBOX_AGENTS_SERVICE_TOKEN_FILE", str(secret))
 
     found = load_settings()
 
@@ -87,8 +87,8 @@ def test_a_secret_from_a_file_is_read_and_registered(
 def test_a_secret_given_directly_wins_over_its_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("MAILBOX_AGENT_GATEWAY_KEY", "direct-key-value")
-    monkeypatch.setenv("MAILBOX_AGENT_GATEWAY_KEY_FILE", str(tmp_path / "none"))
+    monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY", "direct-key-value")
+    monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY_FILE", str(tmp_path / "none"))
 
     assert load_settings().secret("gateway_key") == "direct-key-value"
 
@@ -98,38 +98,38 @@ def test_an_empty_secret_lets_its_file_be_read(
 ) -> None:
     secret = tmp_path / "service_token"
     secret.write_text("from-the-file\n", encoding="utf-8")
-    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN", "")
-    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN_FILE", str(secret))
-    monkeypatch.setenv("MAILBOX_AGENT_GATEWAY_KEY", "")
+    monkeypatch.setenv("MAILBOX_AGENTS_SERVICE_TOKEN", "")
+    monkeypatch.setenv("MAILBOX_AGENTS_SERVICE_TOKEN_FILE", str(secret))
+    monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY", "")
 
     found = load_settings(None)
 
     assert found.secret("service_token") == "from-the-file"
     assert found.gateway_key is None
-    assert found.missing(("gateway_key",)) == ["MAILBOX_AGENT_GATEWAY_KEY"]
+    assert found.missing(("gateway_key",)) == ["MAILBOX_AGENTS_GATEWAY_KEY"]
 
 
 def test_an_unreadable_secret_file_is_a_config_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("MAILBOX_AGENT_GATEWAY_KEY_FILE", str(tmp_path / "none"))
+    monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY_FILE", str(tmp_path / "none"))
 
     with pytest.raises(errors.ConfigError, match="GATEWAY_KEY_FILE"):
         load_settings()
 
 
 def test_a_missing_secret_is_named() -> None:
-    with pytest.raises(errors.ConfigError, match="MAILBOX_AGENT_SERVICE_TOKEN"):
+    with pytest.raises(errors.ConfigError, match="MAILBOX_AGENTS_SERVICE_TOKEN"):
         load_settings().secret("service_token")
 
 
 def test_a_wrong_value_is_named_never_quoted(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MAILBOX_AGENT_STAGE", "everything-now")
+    monkeypatch.setenv("MAILBOX_AGENTS_STAGE", "everything-now")
 
     with pytest.raises(errors.ConfigError) as raised:
         load_settings()
 
-    assert "MAILBOX_AGENT_STAGE" in str(raised.value)
+    assert "MAILBOX_AGENTS_STAGE" in str(raised.value)
     assert "everything-now" not in str(raised.value)
 
 
@@ -142,7 +142,7 @@ def test_a_keyword_is_one_atom(keyword: str) -> None:
 def test_missing_names_the_unset_settings() -> None:
     found = load_settings(model="m")
 
-    assert found.missing(("model", "service_url")) == ["MAILBOX_AGENT_SERVICE_URL"]
+    assert found.missing(("model", "service_url")) == ["MAILBOX_AGENTS_SERVICE_URL"]
 
 
 def _configuration_spec() -> str:
@@ -165,7 +165,7 @@ def test_every_setting_of_the_configuration_spec_exists() -> None:
 
 
 def test_the_env_example_names_every_setting() -> None:
-    example = ROOT / "config" / "benethos-mailbox-agent" / ".env.example"
-    named = set(re.findall(r"MAILBOX_AGENT_([A-Z_]+)=", example.read_text("utf-8")))
+    example = ROOT / "config" / "benethos-mailbox-agents" / ".env.example"
+    named = set(re.findall(r"MAILBOX_AGENTS_([A-Z_]+)=", example.read_text("utf-8")))
 
     assert {name.lower() for name in named} == set(Settings.model_fields)

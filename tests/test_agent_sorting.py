@@ -9,11 +9,11 @@ from typing import Any
 
 import pytest
 
-from benethos_mailbox_agent.agents.sorting.agent import Sorting
-from benethos_mailbox_agent.records import MessageRef
-from benethos_mailbox_agent.runtime.loop import Worker
-from benethos_mailbox_agent.runtime.model import NoModel
-from benethos_mailbox_agent.runtime.readiness import readiness
+from benethos_mailbox_agents.agents.sorting.agent import Sorting
+from benethos_mailbox_agents.records import MessageRef
+from benethos_mailbox_agents.runtime.loop import Worker
+from benethos_mailbox_agents.runtime.model import NoModel
+from benethos_mailbox_agents.runtime.readiness import readiness
 from fakes import ACCOUNT, wire_message
 from helpers import Wired, settings, wired
 
@@ -264,7 +264,7 @@ def test_the_list_is_a_required_setting() -> None:
         Sorting, settings(service_url="https://x.test", service_token="t")
     )
 
-    assert found.missing == ("MAILBOX_AGENT_SORTING_FILE",)
+    assert found.missing == ("MAILBOX_AGENTS_SORTING_FILE",)
 
 
 def test_a_wrong_list_stops_the_start(tmp_path: Path) -> None:
@@ -282,8 +282,8 @@ def test_a_wrong_list_stops_the_start(tmp_path: Path) -> None:
 
 
 def test_summarize_per_group_candidates_and_alike(tmp_path: Path) -> None:
-    from benethos_mailbox_agent.contract import Shown
-    from benethos_mailbox_agent.records import Decision
+    from benethos_mailbox_agents.contract import Shown
+    from benethos_mailbox_agents.records import Decision
 
     def group(name: str, **details: str) -> Decision:
         return Decision(
@@ -327,7 +327,7 @@ def test_summarize_per_group_candidates_and_alike(tmp_path: Path) -> None:
 
 
 async def test_the_report_ends_with_the_groups(world: Wired, tmp_path: Path) -> None:
-    from benethos_mailbox_agent.cli.report import collect, render, summary
+    from benethos_mailbox_agents.cli.report import collect, render, summary
 
     for message_id in ("hosting", "unknown"):
         await run(world, message_id, agent(tmp_path))

@@ -2,7 +2,7 @@
 
 The folders it looks in are a setting, read at its start, so it works with
 ``sorting`` and without it (decided 2026-11-18): it knows nothing of
-groups. ``MAILBOX_AGENT_INVOICES_FOLDERS`` names them, separated by
+groups. ``MAILBOX_AGENTS_INVOICES_FOLDERS`` names them, separated by
 commas, each written in one of three ways:
 
 - a path, ``Providers/CloudHost``: that folder,
@@ -17,9 +17,9 @@ invoice is not asked about twice. ``Parent/*`` and ``*`` are matched
 against the path of the folder a message lies in, so a folder made after
 the start, by ``sorting`` say, is looked in too.
 
-``MAILBOX_AGENT_INVOICES_SUBFOLDER`` is where an invoice goes, as
+``MAILBOX_AGENTS_INVOICES_SUBFOLDER`` is where an invoice goes, as
 ``{folder}/Rechnungen``: below the folder the message lies in.
-``MAILBOX_AGENT_INVOICES_INBOX_FOLDER`` is where an invoice found in the
+``MAILBOX_AGENTS_INVOICES_INBOX_FOLDER`` is where an invoice found in the
 inbox goes. Unset, it is marked and stays. See docs/specs/agents/invoices.md.
 """
 
