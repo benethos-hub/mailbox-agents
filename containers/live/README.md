@@ -245,7 +245,8 @@ mailbox service is not on this machine, and print the account first.
 
 `live/sorting.py` writes to the account: it runs `sorting` with
 `sorting.json` beside this file in `shadow`, then in `full`, and puts every
-message back where it was. The folders it made, `Providers` and two below
+message back where it was, as the inbox was before the checks, also after
+a check that failed or a run cut short. The folders it made, `Providers` and two below
 it, stay, as no agent may delete a folder. `setup.sh` makes the account
 anew without them. `live/invoices.py` runs `invoices` in `shadow` beside
 `sorting` in `full`, in both orders, and puts the mail back. It asks the

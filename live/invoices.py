@@ -45,6 +45,7 @@ from common import (  # beside this script, not a package
     parse_settings,
     put_back,
     run_checks,
+    snapshot,
     sort_test_account,
     worker,
 )
@@ -56,7 +57,7 @@ from benethos_mailbox_agents.llm.gateway import Gateway
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.settings import Settings
 from benethos_mailbox_agents.sources.mailbox import Mailbox
-from benethos_mailbox_agents.store import ActionRow, Store
+from benethos_mailbox_agents.store import Store
 
 SUBFOLDER = "Rechnungen"
 WAIT = 120
@@ -92,7 +93,6 @@ class Live:
     gateway: Gateway
     folder: Path
     before: Snapshot = field(default_factory=dict)
-    sorted_moves: list[ActionRow] = field(default_factory=list)
     putting_back: bool = False
 
     @property
@@ -115,12 +115,7 @@ class Live:
         return worker(agent, store, self.mailbox, self.gateway), store
 
     async def sort(self) -> None:
-        actions, _ = await sort_test_account(
-            self.settings, self.mailbox, "full", self.folder
-        )
-        self.sorted_moves = [
-            a for a in actions if a.action == "move_to_folder" and a.executed
-        ]
+        await sort_test_account(self.settings, self.mailbox, "full", self.folder)
 
 
 def recorded_moves(store: Store) -> set[str]:
@@ -194,13 +189,13 @@ async def sorting_first(live: Live) -> str:
 
 async def put_back_check(live: Live) -> str:
     live.putting_back = True
-    await put_back(live.mailbox, live.sorted_moves, live.keyword)
-    after = await inbox_snapshot(live.mailbox, live.settings)
+    moved = await put_back(live.mailbox, live.before, live.keyword)
+    after = await snapshot(live.mailbox, live.before)
     if {r: f for r, (f, _) in after.items()} != {
         r: f for r, (f, _) in live.before.items()
     }:
         raise AssertionError("the inbox is not as it was")
-    return f"{len(live.sorted_moves)} messages back in the inbox"
+    return f"{moved} messages back in the inbox"
 
 
 CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
@@ -217,10 +212,14 @@ async def run(settings: Settings) -> int:
         gateway = await stack.enter_async_context(open_gateway(settings))
         folder = Path(stack.enter_context(tempfile.TemporaryDirectory()))
         live = Live(settings, mailbox, gateway, folder)
-        failed = await run_checks(live, CHECKS, stop=True)
-        if failed and live.sorted_moves and not live.putting_back:
-            await put_back(live.mailbox, live.sorted_moves, live.keyword)
-            print(f"         {len(live.sorted_moves)} messages back in the inbox")
+        try:
+            failed = await run_checks(live, CHECKS, stop=True)
+        finally:
+            # A check that failed or a run cut short leaves no mail moved.
+            if not live.putting_back:
+                moved = await put_back(live.mailbox, live.before, live.keyword)
+                if moved:
+                    print(f"         {moved} messages back in the inbox")
     return 1 if failed else 0
 
 

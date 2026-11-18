@@ -32,6 +32,7 @@ from common import (  # beside this script, not a package
     parse_settings,
     put_back,
     run_checks,
+    snapshot,
     sort_test_account,
 )
 
@@ -128,12 +129,12 @@ async def full(live: Live) -> str:
 
 async def put_back_check(live: Live) -> str:
     live.putting_back = True
-    await put_back(live.mailbox, live.moved, live.keyword)
-    after = await inbox_snapshot(live.mailbox, live.settings)
+    moved = await put_back(live.mailbox, live.before, live.keyword)
+    after = await snapshot(live.mailbox, live.before)
     if after != live.before:
         changed = sum(after.get(ref) != was for ref, was in live.before.items())
         raise AssertionError(f"{changed} messages are not as they were")
-    return f"{len(live.moved)} messages back in the inbox, keyword off"
+    return f"{moved} messages back in the inbox, keyword off"
 
 
 CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
@@ -147,10 +148,14 @@ CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
 async def run(settings: Settings) -> int:
     async with connect_mailbox(settings) as mailbox:
         live = Live(settings, mailbox)
-        failed = await run_checks(live, CHECKS, stop=True)
-        if failed and live.moved and not live.putting_back:
-            await put_back(live.mailbox, live.moved, live.keyword)
-            print(f"         {len(live.moved)} messages back in the inbox")
+        try:
+            failed = await run_checks(live, CHECKS, stop=True)
+        finally:
+            # A check that failed or a run cut short leaves no mail moved.
+            if not live.putting_back:
+                moved = await put_back(live.mailbox, live.before, live.keyword)
+                if moved:
+                    print(f"         {moved} messages back in the inbox")
     return 1 if failed else 0
 
 

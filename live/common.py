@@ -19,7 +19,7 @@ import argparse
 import os
 import sys
 from collections import Counter
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Sequence
 from contextlib import AbstractAsyncContextManager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -28,6 +28,7 @@ from urllib.parse import urlsplit
 
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
 from benethos_mailbox_agents.contract import Agent
+from benethos_mailbox_agents.errors import MessageGoneError
 from benethos_mailbox_agents.llm.gateway import Gateway
 from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
@@ -62,6 +63,7 @@ __all__ = [
     "parse_settings",
     "put_back",
     "run_checks",
+    "snapshot",
     "sort_test_account",
     "worker",
 ]
@@ -173,9 +175,18 @@ async def inbox_snapshot(mailbox: Mailbox, settings: Settings) -> Snapshot:
     and keywords."""
     since = date.today() - timedelta(days=DAYS)
     refs = await mailbox.recent(since, settings.accounts, roles=("inbox",))
+    return await snapshot(mailbox, refs)
+
+
+async def snapshot(mailbox: Mailbox, refs: Iterable[MessageRef]) -> Snapshot:
+    """The folders and keywords of each message of ``refs`` as it lies now,
+    fetched one by one. A message gone is left out."""
     found: Snapshot = {}
     for ref in refs:
-        message = await mailbox.message(ref)
+        try:
+            message = await mailbox.message(ref)
+        except MessageGoneError:
+            continue
         found[ref] = (
             tuple(sorted(f.id for f in message.folders)),
             tuple(sorted(message.keywords)),
@@ -202,12 +213,23 @@ async def sort_test_account(
         return store.actions(), labels(store)
 
 
-async def put_back(mailbox: Mailbox, moves: list[ActionRow], keyword: str) -> None:
-    """Move each message ``moves`` moved back into the folder it came from,
-    and take ``keyword`` off it."""
-    for action in moves:
-        await mailbox.move(action.ref, action.before["folders"][0])
-        await mailbox.remove_keyword(action.ref, keyword)
+async def put_back(mailbox: Mailbox, before: Snapshot, keyword: str) -> int:
+    """Put each message of ``before`` back as it lay: into its folder when
+    it lies elsewhere now, and with ``keyword`` taken off when it was not on
+    it. Taken from the snapshot, not from the actions of a state file, so a
+    run cut short in the middle is put back too. Answers how many messages
+    were moved back."""
+    moved = 0
+    wanted = keyword.casefold()
+    for ref, (folders, keywords) in (await snapshot(mailbox, before)).items():
+        was_folders, was_keywords = before[ref]
+        if folders != was_folders and was_folders:
+            await mailbox.move(ref, was_folders[0])
+            moved += 1
+        on = {k.casefold() for k in keywords}
+        if wanted in on and wanted not in {k.casefold() for k in was_keywords}:
+            await mailbox.remove_keyword(ref, keyword)
+    return moved
 
 
 async def run_checks(
