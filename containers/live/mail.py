@@ -272,7 +272,7 @@ def messages(me: str) -> Iterator[tuple[str, str, EmailMessage]]:
 # What each invented message is, per agent: the label and the fields, by
 # the local part of its Message-ID. live/gold.py writes the gold files of
 # the test account from it.
-_NO_NEAR_MISS = {"near_miss": None}
+_NO_NEAR_MISS: dict[str, str | None] = {"near_miss": None}
 
 GOLD: dict[str, dict[str, tuple[str, dict[str, str | None]]]] = {
     "inv-cloudhost-1": {
