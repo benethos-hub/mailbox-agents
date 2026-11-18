@@ -217,6 +217,13 @@ class Store:
         with closing(self._db.execute(sql, args)) as done:
             return done.rowcount
 
+    def _insert(self, sql: str, *args: Any) -> int:
+        """Insert one row. Answers its id."""
+        with closing(self._db.execute(sql, args)) as done:
+            if done.lastrowid is None:
+                raise RuntimeError("an insert answered no row id")
+            return done.lastrowid
+
     # -- cursor and passes --------------------------------------------------------
 
     def cursor(self) -> str | None:
@@ -416,8 +423,9 @@ class Store:
         stage: str,
         executed: bool,
         now: datetime,
-    ) -> None:
-        self._write(
+    ) -> int:
+        """Record an action. Answers its id."""
+        return self._insert(
             "INSERT INTO actions (account_id, message_id, action, argument, before, "
             "stage, executed, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             ref.account_id,
@@ -429,6 +437,15 @@ class Store:
             int(executed),
             _text(now),
         )
+
+    def mark_action_executed(self, action_id: int) -> None:
+        """Note that the action recorded as ``action_id`` was taken."""
+        self._write("UPDATE actions SET executed = 1 WHERE id = ?", action_id)
+
+    def drop_action(self, action_id: int) -> None:
+        """Remove an action recorded before it was taken that the mailbox
+        service then refused."""
+        self._write("DELETE FROM actions WHERE id = ?", action_id)
 
     def actions(self, ref: MessageRef | None = None) -> list[ActionRow]:
         """The actions of a message, or of all, in the order they ran."""

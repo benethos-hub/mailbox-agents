@@ -80,35 +80,40 @@ class Executor:
     async def run(self, request: ActionRequest) -> bool:
         """Take one action, or record it. Answers whether it was recorded.
 
-        A refused action is logged and not recorded, whether the executor
-        or the mailbox service refused it, the write itself included. A
-        mailbox service that is away is raised to the loop.
+        The action is recorded with what was there before, and only then
+        taken, so a crash between the two leaves what is needed to take it
+        back. A refused action is logged and not recorded, whether the
+        executor or the mailbox service refused it, the write itself
+        included. A mailbox service that is away is raised to the loop.
         """
         try:
             self._admissible(request)
             message = await self._mailbox.message(request.ref)
             planned = await self._plan(request, message)
-            if planned is None:
-                return False
-            argument, before, target = planned
-            executed = request.action in STAGE_ALLOWS[self.stage]
-            if executed:
-                await self._take(request, target)
         except (ActionRefusedError, MailboxRefusedError) as exc:
-            logbook.action_refused(
-                self.agent.name, request.ref.message_id, request.action.value, exc
-            )
-            self.metrics.step_failed(exc.code)
+            self._refused(request, exc)
             return False
-        self._store.add_action(
+        if planned is None:
+            return False
+        argument, before, target = planned
+        executed = request.action in STAGE_ALLOWS[self.stage]
+        recorded = self._store.add_action(
             request.ref,
             action=request.action.value,
             argument=argument,
             before=before,
             stage=self.stage,
-            executed=executed,
+            executed=False,
             now=self._now(),
         )
+        if executed:
+            try:
+                await self._take(request, target)
+            except MailboxRefusedError as exc:
+                self._store.drop_action(recorded)
+                self._refused(request, exc)
+                return False
+            self._store.mark_action_executed(recorded)
         self.metrics.action(request.action.value, executed)
         logbook.action_done(
             self.agent.name,
@@ -118,6 +123,14 @@ class Executor:
             executed,
         )
         return True
+
+    def _refused(
+        self, request: ActionRequest, exc: ActionRefusedError | MailboxRefusedError
+    ) -> None:
+        logbook.action_refused(
+            self.agent.name, request.ref.message_id, request.action.value, exc
+        )
+        self.metrics.step_failed(exc.code)
 
     def _admissible(self, request: ActionRequest) -> None:
         if request.action not in self.agent.actions:

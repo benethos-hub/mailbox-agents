@@ -157,6 +157,29 @@ async def test_an_account_the_agent_does_not_work_on_is_refused(world: Wired) ->
     assert world.service.writes() == []
 
 
+async def test_what_was_before_is_recorded_before_the_action(
+    world: Wired, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def crash(action_id: int) -> None:
+        raise RuntimeError("the process ends here")
+
+    monkeypatch.setattr(world.store, "mark_action_executed", crash)
+
+    with pytest.raises(RuntimeError):
+        await executor(world).run(MOVE)
+
+    assert world.service.writes() == [(PATH, {"folder_ids": ["inv-hosting"]})]
+    (move,) = world.store.actions(REF)
+    assert (move.action, move.before) == ("move_to_folder", {"folders": ["inbox"]})
+
+
+async def test_a_write_the_service_refuses_is_not_recorded(world: Wired) -> None:
+    world.service.write_refusal = (422, "keyword_refused")
+
+    assert not await executor(world).run(ADD)
+    assert world.store.actions() == []
+
+
 async def test_a_service_that_is_away_is_raised(world: Wired) -> None:
     world.service.down = True
 
