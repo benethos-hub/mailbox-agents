@@ -148,8 +148,8 @@ def test_a_group_is_moved_unless_it_is_held(listed: Groups) -> None:
             ],
             "named by",
         ),
-        ([{"name": "A", "folder": "A", "senders": ["b.example"]}], "*@b.example"),
-        ([{"name": "A", "folder": "A", "senders": ["@b.example"]}], "*@*.b.example"),
+        ([{"name": "A", "folder": "A", "senders": ["b.example"]}], "is a domain"),
+        ([{"name": "A", "folder": "A", "senders": ["@b.example"]}], "is a domain"),
         ([{"name": "A", "folder": "A", "senders": ["*@*.example"]}], "too broad"),
         ([{"name": "A", "folder": "A", "senders": ["*@b*.example"]}], "no address"),
         ([{"name": "A", "folder": "A", "senders": ["nobody"]}], "no address"),
@@ -173,6 +173,44 @@ def test_a_wrong_list_says_what_is_wrong(
         load_groups(path)
 
     assert says in raised.value.message
+    for entry in entries:
+        for rule in entry["senders"]:
+            assert rule not in raised.value.message
+
+
+def test_a_wrong_sender_is_named_by_its_group_and_place(tmp_path: Path) -> None:
+    path = tmp_path / "sorting.json"
+    entries = [
+        {"name": "A", "folder": "A", "senders": ["a@b.example"]},
+        {"name": "B", "folder": "B", "senders": ["c@b.example", "b.example"]},
+    ]
+    path.write_text(json.dumps({"groups": entries}), encoding="utf-8")
+
+    with pytest.raises(ConfigError) as raised:
+        load_groups(path)
+
+    assert "group 'B', sender 2 is a domain" in raised.value.message
+
+
+def test_a_doubled_sender_is_named_by_its_place_not_its_address(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "sorting.json"
+    entries = [
+        {"name": "A", "folder": "A", "senders": ["erika@tax-office.example"]},
+        {
+            "name": "B",
+            "folder": "B",
+            "senders": ["c@b.example", "Erika@tax-office.example"],
+        },
+    ]
+    path.write_text(json.dumps({"groups": entries}), encoding="utf-8")
+
+    with pytest.raises(ConfigError) as raised:
+        load_groups(path)
+
+    assert "group 'B', sender 2 is named by group 'A'" in raised.value.message
+    assert "@" not in raised.value.message
 
 
 def test_a_list_is_read_from_its_file(tmp_path: Path) -> None:

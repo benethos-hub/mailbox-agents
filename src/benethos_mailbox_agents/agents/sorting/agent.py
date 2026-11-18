@@ -186,12 +186,16 @@ class Sorting(Agent):
         """The folders from the top, the move, and with it the keyword. A
         held group asks for all of it to be recorded only."""
         held = group.hold
+        # A code, never the group's name: a name is the owner's free text
+        # and often names a person, which no log line may (decided
+        # 2026-11-18).
+        why = "held" if held else "group"
         requests = [
             ActionRequest(
                 Action.CREATE_FOLDER,
                 message.ref,
                 folder=path,
-                why=group.name,
+                why=why,
                 held=held,
             )
             for path in group.folders
@@ -201,7 +205,7 @@ class Sorting(Agent):
                 Action.MOVE_TO_FOLDER,
                 message.ref,
                 folder=group.folder,
-                why=group.name,
+                why=why,
                 held=held,
             )
         )

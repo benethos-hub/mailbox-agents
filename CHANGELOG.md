@@ -177,3 +177,7 @@ commit that makes the change. Design decisions live in
 - A message in a folder below the trash, junk or spam, such as
   `Trash/Old`, is left alone like one in the folder itself: no agent
   moves it or sets a keyword on it.
+- The log line of an action of `sorting` ends in the code `group`, or
+  `held` for a held group, instead of the group's name, which may name a
+  person. A wrong sorting list names a wrong rule by its group and its
+  place, such as `group 'Bank', sender 2`, no longer by the rule itself.

@@ -109,7 +109,9 @@ write `*@domain` or `*@*.domain`.
 ### When the list is read
 
 - Once, at the start of the agent. A wrong list stops the start and
-  `status` names what is wrong.
+  `status` names what is wrong. A wrong rule is named by its group and
+  its place in the group's list, `group 'Bank', sender 2`, never by
+  itself, as a rule often names a person (decided 2026-11-18).
 - A changed list takes effect at the next start.
 - `sorting` reads and matches it with code of its own. The supplier list
   of `invoices` version 3, whose rules differed, is gone with its rebuild

@@ -14,7 +14,9 @@ belong to it. A sender is written in one of three ways:
 
 A domain alone, ``cloudhost.example``, is refused: ``sorting`` sets no
 keyword a domain could mark with, and the message says what to write
-instead (decided 2026-11-18). Matching ignores case. The most specific rule
+instead (decided 2026-11-18). A message about a wrong rule names its group
+and its place in the group's list, never the rule, which often names a
+person (decided 2026-11-18). Matching ignores case. The most specific rule
 wins: an address before a pattern before a pattern for the subdomains. Two
 groups whose rules of the same kind both match leave the sender to no
 group, so neither is guessed. See docs/specs/agents/sorting.md.
@@ -33,7 +35,14 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    ValidationInfo,
+    field_validator,
+)
 
 from ...errors import ConfigError, describe_invalid
 
@@ -56,6 +65,8 @@ class Kind(IntEnum):
 
 
 def _kind(rule: str) -> Kind:
+    """The kind of ``rule``, or a ValueError that says what is wrong with it
+    without quoting it."""
     if _ADDRESS.match(rule):
         return Kind.ADDRESS
     if _PATTERN.match(rule):
@@ -63,19 +74,23 @@ def _kind(rule: str) -> Kind:
     if _SUBDOMAINS.match(rule):
         return Kind.SUBDOMAINS
     if _BARE_DOMAIN.match(rule):
-        domain = rule.lstrip("@")
         raise ValueError(
-            f"{rule!r} is a domain: write *@{domain} for its addresses, "
-            f"or *@*.{domain} for those of its subdomains"
+            "is a domain: write *@ and the domain for its addresses, "
+            "or *@*. and the domain for those of its subdomains"
         )
     if "@*." in rule:
-        raise ValueError(
-            f"{rule!r} is too broad: the domain after *. needs two names at least"
-        )
+        raise ValueError("is too broad: the domain after *. needs two names at least")
     raise ValueError(
-        f"{rule!r} is no address and no pattern: a * stands before the @, "
+        "is no address and no pattern: a * stands before the @, "
         "or as *. at the start of the domain"
     )
+
+
+def _place(group: object, number: int) -> str:
+    """A sender rule by its group and its place in the group's list, from 1."""
+    if isinstance(group, str):
+        return f"group {group!r}, sender {number}"
+    return f"sender {number}"
 
 
 def _matches(rule: str, kind: Kind, address: str) -> bool:
@@ -121,10 +136,14 @@ class Group(BaseModel):
 
     @field_validator("senders")
     @classmethod
-    def _senders(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+    def _senders(cls, value: tuple[str, ...], info: ValidationInfo) -> tuple[str, ...]:
         found = tuple(rule.strip().lower() for rule in value)
-        for rule in found:
-            _kind(rule)
+        for number, rule in enumerate(found, start=1):
+            try:
+                _kind(rule)
+            except ValueError as exc:
+                place = _place(info.data.get("name"), number)
+                raise ValueError(f"{place} {exc}") from None
         return found
 
     @property
@@ -168,11 +187,11 @@ class Groups(BaseModel):
                 seen.add(key)
         owners: dict[str, str] = {}
         for group in value:
-            for rule in group.senders:
+            for number, rule in enumerate(group.senders, start=1):
                 if rule in owners and owners[rule] != group.name:
                     raise ValueError(
-                        f"the sender {rule!r} is named by {owners[rule]!r} "
-                        f"and {group.name!r}"
+                        f"{_place(group.name, number)} is named by group "
+                        f"{owners[rule]!r} as well"
                     )
                 owners[rule] = group.name
         return value

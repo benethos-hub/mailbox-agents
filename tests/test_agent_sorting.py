@@ -192,6 +192,21 @@ async def test_a_held_group_moves_nothing_in_full(world: Wired, tmp_path: Path) 
     ]
 
 
+async def test_a_log_line_names_no_group(
+    world: Wired, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level("DEBUG")
+
+    assert await run(world, "cloudhost", agent(tmp_path, "shadow")) == "done"
+    assert await run(world, "bank", agent(tmp_path, "shadow")) == "done"
+
+    lines = [r.getMessage() for r in caplog.records]
+    assert not any("CloudHost" in line or "Bank" in line for line in lines)
+    moves = [line for line in lines if "move_to_folder" in line]
+    assert moves[0].endswith("without carrying it out: group")
+    assert moves[1].endswith("without carrying it out: held")
+
+
 # -- the stages -----------------------------------------------------------------
 
 
@@ -275,7 +290,9 @@ def test_a_wrong_list_stops_the_start(tmp_path: Path) -> None:
 
     found = readiness(Sorting, values)
 
-    assert found.problem is not None and "*@a.example" in found.problem
+    assert found.problem is not None
+    assert "group 'A', sender 1 is a domain" in found.problem
+    assert "a.example" not in found.problem
 
 
 # -- the report -----------------------------------------------------------------
