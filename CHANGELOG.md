@@ -90,3 +90,5 @@ commit that makes the change. Design decisions live in
 - `invoices` applies the sender rules again when it acts, so a supplier
   added to the list reaches an invoice decided before on
   `backfill --again`, without a new model call.
+- `awaiting_reply` opens no item for a sent message whose thread already
+  holds a later answer, as after a backfill that took up the reply first.

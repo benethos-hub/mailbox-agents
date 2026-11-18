@@ -367,6 +367,34 @@ async def test_after_shadow_the_keyword_stage_sets_the_keyword(tmp_path: Path) -
         assert world.item("s1").keyword_set
 
 
+async def test_a_reply_decided_before_its_sent_message_opens_nothing(
+    world: World,
+) -> None:
+    world.add(received("r1"), "")
+    world.add(sent("s1", ASK), "")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.worker.backfill(30)
+    order = [row.ref.message_id for row in world.w.store.messages("pending")]
+    assert set(order) == {"r1", "s1"}
+
+    await world.worker.process_due()
+    world.clock.advance(days=4)
+    await world.run()
+
+    assert world.item("s1") is None
+    assert world.keywords("s1") == []
+
+
+async def test_a_later_automatic_answer_still_opens_the_item(world: World) -> None:
+    world.add(received("r1", sender="noreply@partner.example"), "")
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+
+    await world.run()
+
+    assert world.item("s1").is_open
+
+
 async def test_a_reply_in_the_thread_closes_it_and_takes_the_keyword_off(
     world: World,
 ) -> None:

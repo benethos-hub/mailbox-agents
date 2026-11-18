@@ -561,6 +561,10 @@ A sent message that expects a reply becomes an open item. It closes when:
   the earlier item closes as `followed_up` and the new one opens, otherwise
   the earlier item starts again from the new message.
 
+A sent message whose thread already holds a later answer from someone
+else opens no item. So a reply taken up before the message it answers,
+by a backfill or a backoff, is not missed.
+
 An item past its deadline gets the keyword on the tick. The message stays
 where it is. The item counts the keyword as set only once it is on the
 message, so in `shadow` a star or another flag closes nothing. A stage

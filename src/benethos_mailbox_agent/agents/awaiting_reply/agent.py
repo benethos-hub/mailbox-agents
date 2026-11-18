@@ -167,9 +167,31 @@ class AwaitingReply(Agent):
                 await context.items.close(item.ref, "followed_up")
             else:
                 await context.items.open(item.ref, item.thread_id, due)
-        if expects:
+        if expects and not await self._answered(message, context):
             await context.items.open(message.ref, message.thread_id, due)
         return requests
+
+    async def _answered(self, message: MailMessage, context: Context) -> bool:
+        """Whether its thread already holds a later answer from someone else,
+        automatic ones not counted: a reply taken up before the message it
+        answers, by a backfill or a backoff, closes nothing, so it is
+        looked for here."""
+        if message.thread_id is None:
+            return False
+        now = context.now()
+        thread = await context.reader.thread(message.ref.account_id, message.thread_id)
+        me = message.sender.email.lower() if message.sender else ""
+        sent = _when(message, now)
+        for other in thread.messages:
+            sender = other.sender.email.lower() if other.sender else ""
+            if (
+                other.ref != message.ref
+                and sender not in ("", me)
+                and not automatic(other)
+                and _when(other, now) > sent
+            ):
+                return True
+        return False
 
     async def observe(
         self, message: MailMessage, context: Context
