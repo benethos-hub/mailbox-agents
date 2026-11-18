@@ -486,9 +486,15 @@ folders are unique, a sender rule belongs to one supplier, and a folder is
 names between `/`, none empty, `.` or `..`. A wrong list stops the agent at
 its start and `status` names what is wrong.
 
+From is not authenticated, and a domain rule covers every address and
+subdomain of it. So only an address or a pattern rule moves an invoice
+into a supplier's folder. A domain rule and the model's choice mark only
+(decided 2026-11-17).
+
 | The message is | What happens |
 |---|---|
-| an invoice from a listed supplier | the keyword, and in stage `full` a move to the supplier's folder |
+| an invoice from a listed supplier, by an address or pattern rule | the keyword, and in stage `full` a move to the supplier's folder |
+| an invoice from a listed supplier, by a domain rule or the model's choice | the keyword. It stays in the inbox |
 | an invoice from a sender not listed | the keyword. It stays in the inbox, and `report` names the sender as a candidate for the list |
 | not an invoice | nothing |
 
@@ -502,9 +508,9 @@ supplier or a domain of its sender rules, case aside (decided
 `model_supplier`, and the invoice gets the keyword only. The
 decision records the source of its supplier as `supplier_source`: `rule`,
 `model` or `none`, and `report` and the evaluation tell them apart. So the
-content of a mail can at worst move an invoice of an unlisted sender into
-the folder of a listed supplier, never anywhere else, and a move is
-reversible.
+content of a mail can at worst give an invoice of an unlisted sender the
+name of a listed supplier. It moves nothing, since only an address or a
+pattern rule moves.
 
 The prompt is `prompts/system.v1.md`, version `v1`. The model is given the
 sender, the subject, the names and types of the attachments and the first
@@ -600,6 +606,9 @@ Further rules:
 
 - **Mail content is data.** The request names it as the content of a mail
   and never as an instruction, and the step that reads it has no tools.
+- **The sender is not proof.** From is not authenticated. A move that
+  rests on the sender needs a rule naming the address or its pattern. A
+  domain rule and the model's choice mark only (decided 2026-11-17).
 - **A value needs evidence.** A label and every extracted field carry a
   quote. The code looks for the quote in the parts of the mail the model
   was given, each on its own: sender, subject, attachment names, text.

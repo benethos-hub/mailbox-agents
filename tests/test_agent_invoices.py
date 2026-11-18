@@ -186,7 +186,9 @@ async def test_a_supplier_off_the_list_is_refused_by_the_schema(world: Wired) ->
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inbox"]
 
 
-async def test_the_model_may_name_a_listed_supplier_with_a_quote(world: Wired) -> None:
+async def test_the_model_may_name_a_listed_supplier_and_marks_only(
+    world: Wired,
+) -> None:
     world.fake_gateway.answer(
         answer(
             "invoice",
@@ -198,10 +200,32 @@ async def test_the_model_may_name_a_listed_supplier_with_a_quote(world: Wired) -
 
     await run(world, "inv-platform")
 
-    assert mail(world, "inv-platform")["folder_ids"] == ["inv-cloudhost"]
+    assert mail(world, "inv-platform")["keywords"] == ["invoice"]
+    assert mail(world, "inv-platform")["folder_ids"] == ["inbox"]
     found = decision(world, "inv-platform")
     assert found["details"] == {"supplier_source": "model"}
     assert found["fields"] == {"supplier": "CloudHost"}
+
+
+async def test_a_domain_rule_marks_only(world: Wired) -> None:
+    world.service.add(
+        wire_message(
+            "spoof",
+            subject="Invoice INV-7781 - new bank details",
+            sender="payments@eu.cloudhost.example",
+            text="Invoice INV-7781, please pay to the new account.",
+        ),
+        change=None,
+    )
+    world.fake_gateway.answer(answer("invoice", "Invoice INV-7781"))
+
+    assert await run(world, "spoof") == "done"
+
+    assert mail(world, "spoof")["keywords"] == ["invoice"]
+    assert mail(world, "spoof")["folder_ids"] == ["inbox"]
+    found = decision(world, "spoof")
+    assert found["fields"] == {"supplier": "CloudHost"}
+    assert found["details"] == {"supplier_source": "rule", "supplier_rule": "domain"}
 
 
 async def test_a_supplier_whose_quote_does_not_name_it_is_dropped(

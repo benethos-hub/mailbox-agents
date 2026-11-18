@@ -36,6 +36,20 @@ from .suppliers import Supplier, Suppliers, load_suppliers
 __all__ = ["Invoices"]
 
 
+# The sender rules that move an invoice. From is not authenticated, so a
+# domain rule and the model's choice mark only (decided 2026-11-17).
+_MOVING_RULES = frozenset({"address", "pattern"})
+
+
+def _moves(decision: Decision) -> bool:
+    """Whether the supplier of ``decision`` came from a rule that moves."""
+    details = decision.details
+    return (
+        details.get("supplier_source") == "rule"
+        and details.get("supplier_rule") in _MOVING_RULES
+    )
+
+
 def _mentions(supplier: Supplier, quote: str) -> bool:
     """Whether ``quote`` names ``supplier`` or one of its sender domains:
     what a quote must do to back the model's choice of a supplier."""
@@ -163,7 +177,7 @@ class Invoices(Agent):
             )
         ]
         supplier = self.suppliers.named(decision.fields.get("supplier", ""))
-        if supplier is not None:
+        if supplier is not None and _moves(decision):
             requests.append(
                 ActionRequest(
                     Action.MOVE_TO_FOLDER,

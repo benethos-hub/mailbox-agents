@@ -50,5 +50,8 @@ commit that makes the change. Design decisions live in
 - The evidence check looks for a quote only in the parts of the mail, not
   in the frame around them, brings both sides to Unicode NFC, and finds no
   quote of fewer than eight characters besides whitespace.
+- The agent `invoices` moves an invoice only when an address or a pattern
+  rule of the supplier list matched its sender. A domain rule and the
+  model's choice of a supplier set the keyword only.
 - The agent `invoices` takes the model's choice of a supplier only with a
   quote that names the supplier or a domain of its sender rules.
