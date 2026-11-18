@@ -287,6 +287,32 @@ async def test_a_folder_is_recorded_only_below_full(world: Wired, stage: str) ->
     )
 
 
+async def test_a_move_below_a_held_folder_is_recorded_only(world: Wired) -> None:
+    held = ActionRequest(Action.CREATE_FOLDER, REF, folder="Providers", held=True)
+    move = ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Providers")
+
+    await maker(world)([held, move])
+
+    assert world.service.writes() == []
+    assert world.service.made() == []
+    assert [(a.action, a.executed) for a in world.store.actions(REF)] == [
+        ("create_folder", False),
+        ("move_to_folder", False),
+    ]
+
+
+async def test_a_folder_below_a_held_folder_is_recorded_only(world: Wired) -> None:
+    held = ActionRequest(Action.CREATE_FOLDER, REF, folder="Providers", held=True)
+
+    await maker(world)([held, make("Providers/CloudHost")])
+
+    assert world.service.made() == []
+    assert [(a.argument, a.executed) for a in world.store.actions(REF)] == [
+        ("Providers", False),
+        ("Providers/CloudHost", False),
+    ]
+
+
 # -- a message is moved once ----------------------------------------------------
 
 

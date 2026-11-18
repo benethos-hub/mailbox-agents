@@ -206,3 +206,7 @@ commit that makes the change. Design decisions live in
 - No folder is made for the move of a message the agent moved before.
   The move is refused as before, and the folder the owner deleted after
   moving the message back is no longer made again, empty.
+- A move into a folder held and not made, and a folder below one, are
+  recorded only, also in `full`. The move was sent with an empty folder
+  and recorded as carried out, which then refused every later move of
+  the message.

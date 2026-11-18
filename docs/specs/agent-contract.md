@@ -83,8 +83,10 @@ does not allow is recorded as what would have been done, and so is an
 action the agent asks to be `held`, whatever the stage: for a group of
 [sorting](agents/sorting.md) whose folder would lend a forged mail trust.
 A folder recorded and not made counts as there for the folder and the move
-below it in the same effect, so a stage that records only records the
-folders and the move alike.
+below it in the same effect, and they are recorded only too, whatever the
+stage: a stage that records only, or a folder held, records the folders
+and the move alike, and never sends a move into a folder that is not
+there.
 
 **A message is moved at most once by one agent (decided 2026-11-18).** A
 move of a message the agent has moved before is refused, so a message the

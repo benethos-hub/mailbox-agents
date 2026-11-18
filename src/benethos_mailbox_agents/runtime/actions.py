@@ -20,6 +20,7 @@ docs/specs/runtime.md and docs/specs/safety.md.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol
@@ -55,6 +56,18 @@ class Outcome(StrEnum):
     RECORDED = "recorded"  # the stage does not allow it, it was recorded only
     REFUSED = "refused"  # the executor or the mailbox service refused it
     GONE = "gone"  # the message is not there any more
+
+
+@dataclass(frozen=True)
+class Plan:
+    """One action as planned: the argument to record, what was there
+    before, the target to send, and whether it is recorded only, as below
+    a folder recorded and not made, whatever the stage."""
+
+    argument: str
+    before: dict[str, Any]
+    target: str
+    record_only: bool = False
 
 
 class Writer(Protocol):
@@ -139,13 +152,17 @@ class Executor:
             return self._refused(request, exc)
         if planned is None:
             return Outcome.PRESENT
-        argument, before, target = planned
-        executed = request.action in STAGE_ALLOWS[self.stage] and not request.held
+        executed = (
+            request.action in STAGE_ALLOWS[self.stage]
+            and not request.held
+            and not planned.record_only
+        )
+        argument, target = planned.argument, planned.target
         recorded = self._store.add_action(
             request.ref,
             action=request.action.value,
             argument=argument,
-            before=before,
+            before=planned.before,
             stage=self.stage,
             executed=False,
             now=self._now(),
@@ -205,11 +222,9 @@ class Executor:
         elif request.keyword != self.agent.keyword:
             raise ActionRefusedError("an agent sets and takes off its own keyword only")
 
-    async def _plan(
-        self, request: ActionRequest, message: MailMessage
-    ) -> tuple[str, dict[str, Any], str] | None:
-        """The argument to record, what was there before and the target, or
-        None when the result is already there."""
+    async def _plan(self, request: ActionRequest, message: MailMessage) -> Plan | None:
+        """What to record and the target, or None when the result is
+        already there."""
         account = request.ref.account_id
         if await self._in_forbidden(account, message):
             raise ActionRefusedError("the message is in the trash, junk or spam")
@@ -217,9 +232,10 @@ class Executor:
             path = request.folder or ""  # never empty, _admissible checked it
             folder = await self._mailbox.folder_at(account, path)
             if folder is None and (account, path) in self._recorded_folders:
-                # Made in a stage that records only: so is the move.
+                # Its folder was recorded only, by the stage or held: so is
+                # the move, which has no target to send.
                 before = [f.id for f in message.folders]
-                return path, {"folders": before}, ""
+                return Plan(path, {"folders": before}, "", record_only=True)
             if folder is None:
                 raise ActionRefusedError("the target folder does not exist")
             if await self._forbidden(account, folder):
@@ -229,7 +245,7 @@ class Executor:
                 return None
             if self._moved_before(request.ref):
                 raise ActionRefusedError("the agent moved this message before")
-            return folder.path, {"folders": before}, folder.id
+            return Plan(folder.path, {"folders": before}, folder.id)
         if request.action is Action.CREATE_FOLDER:
             return await self._plan_folder(account, request.folder)
         keyword = self.agent.keyword
@@ -238,7 +254,7 @@ class Executor:
         present = keyword.casefold() in {k.casefold() for k in message.keywords}
         if (request.action is Action.ADD_KEYWORD) == present:
             return None
-        return keyword, {"keywords": list(message.keywords)}, keyword
+        return Plan(keyword, {"keywords": list(message.keywords)}, keyword)
 
     def _moved_before(self, ref: MessageRef) -> bool:
         """Whether the agent moved the message once already: then the
@@ -249,14 +265,13 @@ class Executor:
             for row in self._store.actions(ref)
         )
 
-    async def _plan_folder(
-        self, account_id: str, path: str | None
-    ) -> tuple[str, dict[str, Any], str] | None:
+    async def _plan_folder(self, account_id: str, path: str | None) -> Plan | None:
         """A folder to make: refused unless the agent may make it, given
         the account's folders by path. None when it exists. Refused when
         its name exists in another case, which the service would make as a
         second folder (measured 2026-11-18), when the folder above it is
-        missing, and below the trash, junk or spam."""
+        missing, and below the trash, junk or spam. Recorded only when the
+        folder above it was recorded only."""
         path = path or ""  # never empty, _admissible checked it
         known = await self._mailbox.folders(account_id)
         if not self.agent.may_create(path, {f.path: f for f in known.values()}):
@@ -267,13 +282,15 @@ class Executor:
         if any(f.path.casefold() == path.casefold() for f in known.values()):
             raise ActionRefusedError("a folder of that name exists in another case")
         above = path.rpartition("/")[0]
-        if above and (account_id, above) not in self._recorded_folders:
+        if above and (account_id, above) in self._recorded_folders:
+            return Plan(path, {}, path, record_only=True)
+        if above:
             parent = await self._mailbox.folder_at(account_id, above)
             if parent is None:
                 raise ActionRefusedError("the folder above it does not exist")
             if await self._forbidden(account_id, parent):
                 raise ActionRefusedError("no agent makes a folder there")
-        return path, {}, path
+        return Plan(path, {}, path)
 
     async def _in_forbidden(self, account_id: str, message: MailMessage) -> bool:
         """Whether ``message`` lies in the trash, junk or spam, or below one."""
