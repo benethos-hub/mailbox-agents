@@ -109,6 +109,7 @@ class Worker:
             ref=MessageRef(account_id="", message_id=""),
             now=self._now,
             limits=Limits(model_calls_per_message=0, model_calls_per_day=0),
+            metrics=self.metrics,
         )
         return self.runner.context(calls)
 

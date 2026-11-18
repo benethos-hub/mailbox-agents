@@ -22,6 +22,7 @@ from benethos_mailbox_agent.errors import MailboxUnavailableError
 from benethos_mailbox_agent.records import Event, MailMessage, MessageRef
 from benethos_mailbox_agent.runtime.health import check
 from benethos_mailbox_agent.runtime.loop import Worker
+from benethos_mailbox_agent.runtime.model import Calls
 from fakes import ACCOUNT, wire_message
 from helpers import Echo, Wired, settings, wired
 
@@ -93,6 +94,15 @@ async def test_a_refused_write_blocks_nothing(world: Wired) -> None:
     assert (_state(world, "m1"), _state(world, "m2")) == ("done", "done")
     assert world.store.actions() == []
     assert world.service.messages[(ACCOUNT, "m1")]["keywords"] == []
+
+
+def test_observe_and_tick_count_into_the_workers_metrics(world: Wired) -> None:
+    run = worker(world)
+
+    calls = run.context().model
+
+    assert isinstance(calls, Calls)
+    assert calls._metrics is run.metrics
 
 
 def test_an_agent_reads_the_mailbox_and_cannot_write_it(world: Wired) -> None:
