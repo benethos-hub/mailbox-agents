@@ -16,11 +16,9 @@ agent runs over it and the scoring counts where it agrees.
   how often the value is right, wrong, missing or invented, and how often
   it is rightly empty. Values are compared with case and whitespace made
   uniform. A decision the evidence check refused counts as no answer.
-  Where an agent records who chose a field, as `<field>_source` in its
-  details, the field is counted once more per source, so a value a rule
-  chose is told apart from one the model chose (decided 2026-11-17). No
-  agent records one since `invoices` version 4. Tokens and time per
-  message.
+  Tokens and time per message. A field is not counted apart by who chose
+  it: no agent records that since `invoices` version 4, so the count by
+  `<field>_source` went (2026-11-18).
 - **Always against the baseline.** Every report shows the rules alone
   beside the model, so what the model adds is a number.
 - **The judgement, not the filter.** The evaluation runs the baseline and

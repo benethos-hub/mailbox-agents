@@ -37,7 +37,7 @@ def test_render_one_entry() -> None:
             label="invoice",
             source="model",
             fields={"supplier": "Hosting"},
-            details={"supplier_source": "rule"},
+            details={"match": "rule"},
             evidence=(
                 Evidence(
                     field=LABEL, value="invoice", quote="Ihre Rechnung", found=True
@@ -57,8 +57,7 @@ def test_render_one_entry() -> None:
         f"2026-11-17 09:00  {ACCOUNT}/m1  done",
         "  from: Billing <billing@supplier.test>",
         "  subject: Ihre Rechnung",
-        "  decision: invoice (model, local-small) supplier=Hosting"
-        " supplier_source=rule",
+        "  decision: invoice (model, local-small) supplier=Hosting match=rule",
         '  evidence: label "Ihre Rechnung" found',
         '  evidence: x "nowhere" NOT found',
         "  baseline: invoice",

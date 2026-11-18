@@ -102,9 +102,8 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# A test and a live check say what they expect with assert.
+# A test says what it expects with assert.
 "tests/**" = ["S101"]
-"live/**" = ["S101"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

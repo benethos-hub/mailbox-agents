@@ -16,7 +16,7 @@ from benethos_mailbox_agents.errors import ConfigError
 from benethos_mailbox_agents.evaluation.gold import load_gold
 from benethos_mailbox_agents.evaluation.report import build
 from benethos_mailbox_agents.evaluation.run import evaluate
-from benethos_mailbox_agents.records import MailMessage, MessageRef
+from benethos_mailbox_agents.records import Address, MailMessage, MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
 from fakes import ACCOUNT, invented
 from helpers import Wired, settings, wired
@@ -83,9 +83,9 @@ def test_dates_and_rates(text: str, date: bool, rate: bool) -> None:
 def test_the_patterns_file(tmp_path: Path) -> None:
     found = load_patterns(PATTERNS)
 
-    assert found.sender_known("jana@staffing.example")
-    assert found.sender_known("x@eu.staffing.example")
-    assert not found.sender_known("x@client.example")
+    assert found.sender_known(Address(email="jana@staffing.example"))
+    assert found.sender_known(Address(email="x@EU.Staffing.example"))
+    assert not found.sender_known(Address(email="x@client.example"))
     assert not found.sender_known(None)
     assert load_patterns(None).domains == ()
 

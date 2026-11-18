@@ -10,9 +10,7 @@ from contextlib import (
     asynccontextmanager,
 )
 from datetime import UTC, datetime
-from typing import Any, TypeVar
-
-from pydantic import BaseModel
+from typing import Any
 
 from ..contract import Agent
 from ..llm.gateway import Gateway
@@ -31,8 +29,6 @@ __all__ = [
     "session",
     "upstreams",
 ]
-
-T = TypeVar("T", bound=BaseModel)
 
 # Transports for the two upstreams, by "service" and "gateway". Empty in a
 # real process. A test puts its mocks here.

@@ -225,9 +225,6 @@ class Groups(BaseModel):
                 owners[rule] = group.name
         return value
 
-    def named(self, name: str) -> Group | None:
-        return next((g for g in self.groups if g.name == name), None)
-
     def match(self, address: str | None) -> Match | None:
         """The groups ``address`` belongs to by their most specific rules,
         or None when no rule matches."""

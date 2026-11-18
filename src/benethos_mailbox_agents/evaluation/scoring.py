@@ -4,11 +4,8 @@ For the label, precision and recall per label. For each field, how often
 the value is right, wrong, missing or invented, and how often the field is
 rightly empty. Values are compared with case and whitespace made uniform.
 A decision the evidence check refused counts as no answer, since the agent
-does not act on it. Where an agent records who chose a field, as
-``<field>_source`` in its details, the field is counted once more per
-source, so what the model chose and what a rule chose are told apart. The
-rules alone are scored the same way, beside the model. See
-docs/specs/evaluation.md.
+does not act on it. The rules alone are scored the same way, beside the
+model. See docs/specs/evaluation.md.
 """
 
 from __future__ import annotations
@@ -132,13 +129,8 @@ class Scores:
             if found is not None:
                 self._label(found).false_positive += 1
         values = decision.fields if decision is not None and decision.actionable else {}
-        details = decision.details if decision is not None else {}
         for name, expected in item.fields.items():
-            value = values.get(name)
-            self._field(name).count(expected, value)
-            source = details.get(f"{name}_source")
-            if source:
-                self._field(f"{name}[{source}]").count(expected, value)
+            self._field(name).count(expected, values.get(name))
 
 
 def score(outcomes: Iterable[Outcome]) -> tuple[Scores, Scores]:

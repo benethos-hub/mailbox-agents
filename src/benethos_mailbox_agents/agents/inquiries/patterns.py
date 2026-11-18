@@ -20,6 +20,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from ...errors import ConfigError, describe_invalid
+from ...records import Address
 
 __all__ = ["DATE", "PHRASES", "RATE", "Patterns", "load_patterns"]
 
@@ -69,10 +70,10 @@ class Patterns(BaseModel):
             raise ValueError("an empty entry")
         return found
 
-    def sender_known(self, address: str | None) -> bool:
-        if not address:
+    def sender_known(self, address: Address | None) -> bool:
+        if address is None:
             return False
-        domain = address.rpartition("@")[2].lower()
+        domain = address.domain
         return any(domain == d or domain.endswith("." + d) for d in self.domains)
 
     def phrases_in(self, text: str) -> list[str]:

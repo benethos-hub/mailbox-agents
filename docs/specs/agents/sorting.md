@@ -112,9 +112,10 @@ sender. Each is named by its group, and a rule by its place too.
   as too broad. Whether two names are a registered domain, such as
   `co.uk`, is not checked.
 
-**A domain rule is refused (decided 2026-11-18).** In `invoices` today a
-domain rule marks and does not move. `sorting` sets no keyword a domain
-could mark with, so such a rule would do nothing. The message says to
+**A domain rule is refused (decided 2026-11-18).** A bare domain was a
+rule that marks and does not move, in `invoices` before its version 4.
+`sorting` sets no keyword a domain could mark with, so such a rule would
+do nothing. The message says to
 write `*@domain` or `*@*.domain`.
 
 ### When the list is read

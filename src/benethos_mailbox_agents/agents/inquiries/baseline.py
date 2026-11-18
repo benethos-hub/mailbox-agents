@@ -15,11 +15,10 @@ __all__ = ["baseline"]
 
 def baseline(message: MailMessage, patterns: Patterns) -> Decision:
     text = f"{message.subject or ''}\n{message.text[:4000]}"
-    sender = message.sender.email if message.sender else None
     phrases = patterns.phrases_in(text)
     numbers = bool(DATE.search(text)) or bool(RATE.search(text))
     inquiry = (
-        patterns.sender_known(sender)
+        patterns.sender_known(message.sender)
         or len(phrases) >= 2
         or (len(phrases) == 1 and numbers)
     )

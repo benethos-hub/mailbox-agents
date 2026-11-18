@@ -19,10 +19,8 @@ def gold(label: str, **fields: str | None) -> GoldItem:
     return GoldItem(account_id="a", message_id=label, label=label, fields=fields)
 
 
-def decided(label: str, source: str = "model", **values: str) -> Decision:
-    details = {k: v for k, v in values.items() if k.endswith("_source")}
-    fields = {k: v for k, v in values.items() if not k.endswith("_source")}
-    return Decision(label=label, source=source, fields=fields, details=details)
+def decided(label: str, source: str = "model", **fields: str) -> Decision:
+    return Decision(label=label, source=source, fields=fields)
 
 
 def test_same_ignores_case_and_whitespace() -> None:
@@ -86,27 +84,6 @@ def test_each_field_right_wrong_missing_invented_or_empty() -> None:
         1,
         1,
     )
-
-
-def test_a_field_is_counted_again_per_source() -> None:
-    outcomes = [
-        Outcome(
-            gold("invoice", supplier="CloudHost"),
-            None,
-            decided("invoice", supplier="CloudHost", supplier_source="rule"),
-        ),
-        Outcome(
-            gold("invoice", supplier="Telco"),
-            None,
-            decided("invoice", supplier="CloudHost", supplier_source="model"),
-        ),
-    ]
-
-    model, _ = score(outcomes)
-
-    assert model.fields["supplier"].right == 1
-    assert model.fields["supplier[rule]"].right == 1
-    assert model.fields["supplier[model]"].wrong == 1
 
 
 def test_the_rules_are_scored_beside_the_model() -> None:
