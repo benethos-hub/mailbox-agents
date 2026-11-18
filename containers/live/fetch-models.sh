@@ -32,7 +32,8 @@ qwen3.5-9b|unsloth/Qwen3.5-9B-GGUF|3885219b6810b007914f3a7950a8d1b469d598a5|Qwen
 gemma-4-12b|google/gemma-4-12b-it-qat-q4_0-gguf|29d097773436b69ff9feafd636ab4cf873786537|gemma-4-12b-it-qat-q4_0.gguf|93567e57a8fe10b23569b9d9ec38cd005deedf71e29477c421a4b83f418a538b|6975879296
 qwen3.6-35b-a3b|unsloth/Qwen3.6-35B-A3B-GGUF|a483e9e6cbd595906af30beda3187c2663a1118c|Qwen3.6-35B-A3B-UD-Q4_K_M.gguf|ac0e2c1189e055faa36eff361580e79c5bd6f8e76bffb4ce547f167d53e31a61|22134528992
 '
-DEFAULT=qwen3-4b-2507
+# The model of mail-classifier-cpu in litellm.yaml.
+DEFAULT=qwen3.5-4b
 
 say() { printf 'fetch-models: %s\n' "$1" >&2; }
 

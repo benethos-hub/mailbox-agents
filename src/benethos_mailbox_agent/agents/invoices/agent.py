@@ -29,6 +29,7 @@ from ...contract import (
 from ...contract.prompts import load_prompt
 from ...errors import ConfigError
 from ...records import LABEL, Decision, Event, Evidence, MailMessage
+from ...settings import PREFIX
 from .baseline import baseline
 from .schema import Answer, answer_schema, parts, render
 from .suppliers import Kind, Supplier, Suppliers, load_suppliers
@@ -72,7 +73,7 @@ class Invoices(Agent):
     def suppliers(self) -> Suppliers:
         path = self.settings.invoices_suppliers_file
         if path is None:
-            raise ConfigError("MAILBOX_AGENT_INVOICES_SUPPLIERS_FILE is not set")
+            raise ConfigError(f"{PREFIX}INVOICES_SUPPLIERS_FILE is not set")
         return load_suppliers(path)
 
     @cached_property

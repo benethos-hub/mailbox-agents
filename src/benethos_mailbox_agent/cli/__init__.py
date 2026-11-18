@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .. import __version__, logbook
 from ..errors import ConfigError, ContractError, MailboxAgentError
-from ..settings import load_settings
+from ..settings import DEFAULT_ENV_FILE, load_settings
 from . import commands
 
 __all__ = ["PROG", "build_parser", "main"]
@@ -39,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--env-file",
         type=Path,
         default=None,
-        help="the settings file, config/benethos-mailbox-agent/.env when it exists",
+        help=f"the settings file, {DEFAULT_ENV_FILE.as_posix()} when it exists",
     )
     sub = parser.add_subparsers(dest="command", metavar="command")
 

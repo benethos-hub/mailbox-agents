@@ -77,7 +77,7 @@ class Gateway:
         key: str,
         model: str,
         *,
-        timeout: float = 120.0,
+        timeout: float,
         allow_http: bool = False,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:

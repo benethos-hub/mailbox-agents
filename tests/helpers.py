@@ -135,6 +135,7 @@ async def wired(tmp_path: Path) -> AsyncIterator[Wired]:
             "https://gateway.example.test/v1",
             "gateway-key",
             "alias",
+            timeout=120.0,
             transport=fake_gateway.transport(),
         ) as gateway,
     ):

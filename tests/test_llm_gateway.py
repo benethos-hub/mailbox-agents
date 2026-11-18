@@ -42,6 +42,7 @@ async def gateway(fake: FakeGateway) -> AsyncIterator[Gateway]:
         "https://gateway.example.test/v1/",
         "gateway-key",
         "classifier",
+        timeout=120.0,
         transport=fake.transport(),
     ) as opened:
         yield opened
@@ -158,6 +159,7 @@ async def test_a_gateway_out_of_reach_is_unavailable(
         "https://gateway.example.test/v1",
         "k",
         "m",
+        timeout=120.0,
         transport=httpx.MockTransport(handler),
     ) as gateway:
         with pytest.raises(GatewayUnavailableError):
@@ -175,7 +177,7 @@ async def test_a_gateway_out_of_reach_is_unavailable(
     ],
 )
 async def test_a_gateway_url_that_keeps_the_key_safe(url: str, allow: bool) -> None:
-    async with Gateway(url, "k", "m", allow_http=allow):
+    async with Gateway(url, "k", "m", timeout=120.0, allow_http=allow):
         pass
 
 
@@ -184,7 +186,7 @@ async def test_a_gateway_url_that_keeps_the_key_safe(url: str, allow: bool) -> N
 )
 def test_http_to_another_machine_is_refused(url: str) -> None:
     with pytest.raises(ConfigError, match="MAILBOX_AGENT_GATEWAY"):
-        Gateway(url, "k", "m")
+        Gateway(url, "k", "m", timeout=120.0)
 
 
 async def test_the_alias_stands_in_when_no_model_is_reported(gateway: Gateway) -> None:
@@ -195,7 +197,7 @@ async def test_the_alias_stands_in_when_no_model_is_reported(gateway: Gateway) -
         )
     )
     async with Gateway(
-        "https://g.example.test", "k", "alias", transport=transport
+        "https://g.example.test", "k", "alias", timeout=120.0, transport=transport
     ) as other:
         reply = await other.ask(system="s", content="c", schema=Answer)
 
