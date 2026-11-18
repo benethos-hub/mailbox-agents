@@ -40,7 +40,7 @@ looks in are a setting, and it knows nothing of groups or sender rules.
 |---|---|---|
 | `MAILBOX_AGENTS_INVOICES_FOLDERS` | the folders it looks in, separated by commas. `Parent/*` stands for every folder directly below `Parent`, `*` for every folder at the top without a role | the inbox alone |
 | `MAILBOX_AGENTS_INVOICES_SUBFOLDER` | where an invoice goes, as a pattern that starts with `{folder}/`, the folder the message lies in, such as `{folder}/Rechnungen` | an invoice is marked and stays |
-| `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there, it is not made | it is marked and stays in the inbox |
+| `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there, it is not made, and it is never looked in | it is marked and stays in the inbox |
 
 The inbox is always looked in. A folder is named by its path, case
 counting. A message in a folder below a named one, such as the subfolder
@@ -50,6 +50,12 @@ inbox folder are never looked in, even where the settings would take them
 in: `Invoices,Invoices/*` takes in `Invoices/Rechnungen`, and `*` an inbox
 folder at the top. An invoice put there is not filed again, and no empty
 subfolder is made below it.
+
+So an inbox folder the settings also take in, such as `Invoices/Telco`
+beside `Invoices/*`, is not looked in. An invoice the agent moves there
+from the inbox is marked only: it stays in that folder and does not go on
+into the subfolder below it. A message put there by `sorting` or by hand
+is not looked at at all, so it is neither marked nor filed.
 
 **`*` takes in the owner's own folders (decided 2026-11-18).** It covers
 every folder at the top that has no role, the owner's own among them, so
@@ -122,13 +128,21 @@ Without an inbox folder, whichever agent comes first, the end is the same:
 
 - `invoices` first: the message is marked in the inbox and gets an open
   item. `sorting` moves it. The move reaches `invoices` as an update of the
-  message, it finds the open item, sees the message in a folder it looks in and
-  moves it on.
+  message, it finds the open item, sees the message in a folder it looks in
+  and moves it on.
 - `sorting` first: `invoices` finds the message in the folder it looks in
   and moves it on after its decision.
 
 With an inbox folder set, an invoice `invoices` takes up first goes into
-that folder, and `sorting` leaves it there.
+that folder, and `sorting` leaves it there. Its item closes as
+`moved_elsewhere` and the invoice stays there, as the inbox folder is never
+looked in. While that move is not taken, the folder missing or the stage
+below `full`, the item stays open and the invoice goes the way of
+`invoices` first above: once `sorting` moves it into a folder the agent
+looks in, it is filed there. `sorting` first ends as without an inbox
+folder, with one exception: an invoice `sorting` puts into the inbox
+folder itself, before `invoices` takes it up, is neither marked nor filed,
+as the agent does not look in that folder.
 
 The open item and the look at an updated message are what
 [awaiting reply](awaiting_reply.md) uses already. An open item of an
