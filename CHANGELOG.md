@@ -136,6 +136,11 @@ commit that makes the change. Design decisions live in
   folder in two cases, such as `Bank` beside `bank/Sub`, a group named
   `none`, and a sender rule whose domain has an empty name, such as
   `*@shop..example` or `a@b.example.`.
+- After a move or a folder recorded only, by the stage or for a held
+  group, the runtime records the rest of the message's actions only too.
+  `sorting` asks for its keyword in every stage, so in `shadow` and
+  `keyword` and for a held group the state file and `report` show the
+  keyword as recorded and not set.
 
 ### Removed
 

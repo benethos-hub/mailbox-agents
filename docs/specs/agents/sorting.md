@@ -148,9 +148,11 @@ the inbox that carries it was put back by a person and is left alone.
 Besides, the runtime moves a message at most once for an agent ([agent
 contract](../agent-contract.md)). The keyword is its own and no other agent
 sets it, so a move by `sorting` and a move by `invoices` stay told apart.
-The keyword is asked for only in `full` and for a group not held, after the
-move, and the runtime takes nothing after a refused move, so it never
-stands without the move. The name has no `$` in front, as IMAP registers
+The keyword is asked for after the move in every stage. The runtime takes
+nothing after a refused move and records only what follows a move recorded
+only, by the stage or for a held group, so it never stands without the
+move (decided 2026-11-18). Below `full` and for a held group the state
+file holds it as recorded and not set. The name has no `$` in front, as IMAP registers
 such keywords with meanings (`$Junk`, `$label1`), and it carries the
 prefix `agent-` of the [agent contract](../agent-contract.md), which no mail
 client or other tool is known to use. `MAILBOX_AGENTS_KEYWORD` names
@@ -158,11 +160,11 @@ another.
 
 ### By stage
 
-| Stage | Folder creation | Move |
-|---|---|---|
-| `shadow` | recorded | recorded |
-| `keyword` | recorded | recorded. The keyword goes with the move, so the stage acts like `shadow` |
-| `full` | made | made, but for a held group |
+| Stage | Folder creation | Move | Keyword |
+|---|---|---|---|
+| `shadow` | recorded | recorded | recorded |
+| `keyword` | recorded | recorded | recorded. It goes with the move, so the stage acts like `shadow` |
+| `full` | made | made, but for a held group | set, but for a held group |
 
 Below `full` a folder recorded as to be made counts as there for the
 folder and the move below it in the same effect, so both are recorded.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Callable, Mapping
 from pathlib import Path
+from typing import get_args
 
 import httpx
 import pytest
@@ -11,7 +12,8 @@ import pytest
 from benethos_mailbox_agents.contract import Action, ActionRequest
 from benethos_mailbox_agents.errors import MailboxUnavailableError, MessageGoneError
 from benethos_mailbox_agents.records import FolderRef, MessageRef
-from benethos_mailbox_agents.runtime.actions import Executor, Outcome
+from benethos_mailbox_agents.runtime.actions import STAGE_ALLOWS, Executor, Outcome
+from benethos_mailbox_agents.settings import Stage
 from fakes import ACCOUNT, wire_message
 from helpers import Echo, Wired, settings, wired
 
@@ -451,6 +453,36 @@ async def test_after_a_refused_folder_the_rest_is_not_taken(world: Wired) -> Non
     await maker(world)([make("Elsewhere"), MOVE, ADD])
 
     assert world.service.writes() == []
+
+
+def test_every_stage_has_a_row() -> None:
+    assert set(STAGE_ALLOWS) == set(get_args(Stage))
+
+
+@pytest.mark.parametrize("stage", ["shadow", "keyword"])
+async def test_after_a_move_recorded_only_the_rest_is_recorded_only(
+    world: Wired, stage: str
+) -> None:
+    assert await executor(world, stage)([MOVE, ADD]) == [Outcome.RECORDED] * 2
+
+    assert world.service.writes() == []
+    assert [(a.action, a.executed) for a in world.store.actions(REF)] == [
+        ("move_to_folder", False),
+        ("add_keyword", False),
+    ]
+
+
+async def test_after_a_held_folder_the_rest_is_recorded_only(world: Wired) -> None:
+    held = ActionRequest(Action.CREATE_FOLDER, REF, folder="Providers", held=True)
+
+    outcomes = await maker(world)([held, ADD])
+
+    assert outcomes == [Outcome.RECORDED, Outcome.RECORDED]
+    assert world.service.writes() == []
+
+
+async def test_after_a_move_taken_the_keyword_is_taken(world: Wired) -> None:
+    assert await executor(world)([MOVE, ADD]) == [Outcome.DONE, Outcome.DONE]
 
 
 async def test_a_refused_keyword_does_not_stop_a_move(world: Wired) -> None:

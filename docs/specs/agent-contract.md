@@ -104,8 +104,12 @@ not made either, so no empty folder is left behind the refused move. A
 move only recorded in
 `shadow` or `keyword` does not count. A message moved by hand never wanders
 back in a later pass. The actions of one message are taken in order, and
-after a refused move or folder the rest are not taken, so a keyword that
-says a message was moved never stands without the move. This holds for
+after a refused move or folder the rest are not taken. After a move or
+folder recorded only, by the stage or held, the rest are recorded only,
+as if held, whatever the stage allows (decided 2026-11-18). So a keyword
+that says a message was moved never stands without the move, and the
+rule lives in the runtime alone: an agent asks for its actions whatever
+the stage and compares no stage. This holds for
 an effect, for `observe` and for the tick alike: the tick's actions are
 taken message by message.
 

@@ -13,14 +13,15 @@ whose result is already there is not taken again, and a message the
 agent moved once is not moved again, so one the owner moved back stays,
 and no folder is made for its move.
 After a refused move or folder, the rest of the message's actions are not
-taken. See docs/specs/agent-contract.md,
-docs/specs/runtime.md and docs/specs/safety.md.
+taken, and after one recorded only, the rest are recorded only. See
+docs/specs/agent-contract.md, docs/specs/runtime.md and
+docs/specs/safety.md.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol
@@ -50,7 +51,8 @@ STAGE_ALLOWS: dict[str, frozenset[Action]] = {
 # Folders no agent moves a message into: a move there is a deletion.
 FORBIDDEN_ROLES = frozenset({"trash", "junk", "spam"})
 
-# The actions after whose refusal the rest of a message's are not taken.
+# The actions after whose refusal the rest of a message's are not taken,
+# and after whose recording only the rest are recorded only.
 _FOLDER_ACTIONS = frozenset({Action.CREATE_FOLDER, Action.MOVE_TO_FOLDER})
 
 
@@ -124,7 +126,9 @@ class Executor:
 
         After a refused folder or move, those after it are not taken and
         have no outcome: an action asked after a move, such as a keyword
-        that says the message was moved, must not stand without it. For a
+        that says the message was moved, must not stand without it. After
+        a folder or move recorded only, by the stage or held, those after
+        it are recorded only too, as if held, for the same reason. For a
         message the agent moved before, the folders made for its move are
         skipped: the move will be refused, and an empty folder would stay.
         A message that is gone is logged and raised as MessageGoneError, so
@@ -137,14 +141,20 @@ class Executor:
             and self._moved_before(request.ref)
         }
         outcomes: list[Outcome] = []
+        # The messages a folder action was recorded for and not taken.
+        recorded: set[MessageRef] = set()
         for request in requests:
             if request.action is Action.CREATE_FOLDER and request.ref in moved:
                 outcomes.append(Outcome.SKIPPED)
                 continue
-            outcome = await self._run(request)
+            held = request.ref in recorded and not request.held
+            outcome = await self._run(replace(request, held=True) if held else request)
             outcomes.append(outcome)
-            if outcome is Outcome.REFUSED and request.action in _FOLDER_ACTIONS:
-                break
+            if request.action in _FOLDER_ACTIONS:
+                if outcome is Outcome.REFUSED:
+                    break
+                if outcome is Outcome.RECORDED:
+                    recorded.add(request.ref)
         return outcomes
 
     async def _run(self, request: ActionRequest) -> Outcome:

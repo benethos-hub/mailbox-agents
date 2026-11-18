@@ -221,13 +221,13 @@ class Sorting(Agent):
                 held=held,
             )
         )
-        # The keyword says the message was moved. It is asked for only
-        # where the move is taken: in full and for a group not held. The
-        # executor takes nothing after a refused move.
-        if self.settings.stage == "full" and not held:
-            requests.append(
-                ActionRequest(
-                    Action.ADD_KEYWORD, message.ref, keyword=self.keyword, why="sorted"
-                )
+        # The keyword says the message was moved, so it is asked for after
+        # the move. The executor takes nothing after a refused move, and
+        # records only what follows a move recorded only, by the stage or
+        # held: the keyword never stands without the move.
+        requests.append(
+            ActionRequest(
+                Action.ADD_KEYWORD, message.ref, keyword=self.keyword, why="sorted"
             )
+        )
         return requests

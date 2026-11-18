@@ -229,6 +229,23 @@ def test_no_http_status_beyond_the_upstreams(path: Path) -> None:
                 )
 
 
+AGENT_MODULES = [p for p in _modules() if _layer_of(p) == "agents"]
+
+
+@pytest.mark.parametrize(
+    "path", AGENT_MODULES, ids=[p.relative_to(SOURCE).as_posix() for p in AGENT_MODULES]
+)
+def test_no_agent_compares_the_stage(path: Path) -> None:
+    """What a stage carries out is the executor's table alone: an agent
+    asks for its actions whatever the stage."""
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Compare):
+            for side in (node.left, *node.comparators):
+                assert not (isinstance(side, ast.Attribute) and side.attr == "stage"), (
+                    f"{path.name} compares the stage on line {node.lineno}"
+                )
+
+
 def _third_party(path: Path) -> set[str]:
     """The top-level names of what ``path`` imports from outside the package."""
     found: set[str] = set()

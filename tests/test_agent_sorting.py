@@ -190,6 +190,7 @@ async def test_a_held_group_moves_nothing_in_full(world: Wired, tmp_path: Path) 
         ("create_folder", "Providers", False),
         ("create_folder", "Providers/Bank", False),
         ("move_to_folder", "Providers/Bank", False),
+        ("add_keyword", "agent-sorted", False),
     ]
 
 
@@ -223,6 +224,20 @@ async def test_below_full_the_folders_and_the_move_are_recorded(
         ("create_folder", "Providers", False),
         ("create_folder", "Providers/CloudHost", False),
         ("move_to_folder", "Providers/CloudHost", False),
+        ("add_keyword", "agent-sorted", False),
+    ]
+
+
+async def test_in_keyword_the_keyword_is_recorded_and_not_set(
+    world: Wired, tmp_path: Path
+) -> None:
+    assert await run(world, "hosting", agent(tmp_path, "keyword")) == "done"
+
+    assert world.service.writes() == []
+    assert mail(world, "hosting")["keywords"] == []
+    assert actions(world, "hosting") == [
+        ("move_to_folder", "Invoices/Hosting", False),
+        ("add_keyword", "agent-sorted", False),
     ]
 
 
@@ -236,6 +251,7 @@ async def test_a_backfill_run_again_records_nothing_twice(
         ("create_folder", "Providers", False),
         ("create_folder", "Providers/CloudHost", False),
         ("move_to_folder", "Providers/CloudHost", False),
+        ("add_keyword", "agent-sorted", False),
     ]
 
 
@@ -244,7 +260,10 @@ async def test_below_full_a_folder_that_exists_is_not_recorded(
 ) -> None:
     assert await run(world, "hosting", agent(tmp_path, "shadow")) == "done"
 
-    assert actions(world, "hosting") == [("move_to_folder", "Invoices/Hosting", False)]
+    assert actions(world, "hosting") == [
+        ("move_to_folder", "Invoices/Hosting", False),
+        ("add_keyword", "agent-sorted", False),
+    ]
 
 
 # -- the list as it is when the agent acts --------------------------------------
