@@ -10,9 +10,9 @@ were carried out, and the time of the last pass. See SPECS.md section 14.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
-from threading import Thread
-from wsgiref.simple_server import WSGIServer
 
 from prometheus_client import (
     CollectorRegistry,
@@ -119,6 +119,14 @@ class Metrics:
     def text(self) -> bytes:
         return generate_latest(self.registry)
 
-    def serve(self, port: int, addr: str = "0.0.0.0") -> tuple[WSGIServer, Thread]:
-        """Serve the metrics on ``port`` in a thread of their own."""
-        return start_http_server(port, addr=addr, registry=self.registry)
+    @contextmanager
+    def serving(self, port: int, addr: str = "0.0.0.0") -> Iterator[None]:
+        """Serve the metrics on ``port`` in a thread of their own while the
+        block runs, and stop serving after it."""
+        server, thread = start_http_server(port, addr=addr, registry=self.registry)
+        try:
+            yield
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()

@@ -116,16 +116,15 @@ def _free_port() -> int:
 def test_the_metrics_are_served() -> None:
     metrics = Metrics("echo", "1", "shadow")
     port = _free_port()
-    server, thread = metrics.serve(port, addr="127.0.0.1")
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics") as answer:
-            body = answer.read()
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join()
+    with (
+        metrics.serving(port, addr="127.0.0.1"),
+        urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics") as answer,
+    ):
+        body = answer.read()
 
     assert b'mailbox_agent_info{agent="echo"' in body
+    with pytest.raises(OSError):
+        urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics", timeout=1)
 
 
 def test_health_on_the_command_line(

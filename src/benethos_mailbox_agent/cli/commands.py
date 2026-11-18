@@ -8,7 +8,7 @@ import argparse
 import asyncio
 import signal
 import tempfile
-from contextlib import suppress
+from contextlib import ExitStack, suppress
 from pathlib import Path
 from typing import Any
 
@@ -65,16 +65,13 @@ async def _worker(name: str, settings: Settings) -> None:
         logbook.started(found.agent.name, found.agent.version, settings.stage)
         stop = asyncio.Event()
         _stop_on_signals(stop)
-        server = None
-        if settings.metrics_port:
-            server, _ = found.worker.metrics.serve(settings.metrics_port)
-            logbook.metrics_serving(found.agent.name, settings.metrics_port)
-        try:
+        with ExitStack() as serving:
+            if settings.metrics_port:
+                serving.enter_context(
+                    found.worker.metrics.serving(settings.metrics_port)
+                )
+                logbook.metrics_serving(found.agent.name, settings.metrics_port)
             await found.worker.run(stop)
-        finally:
-            if server is not None:
-                server.shutdown()
-                server.server_close()
         logbook.stopped(found.agent.name, "signal")
 
 
