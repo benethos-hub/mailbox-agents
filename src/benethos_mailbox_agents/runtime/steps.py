@@ -47,7 +47,7 @@ __all__ = [
 T = TypeVar("T", bound=BaseModel)
 
 # What carries out the actions of an effect: the action executor.
-Effects = Callable[[list[ActionRequest]], Awaitable[None]]
+Effects = Callable[[list[ActionRequest]], Awaitable[object]]
 
 
 def backoff(settings: Settings, attempts: int) -> float:

@@ -56,6 +56,7 @@ class Outcome(StrEnum):
     RECORDED = "recorded"  # the stage does not allow it, it was recorded only
     REFUSED = "refused"  # the executor or the mailbox service refused it
     GONE = "gone"  # the message is not there any more
+    SKIPPED = "skipped"  # a folder for a move that will be refused, not made
 
 
 @dataclass(frozen=True)
@@ -112,13 +113,16 @@ class Executor:
         # account and path: a folder or a move below one is recorded too.
         self._recorded_folders: set[tuple[str, str]] = set()
 
-    async def __call__(self, requests: list[ActionRequest]) -> None:
-        """Take the actions in order. After a refused folder or move, or a
-        message that is gone, those after it are not taken: an action
-        asked after a move, such as a keyword that says the message was
-        moved, must not stand without it. For a message the agent moved
-        before, the folders made for its move are skipped: the move will be
-        refused, and an empty folder would stay."""
+    async def __call__(self, requests: list[ActionRequest]) -> list[Outcome]:
+        """Take the actions of one message in order. Answers what became of
+        each, in the order of ``requests``, up to the last one handled.
+
+        After a refused folder or move, or a message that is gone, those
+        after it are not taken and have no outcome: an action asked after
+        a move, such as a keyword that says the message was moved, must not
+        stand without it. For a message the agent moved before, the folders
+        made for its move are skipped: the move will be refused, and an
+        empty folder would stay."""
         self._recorded_folders = set()
         moved = {
             request.ref
@@ -126,16 +130,20 @@ class Executor:
             if request.action is Action.MOVE_TO_FOLDER
             and self._moved_before(request.ref)
         }
+        outcomes: list[Outcome] = []
         for request in requests:
             if request.action is Action.CREATE_FOLDER and request.ref in moved:
+                outcomes.append(Outcome.SKIPPED)
                 continue
-            outcome = await self.run(request)
+            outcome = await self._run(request)
+            outcomes.append(outcome)
             if outcome is Outcome.GONE or (
                 outcome is Outcome.REFUSED and request.action in _FOLDER_ACTIONS
             ):
-                return
+                break
+        return outcomes
 
-    async def run(self, request: ActionRequest) -> Outcome:
+    async def _run(self, request: ActionRequest) -> Outcome:
         """Take one action, or record it. Answers what became of it.
 
         The action is recorded with what was there before, and only then

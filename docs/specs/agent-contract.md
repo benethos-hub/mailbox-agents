@@ -97,7 +97,9 @@ move only recorded in
 `shadow` or `keyword` does not count. A message moved by hand never wanders
 back in a later pass. The actions of one message are taken in order, and
 after a refused move or folder the rest are not taken, so a keyword that
-says a message was moved never stands without the move.
+says a message was moved never stands without the move. This holds for
+an effect, for `observe` and for the tick alike: the tick's actions are
+taken message by message.
 
 `status` reports for each agent whether it is ready and which required
 setting is missing, without starting it. For a ready agent that names

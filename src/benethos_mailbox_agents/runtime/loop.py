@@ -246,8 +246,16 @@ class Worker:
         ):
             return
         requests: list[ActionRequest] = await self.agent.tick(now, self.context())
+        # Each message's actions through the executor at once, so a refused
+        # move stops what was asked after it for that message.
+        by_message: dict[MessageRef, list[ActionRequest]] = {}
         for request in requests:
-            self._note(request, await self.executor.run(request))
+            by_message.setdefault(request.ref, []).append(request)
+        for group in by_message.values():
+            for request, outcome in zip(
+                group, await self.executor(group), strict=False
+            ):
+                self._note(request, outcome)
         self._last_tick = now
         record(worker.TickDone(agent=self.agent.name, actions=len(requests)))
 

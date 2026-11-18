@@ -89,10 +89,10 @@ async def test_an_action_already_done_is_not_taken_again(world: Wired) -> None:
 
 
 async def test_removing_a_keyword_that_is_not_there_does_nothing(world: Wired) -> None:
-    assert await executor(world).run(REMOVE) is Outcome.PRESENT
+    assert await executor(world)([REMOVE]) == [Outcome.PRESENT]
 
-    await executor(world).run(ADD)
-    assert await executor(world).run(REMOVE) is Outcome.DONE
+    await executor(world)([ADD])
+    assert await executor(world)([REMOVE]) == [Outcome.DONE]
     assert world.service.writes()[-1] == (PATH, {"remove_keywords": ["echo"]})
 
 
@@ -136,7 +136,7 @@ async def test_a_refused_action_is_neither_taken_nor_recorded(
 
     gone = request_.ref.message_id == "gone"
     expected = Outcome.GONE if gone else Outcome.REFUSED
-    assert await run.run(request_) is expected
+    assert await run([request_]) == [expected]
     assert world.service.writes() == []
     assert world.store.actions() == []
 
@@ -149,13 +149,13 @@ async def test_a_message_in_the_trash_or_junk_is_left_alone(
     async with wired(tmp_path) as found:
         found.service.add(wire_message("m1", folder_ids=[folder]))
 
-        assert await executor(found).run(request_) is Outcome.REFUSED
+        assert await executor(found)([request_]) == [Outcome.REFUSED]
         assert found.service.writes() == []
         assert found.store.actions() == []
 
 
 async def test_an_account_the_agent_does_not_work_on_is_refused(world: Wired) -> None:
-    assert await executor(world, accounts=["other"]).run(ADD) is Outcome.REFUSED
+    assert await executor(world, accounts=["other"])([ADD]) == [Outcome.REFUSED]
     assert world.service.writes() == []
 
 
@@ -168,7 +168,7 @@ async def test_what_was_before_is_recorded_before_the_action(
     monkeypatch.setattr(world.store, "mark_action_executed", crash)
 
     with pytest.raises(RuntimeError):
-        await executor(world).run(MOVE)
+        await executor(world)([MOVE])
 
     assert world.service.writes() == [(PATH, {"folder_ids": ["inv-hosting"]})]
     (move,) = world.store.actions(REF)
@@ -178,7 +178,7 @@ async def test_what_was_before_is_recorded_before_the_action(
 async def test_a_write_the_service_refuses_is_not_recorded(world: Wired) -> None:
     world.service.write_refusal = (422, "keyword_refused")
 
-    assert await executor(world).run(ADD) is Outcome.REFUSED
+    assert await executor(world)([ADD]) == [Outcome.REFUSED]
     assert world.store.actions() == []
 
 
@@ -188,8 +188,8 @@ async def test_the_log_line_names_why(
     caplog.set_level("INFO")
     request = ActionRequest(Action.ADD_KEYWORD, REF, keyword="echo", why="due")
 
-    await executor(world).run(request)
-    await executor(world).run(MOVE)
+    await executor(world)([request])
+    await executor(world)([MOVE])
 
     lines = [r.getMessage() for r in caplog.records if ".actions." in r.name]
     assert lines[0].endswith("carried out add_keyword on message m1 in stage full: due")
@@ -200,7 +200,7 @@ async def test_a_service_that_is_away_is_raised(world: Wired) -> None:
     world.service.down = True
 
     with pytest.raises(MailboxUnavailableError):
-        await executor(world).run(ADD)
+        await executor(world)([ADD])
 
 
 # -- folders an agent makes -----------------------------------------------------
@@ -240,7 +240,7 @@ def make(path: str) -> ActionRequest:
 async def test_a_folder_the_agent_may_make_is_made_from_the_top(world: Wired) -> None:
     run = maker(world)
 
-    outcomes = [await run.run(make(p)) for p in ("Providers", "Providers/CloudHost")]
+    outcomes = await run([make(p) for p in ("Providers", "Providers/CloudHost")])
 
     assert outcomes == [Outcome.DONE, Outcome.DONE]
     assert world.service.made() == [
@@ -260,24 +260,24 @@ async def test_a_folder_the_agent_may_make_is_made_from_the_top(world: Wired) ->
     ids=["not-declared", "below-trash", "below-junk", "other-case", "parent-missing"],
 )
 async def test_a_folder_is_refused(world: Wired, path: str) -> None:
-    assert await maker(world).run(make(path)) is Outcome.REFUSED
+    assert await maker(world)([make(path)]) == [Outcome.REFUSED]
     assert world.service.made() == []
     assert world.store.actions() == []
 
 
 async def test_a_folder_that_exists_is_not_made_again(world: Wired) -> None:
-    assert await maker(world).run(make("Invoices/Hosting")) is Outcome.PRESENT
+    assert await maker(world)([make("Invoices/Hosting")]) == [Outcome.PRESENT]
     assert world.service.made() == []
 
 
 async def test_an_agent_makes_no_folder_unless_it_says_so(world: Wired) -> None:
-    assert await executor(world).run(make("Providers")) is Outcome.REFUSED
+    assert await executor(world)([make("Providers")]) == [Outcome.REFUSED]
     assert world.service.made() == []
 
 
 @pytest.mark.parametrize("stage", ["shadow", "keyword"])
 async def test_a_folder_is_recorded_only_below_full(world: Wired, stage: str) -> None:
-    assert await maker(world, stage).run(make("Providers")) is Outcome.RECORDED
+    assert await maker(world, stage)([make("Providers")]) == [Outcome.RECORDED]
     assert world.service.made() == []
     (made,) = world.store.actions(REF)
     assert (made.action, made.argument, made.executed) == (
@@ -320,10 +320,10 @@ async def test_a_message_the_owner_moved_back_is_not_moved_again(
     world: Wired,
 ) -> None:
     run = executor(world)
-    assert await run.run(MOVE) is Outcome.DONE
+    assert await run([MOVE]) == [Outcome.DONE]
     world.service.messages[(ACCOUNT, "m1")]["folder_ids"] = ["inbox"]
 
-    assert await run.run(MOVE) is Outcome.REFUSED
+    assert await run([MOVE]) == [Outcome.REFUSED]
     assert world.service.writes() == [(PATH, {"folder_ids": ["inv-hosting"]})]
     assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
 
@@ -333,23 +333,24 @@ async def test_no_folder_is_made_for_a_message_moved_before(world: Wired) -> Non
     await run([MOVE])
     world.service.messages[(ACCOUNT, "m1")]["folder_ids"] = ["inbox"]
 
-    await run([make("Providers"), MOVE])
+    outcomes = await run([make("Providers"), MOVE])
 
+    assert outcomes == [Outcome.SKIPPED, Outcome.REFUSED]
     assert world.service.made() == []
     assert [a.action for a in world.store.actions(REF)] == ["move_to_folder"]
     assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
 
 
 async def test_a_move_only_recorded_does_not_count(world: Wired) -> None:
-    assert await executor(world, "shadow").run(MOVE) is Outcome.RECORDED
+    assert await executor(world, "shadow")([MOVE]) == [Outcome.RECORDED]
 
-    assert await executor(world).run(MOVE) is Outcome.DONE
+    assert await executor(world)([MOVE]) == [Outcome.DONE]
 
 
 async def test_after_a_refused_move_the_rest_is_not_taken(world: Wired) -> None:
     missing = ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Missing")
 
-    await executor(world)([missing, ADD])
+    assert await executor(world)([missing, ADD]) == [Outcome.REFUSED]
 
     assert world.service.writes() == []
     assert world.store.actions() == []

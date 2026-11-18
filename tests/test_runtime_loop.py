@@ -228,6 +228,26 @@ async def test_the_tick_comes_once_per_interval(world: Wired) -> None:
     assert world.service.messages[(ACCOUNT, "m1")]["keywords"] == ["echo"]
 
 
+async def test_after_a_refused_move_on_the_tick_the_rest_is_not_taken(
+    world: Wired, caplog: pytest.LogCaptureFixture
+) -> None:
+    class Moving(Ticking):
+        async def tick(self, now: datetime, context: Context) -> list[ActionRequest]:
+            return [
+                ActionRequest(Action.MOVE_TO_FOLDER, ref("m1"), folder="Nowhere"),
+                ActionRequest(Action.ADD_KEYWORD, ref("m1"), keyword=self.keyword),
+            ]
+
+    caplog.set_level("INFO")
+    world.service.add(wire_message("m1"), change=None)
+
+    await worker(world, Moving(settings(stage="full"))).run_pass()
+
+    assert world.service.writes() == []
+    lines = [r.name for r in caplog.records if ".actions." in r.name]
+    assert len(lines) == 1 and lines[0].endswith(".refused")
+
+
 async def test_an_observed_event_is_handed_on_once_per_pass(world: Wired) -> None:
     agent = Ticking(settings(stage="full"))
     agent.observed = []
