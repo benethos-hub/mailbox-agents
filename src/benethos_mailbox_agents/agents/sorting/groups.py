@@ -46,14 +46,21 @@ from pydantic import (
 
 from ...errors import ConfigError, describe_invalid
 
-__all__ = ["READERS", "Group", "Groups", "Kind", "Match", "load_groups"]
+__all__ = ["NONE", "READERS", "Group", "Groups", "Kind", "Match", "load_groups"]
+
+# The label of a message whose sender is in no group, or in two alike. No
+# group is named so, case aside, as its messages would be counted as none.
+NONE = "none"
 
 _NAME = r"[^\s@*]+"
-_DOMAIN = rf"{_NAME}\.{_NAME}"
+# One name of a domain, and a domain of two names at least, none empty.
+_LABEL = r"[^\s@*.]+"
+_DOMAIN = rf"{_LABEL}(?:\.{_LABEL})+"
 _ADDRESS = re.compile(rf"^{_NAME}@{_DOMAIN}$")
 _PATTERN = re.compile(rf"^[^\s@]*\*[^\s@]*@{_DOMAIN}$")
 _SUBDOMAINS = re.compile(rf"^[^\s@]+@\*\.({_DOMAIN})$")
 _BARE_DOMAIN = re.compile(rf"^@?{_DOMAIN}$")
+_TOO_BROAD = re.compile(rf"^[^\s@]+@\*\.{_LABEL}$")
 
 
 class Kind(IntEnum):
@@ -78,7 +85,7 @@ def _kind(rule: str) -> Kind:
             "is a domain: write *@ and the domain for its addresses, "
             "or *@*. and the domain for those of its subdomains"
         )
-    if "@*." in rule:
+    if _TOO_BROAD.match(rule):
         raise ValueError("is too broad: the domain after *. needs two names at least")
     raise ValueError(
         "is no address and no pattern: a * stands before the @, "
@@ -124,6 +131,11 @@ class Group(BaseModel):
     def _name(cls, value: str) -> str:
         if value != value.strip():
             raise ValueError("a name has no space at its ends")
+        if value.casefold() == NONE:
+            raise ValueError(
+                f"a group is not named {NONE}: that is the label of a message "
+                "in no group"
+            )
         return value
 
     @field_validator("folder")
@@ -152,6 +164,22 @@ class Group(BaseModel):
         the agent may make for it."""
         parts = self.folder.split("/")
         return tuple("/".join(parts[: i + 1]) for i in range(len(parts)))
+
+
+def _spelt_alike(groups: tuple[Group, ...]) -> None:
+    """Raise a ValueError when two groups write a folder, theirs or one
+    above it, in another case: the executor refuses a folder whose name
+    exists in another case, so the second would never be made. The
+    message names the groups, not the folder."""
+    spelt: dict[str, tuple[str, str]] = {}
+    for group in groups:
+        for path in group.folders:
+            first = spelt.setdefault(path.casefold(), (path, group.name))
+            if first[0] != path:
+                raise ValueError(
+                    f"group {group.name!r}: a folder differs from one of group "
+                    f"{first[1]!r} in case only"
+                )
 
 
 @dataclass(frozen=True)
@@ -185,6 +213,7 @@ class Groups(BaseModel):
                 if key in seen:
                     raise ValueError(f"two groups share the {attribute} {key!r}")
                 seen.add(key)
+        _spelt_alike(value)
         owners: dict[str, str] = {}
         for group in value:
             for number, rule in enumerate(group.senders, start=1):

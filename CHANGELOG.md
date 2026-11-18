@@ -132,6 +132,10 @@ commit that makes the change. Design decisions live in
   stored under a version made from the list, so after `backfill` the
   label, the details and `report` follow the list the message was moved
   with, not the one it was first decided with.
+- `sorting` refuses a list that could never work: two groups that write a
+  folder in two cases, such as `Bank` beside `bank/Sub`, a group named
+  `none`, and a sender rule whose domain has an empty name, such as
+  `*@shop..example` or `a@b.example.`.
 
 ### Removed
 

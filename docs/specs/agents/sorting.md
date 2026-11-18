@@ -70,14 +70,22 @@ of it is versioned as `sorting.example.json`.
 
 | Field | Meaning | Rule |
 |---|---|---|
-| `name` | what `report` and the decision call the group | unique, case aside, no space at its ends |
-| `folder` | where its mail goes, `/` between the names | unique, case aside. No name empty, `.` or `..`, nor with a space at its ends |
+| `name` | what `report` and the decision call the group | unique, case aside, no space at its ends, not `none` in any case |
+| `folder` | where its mail goes, `/` between the names | unique, case aside. No name empty, `.` or `..`, nor with a space at its ends. A folder above it that another group's path shares is written alike in both |
 | `senders` | who belongs to it | at least one. A rule belongs to one group |
 | `hold` | section 5 | optional, `false` when left out |
 
 The folder is chosen freely (decided 2026-11-18): one folder for several
 senders, such as all banks in `Bank`, one per sender, or a folder below
 another.
+
+**A list that could never work is refused (decided 2026-11-18).** Two
+groups that write one folder in two cases, `Bank` beside `bank/Sub`, would
+never get the second, as the runtime makes no folder whose name exists in
+another case. A group named `none` would share the label of a message in
+no group, and `report` would leave it out. A domain with an empty name,
+such as `*@.shop.example`, `*@shop..example` or `a@b.example.`, matches no
+sender. Each is named by its group, and a rule by its place too.
 
 ### Sender rules
 

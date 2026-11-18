@@ -150,6 +150,48 @@ def test_a_group_is_moved_unless_it_is_held(listed: Groups) -> None:
         ),
         ([{"name": "A", "folder": "A", "senders": ["b.example"]}], "is a domain"),
         ([{"name": "A", "folder": "A", "senders": ["@b.example"]}], "is a domain"),
+        (
+            [
+                {"name": "A", "folder": "Bank", "senders": ["a@b.example"]},
+                {"name": "B", "folder": "bank/Sub", "senders": ["c@b.example"]},
+            ],
+            "group 'B': a folder differs from one of group 'A' in case only",
+        ),
+        (
+            [
+                {"name": "A", "folder": "Top/Bank", "senders": ["a@b.example"]},
+                {"name": "B", "folder": "TOP/Shop", "senders": ["c@b.example"]},
+            ],
+            "group 'B': a folder differs from one of group 'A' in case only",
+        ),
+        (
+            [{"name": "None", "folder": "A", "senders": ["a@b.example"]}],
+            "the label of a message in no group",
+        ),
+        (
+            [{"name": "none", "folder": "A", "senders": ["a@b.example"]}],
+            "the label of a message in no group",
+        ),
+        (
+            [{"name": "A", "folder": "A", "senders": ["*@.shop.example"]}],
+            "group 'A', sender 1 is no address",
+        ),
+        (
+            [{"name": "A", "folder": "A", "senders": ["*@shop..example"]}],
+            "group 'A', sender 1 is no address",
+        ),
+        (
+            [{"name": "A", "folder": "A", "senders": ["a@b.c."]}],
+            "group 'A', sender 1 is no address",
+        ),
+        (
+            [{"name": "A", "folder": "A", "senders": ["*@b.c."]}],
+            "group 'A', sender 1 is no address",
+        ),
+        (
+            [{"name": "A", "folder": "A", "senders": ["*@*.shop..example"]}],
+            "group 'A', sender 1 is no address",
+        ),
         ([{"name": "A", "folder": "A", "senders": ["*@*.example"]}], "too broad"),
         ([{"name": "A", "folder": "A", "senders": ["*@b*.example"]}], "no address"),
         ([{"name": "A", "folder": "A", "senders": ["nobody"]}], "no address"),
@@ -176,6 +218,16 @@ def test_a_wrong_list_says_what_is_wrong(
     for entry in entries:
         for rule in entry["senders"]:
             assert rule not in raised.value.message
+
+
+def test_groups_may_share_a_folder_above_theirs_spelt_alike() -> None:
+    found = groups(
+        {"name": "A", "folder": "Providers", "senders": ["a@b.example"]},
+        {"name": "B", "folder": "Providers/Bank", "senders": ["c@b.example"]},
+        {"name": "C", "folder": "Providers/Shop", "senders": ["*@*.shop.example"]},
+    )
+
+    assert [g.name for g in found.groups] == ["A", "B", "C"]
 
 
 def test_a_wrong_sender_is_named_by_its_group_and_place(tmp_path: Path) -> None:

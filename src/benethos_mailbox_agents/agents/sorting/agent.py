@@ -35,12 +35,9 @@ from ...contract import (
 from ...errors import ConfigError
 from ...records import Decision, Event, FolderRef, MailMessage
 from ...settings import PREFIX
-from .groups import Group, Groups, load_groups
+from .groups import NONE, Group, Groups, load_groups
 
 __all__ = ["NONE", "Sorting"]
-
-# The label of a message whose sender is in no group, or in two alike.
-NONE = "none"
 
 # The senders in no group a report names at most, as candidates.
 CANDIDATES = 10
