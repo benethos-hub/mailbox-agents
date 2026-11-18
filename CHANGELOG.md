@@ -83,6 +83,9 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- An open item of `awaiting_reply` whose sent message was deleted closes
+  as `message_gone` on the tick, instead of staying due and asking for
+  its keyword every round.
 - A write the mailbox service refuses, such as a keyword the provider
   does not take, and a message an agent reads for its actions that was
   deleted since, no longer stop the agent before its cursor. The refusal

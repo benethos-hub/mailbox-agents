@@ -237,7 +237,12 @@ class Worker:
     def _note(self, request: ActionRequest, outcome: Outcome) -> None:
         """Keep on an open item what became of its keyword: set when it is on
         the message, recorded in this stage when the stage did not allow it.
-        A refused keyword leaves the item due."""
+        A refused keyword leaves the item due. An item whose message is not
+        there any more closes as ``message_gone``: no tick could set its
+        keyword again."""
+        if outcome is Outcome.GONE:
+            self.store.close_item(request.ref, "message_gone", self._now())
+            return
         if request.action is not Action.ADD_KEYWORD:
             return
         if outcome in (Outcome.DONE, Outcome.PRESENT):

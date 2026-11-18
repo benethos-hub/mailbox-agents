@@ -134,7 +134,9 @@ async def test_a_refused_action_is_neither_taken_nor_recorded(
         now=world.clock,
     )
 
-    assert await run.run(request_) is Outcome.REFUSED
+    gone = request_.ref.message_id == "gone"
+    expected = Outcome.GONE if gone else Outcome.REFUSED
+    assert await run.run(request_) is expected
     assert world.service.writes() == []
     assert world.store.actions() == []
 

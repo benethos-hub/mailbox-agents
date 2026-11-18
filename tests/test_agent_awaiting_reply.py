@@ -352,6 +352,22 @@ async def test_a_keyword_the_service_refused_is_offered_again(tmp_path: Path) ->
         assert world.item("s1").keyword_set
 
 
+async def test_an_item_whose_sent_message_is_gone_closes_on_the_tick(
+    world: World,
+) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    del world.w.service.messages[(ACCOUNT, "s1")]
+    world.clock.advance(days=4)
+
+    await world.run()
+
+    found = world.item("s1")
+    assert found.closed is not None and found.reason == "message_gone"
+    assert world.w.store.due_items(world.clock()) == []
+
+
 async def test_after_shadow_the_keyword_stage_sets_the_keyword(tmp_path: Path) -> None:
     async for world in staged(tmp_path, "shadow"):
         await _due(world)

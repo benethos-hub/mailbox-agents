@@ -18,7 +18,7 @@ from enum import StrEnum
 from typing import Any, Protocol
 
 from ..contract import Action, ActionRequest, Agent
-from ..errors import ActionRefusedError, MailboxRefusedError
+from ..errors import ActionRefusedError, MailboxRefusedError, MessageGoneError
 from ..logbook import actions, record
 from ..records import FolderRef, MailMessage, MessageRef
 from ..store import Store
@@ -44,6 +44,7 @@ class Outcome(StrEnum):
     PRESENT = "present"  # its result was already there
     RECORDED = "recorded"  # the stage does not allow it, it was recorded only
     REFUSED = "refused"  # the executor or the mailbox service refused it
+    GONE = "gone"  # the message is not there any more
 
 
 class Writer(Protocol):
@@ -101,8 +102,7 @@ class Executor:
             message = await self._mailbox.message(request.ref)
             planned = await self._plan(request, message)
         except (ActionRefusedError, MailboxRefusedError) as exc:
-            self._refused(request, exc)
-            return Outcome.REFUSED
+            return self._refused(request, exc)
         if planned is None:
             return Outcome.PRESENT
         argument, before, target = planned
@@ -121,8 +121,7 @@ class Executor:
                 await self._take(request, target)
             except MailboxRefusedError as exc:
                 self._store.drop_action(recorded)
-                self._refused(request, exc)
-                return Outcome.REFUSED
+                return self._refused(request, exc)
             self._store.mark_action_executed(recorded)
         self.metrics.action(request.action.value, executed)
         done = actions.Done if executed else actions.Recorded
@@ -139,7 +138,9 @@ class Executor:
 
     def _refused(
         self, request: ActionRequest, exc: ActionRefusedError | MailboxRefusedError
-    ) -> None:
+    ) -> Outcome:
+        """Log the refusal and count it. Answers ``GONE`` when the message is
+        not there any more, ``REFUSED`` otherwise."""
         record(
             actions.Refused(
                 agent=self.agent.name,
@@ -149,6 +150,7 @@ class Executor:
             )
         )
         self.metrics.step_failed(exc.code)
+        return Outcome.GONE if isinstance(exc, MessageGoneError) else Outcome.REFUSED
 
     def _admissible(self, request: ActionRequest) -> None:
         if request.action not in self.agent.actions:

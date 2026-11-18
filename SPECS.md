@@ -586,7 +586,10 @@ A sent message that expects a reply becomes an open item. It closes when:
 - the sender writes again in the same thread. That restarts the deadline and
   does not count as a reply: when the new message expects a reply itself,
   the earlier item closes as `followed_up` and the new one opens, otherwise
-  the earlier item starts again from the new message.
+  the earlier item starts again from the new message,
+- the sent message is not there any more when the tick would set its
+  keyword: the item closes as `message_gone` (built 2026-11-18). Before,
+  it stayed due and the tick asked for the keyword every round.
 
 A sent message whose thread already holds a later answer from someone
 else opens no item. So a reply taken up before the message it answers,
