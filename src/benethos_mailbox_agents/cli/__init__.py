@@ -55,7 +55,9 @@ def build_parser() -> argparse.ArgumentParser:
         "backfill", help="take the messages of recent days up anew, then run them"
     )
     _agent(found)
-    found.add_argument("--days", type=int, default=None, help="BACKFILL_DAYS if unset")
+    found.add_argument(
+        "--days", type=int, default=None, help="MAILBOX_AGENTS_BACKFILL_DAYS if unset"
+    )
     found.set_defaults(handler=commands.backfill)
 
     found = sub.add_parser(
