@@ -1,0 +1,120 @@
+name: Publish
+
+# Publishes a release when a GitHub release is published:
+#   * sdist and wheel to PyPI, through Trusted Publishing (OIDC, no stored
+#     token)
+#   * the container image to ghcr.io, through the GITHUB_TOKEN, as
+#     benethos-mailbox-agents, the name of the distribution, for linux/amd64
+#     and linux/arm64
+#
+# Each upload is done by an action of the organisation in
+# benethos-hub/.github (actions/publish), followed at main like the CI
+# workflows. The jobs stay here because PyPI trusts the workflow of the job
+# that uploads. Every action first checks that the release tag is the
+# version of pyproject.toml, as PEP 440 writes it: v0.1.0, v0.2.0a1.
+#
+# Nothing is built before ci-passed has found a green CI run of the push to
+# main for this very commit. A version on PyPI cannot be replaced, and that
+# run is the full CI with every required check. With audit, the gate checks
+# uv.lock against PyPI and OSV once more. Waive a vulnerability in
+# ignore-vulns there and in ci.yml alike.
+#
+# A manual run (workflow_dispatch) is the trial. pypi-trial builds and checks
+# the package and asks PyPI whether it would take it, without uploading.
+# ghcr-publish pushes the image as `edge`, from main only.
+#
+# One-time setup on PyPI: a pending publisher for the project
+# benethos-mailbox-agents with
+#   Owner: benethos-hub
+#   Repository: mailbox-agents
+#   Workflow filename: publish.yml
+#   Environment: pypi-benethos-mailbox-agents
+# and that environment on GitHub, open to tags v* only.
+#
+# One-time setup for ghcr, after the first push: a new package is private
+# even when its repository is public. Switch it to public under the
+# organisation's packages.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Waits up to 30 minutes for a CI run of ci.yml on main still in progress.
+  # On a manual run outside main it is skipped, together with everything
+  # that needs it.
+  ci-passed:
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+    uses: benethos-hub/.github/.github/workflows/python-release-ci-passed.yml@main
+    permissions:
+      actions: read # list the CI runs of this commit
+      contents: read
+    with:
+      audit: true
+
+  pypi-publish:
+    name: Build and publish to PyPI
+    # A version may be uploaded once only, so never by hand. The trial is
+    # pypi-trial.
+    if: github.event_name == 'release'
+    needs: ci-passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi-benethos-mailbox-agents
+      url: https://pypi.org/p/benethos-mailbox-agents
+    permissions:
+      contents: read
+      id-token: write # Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The PEP 561 marker, and a prompt of an agent: a wheel without its
+      # prompts would import and fail only when the agent starts.
+      - uses: benethos-hub/.github/actions/publish/pypi@main
+        with:
+          wheel-contains: |
+            benethos_mailbox_agents/py.typed
+            benethos_mailbox_agents/agents/invoices/prompts/system.v4.md
+
+  # The PyPI half of a manual run, without the environment and without an
+  # OIDC token, since nothing is uploaded.
+  pypi-trial:
+    name: Build and check for PyPI (trial)
+    if: github.event_name == 'workflow_dispatch'
+    needs: ci-passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: benethos-hub/.github/actions/publish/pypi@main
+        with:
+          dry-run: true
+          wheel-contains: |
+            benethos_mailbox_agents/py.typed
+            benethos_mailbox_agents/agents/invoices/prompts/system.v4.md
+
+  ghcr-publish:
+    name: Build and publish the image
+    # A release, or a manual run on main.
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+    needs: ci-passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io as the GITHUB_TOKEN identity
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # arm64 is emulated on the amd64 runner. The arm64 build of the docker
+      # job in ci.yml writes its layers to the cache scope buildkit, and the
+      # release reads them from there.
+      - uses: benethos-hub/.github/actions/publish/ghcr@main
+        with:
+          image: benethos-mailbox-agents
+          dockerfile: containers/images/mailbox-agents/Dockerfile
+          cache-scope: buildkit

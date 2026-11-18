@@ -1,0 +1,66 @@
+version: 2
+# Minor and patch updates arrive as one pull request per ecosystem and week
+# instead of one each. A single run of the gates covers them together. A
+# major update comes on its own, since that is where behaviour changes.
+updates:
+  # Python dependencies. The ecosystem is "uv", not "pip", because the
+  # versions that get installed are the ones pinned in uv.lock, which the pip
+  # ecosystem does not read. Every requirement in pyproject.toml stays inside
+  # a patch window (`~=X.Y.Z`). A release past one needs the window moved,
+  # and that pull request is the place to check it.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # A release the window allows changes uv.lock only, and one past it
+    # moves the window, as `~=` again, instead of widening it to a range.
+    versioning-strategy: increase-if-necessary
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+        # Always alone: the suite mocks the mailbox service, so a change of
+        # its client is not seen by the tests. It wants a live check against
+        # the test account of containers/live (CLAUDE.md, Verifying).
+        exclude-patterns: ["benethos-mailbox-client"]
+
+  # The actions of the workflows, each pinned to a full commit SHA with its
+  # version in a trailing comment. Dependabot reads the comment and raises
+  # SHA and comment together.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # The images of the Dockerfile, python and uv, pinned by digest beside
+  # their tag. A stale base is no build failure, it is unpatched packages in
+  # something people pull.
+  - package-ecosystem: "docker"
+    directory: "/containers/images/mailbox-agents"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # The images of the live setup's compose file: Stalwart, the mailbox
+  # service, LiteLLM, Postgres and llama.cpp, each pinned by digest. A bump
+  # of the mailbox service wants a live check as well.
+  - package-ecosystem: "docker-compose"
+    directory: "/containers/live"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+        exclude-patterns: ["*benethos-mailbox-service*"]

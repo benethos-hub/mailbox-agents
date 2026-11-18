@@ -1,5 +1,11 @@
 # Operation
 
+- **Release (alpha, planned):** `publish.yml` publishes a GitHub release
+  to PyPI as `benethos-mailbox-agents` and to ghcr.io as the image of the
+  same name, for amd64 and arm64, once the CI of its commit on `main` is
+  green. The tag is `v` and the version of `pyproject.toml`. A manual run
+  is the trial: it checks the package without uploading and pushes the
+  image as `edge`.
 - **Container:** non-root (uid 10001), read-only root file system, no
   capabilities, `no-new-privileges`, one volume for the state file, the
   token and the key mounted as files and named in `*_FILE` settings, at

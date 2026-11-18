@@ -10,6 +10,13 @@
   [state](state.md) and [agent contract](agent-contract.md) to the code
   where they can be compared.
 - Async tests run with pytest-asyncio.
+- The CI, `.github/workflows/ci.yml`, runs the gates on every push to
+  `main` and every pull request, the tests on Python 3.11 to 3.15. Besides
+  them: a fresh install of the wheel without the lockfile, the tests
+  against the lowest versions `pyproject.toml` allows, an audit of
+  `uv.lock`, CodeQL, hadolint, the brand assets, and the image built for
+  amd64 and arm64 with the compose files checked. `freshness.yml` reports
+  newer releases once a day, and Dependabot raises the pins once a week.
 - Live checks are scripts in `live/`, run by hand against a test account.
   `containers/live/` holds it (decided 2026-11-17): a mail server of our
   own, Stalwart, in a local container, with an account made for the agents

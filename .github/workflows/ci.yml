@@ -1,0 +1,249 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Nothing here writes anything back but the coverage badge, which asks for
+# its own permission. Without this the token gets whatever the repository
+# default happens to be.
+permissions:
+  contents: read
+
+jobs:
+  # brand, lint, test, lowest-versions, audit, coverage-badge, codeql and
+  # dockerfile-lint are the organisation's reusable workflows in
+  # benethos-hub/.github, the same for every Python project there. They are
+  # followed at main on purpose, so a rule changed there applies here on the
+  # next run. What stays here is what only this project has: fresh-install
+  # and docker.
+
+  # assets/brand/icon.svg, and a 512x512 icon.png and a 1280x640
+  # social-preview.png rendered from it by assets/build.py, neither older
+  # than the SVG.
+  brand:
+    uses: benethos-hub/.github/.github/workflows/brand.yml@main
+
+  # uv.lock in step with pyproject.toml, ruff, the formatting and mypy. The
+  # dev tools are a dependency group, which uv sync takes by default.
+  lint:
+    uses: benethos-hub/.github/.github/workflows/python-lint.yml@main
+
+  # pytest on every supported Python against uv.lock, and on the newest the
+  # coverage with its floor of 80 %, which pyproject.toml sets as well. The
+  # suite is offline: the mailbox service and the gateway are mocked. live/
+  # is not collected, it is the only part that reaches a mail server.
+  #
+  # The versions are named here although the workflow has the same
+  # defaults: which Pythons this project supports is its own decision, in
+  # step with requires-python and the classifiers.
+  test:
+    uses: benethos-hub/.github/.github/workflows/python-tests.yml@main
+    with:
+      python-versions: '["3.11", "3.12", "3.13", "3.14", "3.15"]'
+      coverage-python: "3.15"
+      cov: benethos_mailbox_agents
+      badge: true
+      timeout-minutes: 10
+
+  # The coverage badge in the README, as coverage.json on the badges branch.
+  # On a push to main only, so it shows main's coverage and is no required
+  # check.
+  coverage-badge:
+    if: github.event_name == 'push'
+    needs: test
+    uses: benethos-hub/.github/.github/workflows/coverage-badge.yml@main
+    permissions:
+      contents: write # push coverage.json to the badges branch
+
+  # Every other job installs from uv.lock. This one resolves the dependencies
+  # the way a user does, from the wheel and without a lockfile, so a range in
+  # pyproject.toml that lets a breaking release in shows here and not after
+  # a release.
+  fresh-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Build the wheel
+        run: uv build --wheel
+
+      - name: Install it into a clean environment and start it
+        run: |
+          set -euo pipefail
+          uv venv /tmp/fresh
+          uv pip install --python /tmp/fresh/bin/python dist/*.whl
+          echo "--- resolved dependency versions ---"
+          uv pip list --python /tmp/fresh/bin/python
+          echo "--- import, agents and entry point ---"
+          # An assertion, not a report: every agent the package ships is
+          # found, so a wheel that leaves an agent's prompts or modules out
+          # fails here.
+          /tmp/fresh/bin/python - <<'PY'
+          import benethos_mailbox_agents as package
+          from benethos_mailbox_agents.contract import discover
+
+          names = sorted(discover())
+          expected = ["awaiting_reply", "counting", "inquiries", "invoices", "sorting"]
+          assert names == expected, f"agents found: {names}"
+          print("version", package.__version__, "agents", ", ".join(names))
+          PY
+          /tmp/fresh/bin/benethos-mailbox-agents --help > /dev/null
+          echo "OK: a fresh install imports, finds its agents and starts"
+
+  # The other half of what fresh-install checks: every direct dependency at
+  # its declared lower bound, on the oldest supported Python, without the
+  # lockfile, and the tests against them. The test tools at the floors the
+  # dev group declares. The audit checks those versions as well. A red run
+  # means a lower bound in pyproject.toml needs raising.
+  lowest-versions:
+    uses: benethos-hub/.github/.github/workflows/python-lowest-versions.yml@main
+    with:
+      python-version: "3.11"
+      requirements: |
+        pytest>=9.1.1
+        pytest-cov>=7.1.0
+        pytest-asyncio>=1.5.0
+      audit: true
+      timeout-minutes: 10
+
+  # Every version pinned in uv.lock, for every platform and Python, against
+  # PyPI and OSV. GitHub's dependency graph does not read uv.lock, so nothing
+  # else covers the packages that land in the image.
+  audit:
+    uses: benethos-hub/.github/.github/workflows/python-dependency-audit.yml@main
+
+  # CodeQL on the Python code and on the workflows, with the security and the
+  # quality queries. Findings go to Security, Code scanning, and never fail
+  # this job, so it is no required check. codeql.yml runs the same analysis
+  # once a week.
+  codeql:
+    uses: benethos-hub/.github/.github/workflows/codeql.yml@main
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      languages: python,actions
+
+  # hadolint over the Dockerfile. Findings go to Security, Code scanning, and
+  # the job stays green on them. The docker job below builds the image, this
+  # one reads the file.
+  dockerfile-lint:
+    uses: benethos-hub/.github/.github/workflows/dockerfile-lint.yml@main
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      files: containers/**/Dockerfile
+      trusted-registries: docker.io ghcr.io
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build image
+        run: docker build -f containers/images/mailbox-agents/Dockerfile -t benethos-mailbox-agents:ci .
+
+      # The image runs as uid 10001, starts, and every agent is in it. The
+      # agents need a mailbox service to do more, which the live checks of
+      # live/ bring, by hand.
+      - name: The image starts and holds every agent
+        run: |
+          set -euo pipefail
+          user=$(docker inspect -f '{{.Config.User}}' benethos-mailbox-agents:ci)
+          if [ "$user" != "10001" ]; then
+            echo "::error::the image runs as '$user', not as 10001"
+            exit 1
+          fi
+          docker run --rm --network none benethos-mailbox-agents:ci --help > /dev/null
+          docker run --rm --network none --entrypoint python benethos-mailbox-agents:ci -c "
+          from benethos_mailbox_agents.contract import discover
+          names = sorted(discover())
+          assert names == ['awaiting_reply', 'counting', 'inquiries', 'invoices', 'sorting'], names
+          print('OK: the image runs as 10001 and holds', ', '.join(names))
+          "
+
+      # No test reaches the Compose files. Both are read as compose resolves
+      # them, with every profile, and three things are asserted: that they
+      # are valid, that every published port stays on the loopback address,
+      # as the metrics have no authentication, and that each folder is what
+      # its name says: development builds from the checkout, production pulls
+      # the published image, and both keep the root file system read-only
+      # and drop every capability. The settings files compose reads are not
+      # versioned, so empty ones stand in for them.
+      - name: Compose files are valid, loopback only, and what their folder says
+        run: |
+          set -euo pipefail
+          mkdir -p containers/live/secrets
+          touch containers/live/secrets/agent.env
+          for agent in counting invoices awaiting_reply inquiries sorting; do
+            touch "containers/production/agents/$agent/.env"
+          done
+          docker compose -f containers/development/compose.yaml \
+            --profile invoices --profile sorting config --format json > /tmp/development.json
+          docker compose -f containers/production/compose.yaml \
+            --env-file containers/production/.env.example \
+            --profile counting --profile invoices --profile awaiting_reply \
+            --profile inquiries --profile sorting \
+            config --format json > /tmp/production.json
+          python3 - <<'PY'
+          import json
+
+          AGENTS = {"counting", "invoices", "awaiting_reply", "inquiries", "sorting"}
+          for folder in ("development", "production"):
+              services = json.load(open(f"/tmp/{folder}.json"))["services"]
+              assert services, f"the {folder} Compose file defines no services"
+              if folder == "production":
+                  assert set(services) == AGENTS, f"production runs {sorted(services)}"
+              for name, service in services.items():
+                  where = f"{folder}: {name}"
+                  for port in service.get("ports") or []:
+                      host_ip = port.get("host_ip")
+                      assert host_ip in ("127.0.0.1", "::1"), (
+                          f"{where} publishes port {port.get('published')} on "
+                          f"{host_ip or 'every interface'}, not on the loopback address"
+                      )
+                  assert service.get("read_only") is True, f"{where} is not read-only"
+                  assert service.get("cap_drop") == ["ALL"], f"{where} keeps capabilities"
+                  if folder == "development":
+                      assert "build" in service, f"{where} does not build from the checkout"
+                  else:
+                      assert "build" not in service, f"{where} builds instead of pulling"
+                      assert service["image"].startswith(
+                          "ghcr.io/benethos-hub/benethos-mailbox-agents:"
+                      ), f"{where} runs {service['image']}, not the published image"
+                  print(f"OK: {where} is loopback only, read-only and "
+                        f"{'builds' if folder == 'development' else 'pulls'}")
+          PY
+
+      # publish.yml publishes linux/amd64 and linux/arm64, but only amd64 is
+      # built above, so an arm64 break would first show at a release. Build
+      # it here as well, into the cache scope buildkit the release reads.
+      # Nothing is loaded or pushed: that the build completes is the check.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build for arm64 as well
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: containers/images/mailbox-agents/Dockerfile
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

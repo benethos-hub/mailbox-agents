@@ -1,0 +1,75 @@
+name: Freshness
+
+# Two questions about the versions, answered once a day in one run and two
+# issues, through the organisation's freshness workflow:
+#
+#   * "Pinned versions have newer releases": every package uv.lock pins that
+#     has a newer release, within the patch windows and beyond them, the
+#     build backend, known vulnerabilities, the images of the Dockerfile and
+#     the compose files, and the actions pinned by commit.
+#   * "Newest dependency versions break the agents": the job newest installs
+#     the newest versions pyproject.toml allows, as a fresh install of the
+#     package does, and runs the tests on them.
+#
+# The run after each completed Publish is for the index job, once it is on:
+# it installs the release just published from PyPI, so a release that does
+# not install shows within minutes.
+#
+# Nothing here commits anything: the upgraded lockfile stays in the runner.
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_run:
+    workflows: [Publish]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: freshness
+
+jobs:
+  newest:
+    name: Newest versions allowed
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test the newest versions allowed
+        uses: benethos-hub/.github/actions/python/freshness-newest@main
+        with:
+          findings: ${{ runner.temp }}/freshness/newest
+          groups: dev
+
+      - name: Leave the result for the report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: freshness-newest
+          path: ${{ runner.temp }}/freshness/newest
+          retention-days: 7
+
+  # Runs whatever happened before: a job that died before its upload is a
+  # line in the report, not a silent gap, since extra-jobs names it.
+  freshness:
+    name: Freshness report
+    needs: newest
+    if: ${{ !cancelled() }}
+    uses: benethos-hub/.github/.github/workflows/freshness.yml@main
+    permissions:
+      contents: read
+      issues: write
+    with:
+      issue-title: Pinned versions have newer releases
+      extra-jobs: newest
+      alarm-title: Newest dependency versions break the agents
+      alarm-resolved: The newest dependency versions work.
+      # Off until the first release is on PyPI: the index job installs the
+      # published package, and there is none yet. Then index: true, and
+      # index-check: $FRESHNESS_PYTHON -m benethos_mailbox_agents --help.
+      index: false
