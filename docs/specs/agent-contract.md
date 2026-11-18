@@ -87,6 +87,9 @@ and not taken. What the stage
 does not allow is recorded as what would have been done, and so is an
 action the agent asks to be `held`, whatever the stage: for a group of
 [sorting](agents/sorting.md) whose folder would lend a forged mail trust.
+An action recorded and not taken is recorded once per message and stage:
+asked for again with the same argument, as by a second `backfill`, it adds
+no row and no log line, and counts as recorded (decided 2026-11-18).
 A folder recorded and not made counts as there for the folder and the move
 below it in the same effect, and they are recorded only too, whatever the
 stage: a stage that records only, or a folder held, records the folders

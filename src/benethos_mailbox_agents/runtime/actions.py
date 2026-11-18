@@ -7,7 +7,7 @@ makes only a folder the agent may make, below a folder that exists and not
 below those three, nor one whose name exists in another case. A message in
 one of them, or in a folder below one, is left alone. What the stage allows is
 carried out, the rest is recorded as what would have been done, and so is
-an action the agent asks to be held. Every
+an action the agent asks to be held, once per message and stage. Every
 action records what was there before, so it can be taken back. An action
 whose result is already there is not taken again, and a message the
 agent moved once is not moved again, so one the owner moved back stays,
@@ -152,7 +152,10 @@ class Executor:
 
         The action is recorded with what was there before, and only then
         taken, so a crash between the two leaves what is needed to take it
-        back. A refused action is logged and not recorded, whether the
+        back. One recorded and not taken in this stage before is not
+        recorded again: it answers ``RECORDED`` without a row or a log
+        line, so the tick still notes its keyword as recorded, not as set.
+        A refused action is logged and not recorded, whether the
         executor or the mailbox service refused it, the write itself
         included. A message that is gone is raised after it is logged, and
         so is a mailbox service that is away, to the loop.
@@ -171,6 +174,10 @@ class Executor:
             and not planned.record_only
         )
         argument, target = planned.argument, planned.target
+        if not executed and self._recorded_before(request, argument):
+            if request.action is Action.CREATE_FOLDER:
+                self._recorded_folders.add((request.ref.account_id, argument))
+            return Outcome.RECORDED
         recorded = self._store.add_action(
             request.ref,
             action=request.action.value,
@@ -273,6 +280,18 @@ class Executor:
         if (request.action is Action.ADD_KEYWORD) == present:
             return None
         return Plan(keyword, {"keywords": list(message.keywords)}, keyword)
+
+    def _recorded_before(self, request: ActionRequest, argument: str) -> bool:
+        """Whether the same action is recorded for the message already, in
+        this stage and not taken: then it is not recorded again, so a
+        ``backfill`` run again adds no row (decided 2026-11-18)."""
+        return any(
+            row.action == request.action.value
+            and row.argument == argument
+            and row.stage == self.stage
+            and not row.executed
+            for row in self._store.actions(request.ref)
+        )
 
     def _moved_before(self, ref: MessageRef) -> bool:
         """Whether the agent moved the message once already: then the

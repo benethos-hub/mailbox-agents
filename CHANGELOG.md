@@ -125,6 +125,9 @@ commit that makes the change. Design decisions live in
   `worker`, is refused with a message naming the agent.
 - The state file and the secrets of the live setup are written readable
   by their owner only.
+- An action recorded and not carried out is recorded once per message and
+  stage. A second `backfill` in `shadow` adds no row to the state file and
+  no line to `report`.
 
 ### Removed
 

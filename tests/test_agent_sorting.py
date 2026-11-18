@@ -225,6 +225,19 @@ async def test_below_full_the_folders_and_the_move_are_recorded(
     ]
 
 
+async def test_a_backfill_run_again_records_nothing_twice(
+    world: Wired, tmp_path: Path
+) -> None:
+    for _ in range(3):
+        assert await run(world, "cloudhost", agent(tmp_path, "shadow"), again=True)
+
+    assert actions(world, "cloudhost") == [
+        ("create_folder", "Providers", False),
+        ("create_folder", "Providers/CloudHost", False),
+        ("move_to_folder", "Providers/CloudHost", False),
+    ]
+
+
 async def test_below_full_a_folder_that_exists_is_not_recorded(
     world: Wired, tmp_path: Path
 ) -> None:

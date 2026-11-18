@@ -89,6 +89,34 @@ async def test_an_action_already_done_is_not_taken_again(world: Wired) -> None:
     assert len(world.store.actions(REF)) == 2
 
 
+async def test_an_action_recorded_before_is_not_recorded_again(
+    world: Wired, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level("INFO")
+    asked = [make("Providers"), make("Providers/CloudHost"), ADD]
+
+    for _ in range(3):
+        assert await maker(world, "shadow")(asked) == [Outcome.RECORDED] * 3
+
+    assert world.service.writes() == []
+    assert [(a.action, a.argument) for a in world.store.actions(REF)] == [
+        ("create_folder", "Providers"),
+        ("create_folder", "Providers/CloudHost"),
+        ("add_keyword", "echo"),
+    ]
+    lines = [r.getMessage() for r in caplog.records if ".actions." in r.name]
+    assert len(lines) == 3
+
+
+async def test_an_action_recorded_in_another_stage_is_recorded_again(
+    world: Wired,
+) -> None:
+    await executor(world, "shadow")([MOVE])
+    await executor(world, "keyword")([MOVE])
+
+    assert [a.stage for a in world.store.actions(REF)] == ["shadow", "keyword"]
+
+
 async def test_removing_a_keyword_that_is_not_there_does_nothing(world: Wired) -> None:
     assert await executor(world)([REMOVE]) == [Outcome.PRESENT]
 
