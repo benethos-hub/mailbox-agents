@@ -1,9 +1,10 @@
 """The mailbox service: the only module that imports benethos_mailbox_client.
 
 It offers what the agents need of the service and nothing else: the change
-feed, a message, a thread, the folders, a keyword set or taken off, and a
-move. There is no way here to send, delete, trash or create a folder, so
-the runtime cannot do any of it whatever an agent asks. Every answer is
+feed, the messages of the last days for a backfill, a message, a thread,
+the folders, a keyword set or taken off, and a move. There is no way here
+to send, delete, trash or create a folder, so the runtime cannot do any of
+it whatever an agent asks. Every answer is
 turned into a record of :mod:`records`, and every failure into an error of
 :mod:`errors`. See SPECS.md section 5.
 """
@@ -148,8 +149,8 @@ class Mailbox:
         accounts: list[str] | None = None,
         roles: tuple[str, ...] = ("inbox", "sent"),
     ) -> list[MessageRef]:
-        """The messages received from ``since`` on in the folders of
-        ``roles``, for a backfill. The service lists the inbox alone when
+        """The messages from ``since`` on in the folders of ``roles``,
+        received or sent, for a backfill. The service lists the inbox alone when
         no folder is named, so each role is asked for by itself."""
         refs: dict[MessageRef, None] = {}
         for role in roles:

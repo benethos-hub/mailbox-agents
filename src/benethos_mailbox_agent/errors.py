@@ -94,13 +94,14 @@ class UnavailableError(MailboxAgentError):
 
 
 class MailboxUnavailableError(UnavailableError):
-    """The mailbox service did not answer, or answered with a 5xx."""
+    """The mailbox service did not answer, or answered with a 5xx or 429."""
 
     code = "mailbox_unavailable"
 
 
 class GatewayUnavailableError(UnavailableError):
-    """The model gateway did not answer, or answered with a 5xx or 429."""
+    """The model gateway did not answer, or answered with a 5xx, 408 or
+    429."""
 
     code = "gateway_unavailable"
 
@@ -146,7 +147,9 @@ class LimitReachedError(MailboxAgentError):
 
 
 class ActionRefusedError(MailboxAgentError):
-    """The runtime refused an action: one the agent did not declare, or a
-    folder that does not exist."""
+    """The runtime refused an action: one the agent did not declare, an
+    account it does not work on, a keyword not its own, a folder that does
+    not exist, or a message or folder in or below the trash, junk or
+    spam."""
 
     code = "action_refused"
