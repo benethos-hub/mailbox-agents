@@ -354,7 +354,10 @@ Rules:
   prompt version and model is not run again. A repeated feed entry is
   harmless.
 - **The cursor moves last.** A crash repeats work, it does not skip mail.
-- **One writer.** A process is the only writer of its state file.
+- **One writer.** A process is the only writer of its state file. It holds
+  an exclusive lock on `<agent>.db.lock` beside it while the file is open,
+  so `run` or `backfill` beside a running `worker` is refused. Readers
+  such as `status` and `report` stay free (decided 2026-11-17).
 - **A new prompt or model does not rewrite history.** `backfill` runs old
   messages again under the new version and keeps both results.
 

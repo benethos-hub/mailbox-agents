@@ -45,9 +45,21 @@ def test_a_new_file_runs_every_migration_in_wal_mode(store: Store) -> None:
 
 def test_opening_again_runs_nothing_twice(path: Path, store: Store) -> None:
     store.set_cursor("s1", NOW)
+    store.close()
     with Store.open(path) as again:
         assert again.migrate() == len(MIGRATIONS)
         assert again.cursor() == "s1"
+
+
+def test_one_writer_per_state_file(path: Path, store: Store) -> None:
+    with pytest.raises(ConfigError, match="already running: one writer"):
+        Store.open(path)
+    with Store.open(path, read_only=True) as reader:
+        assert reader.cursor() is None
+
+    store.close()
+    with Store.open(path) as again:
+        again.set_cursor("s2", NOW)
 
 
 def test_the_tables_are_those_of_specs_section_9(store: Store) -> None:

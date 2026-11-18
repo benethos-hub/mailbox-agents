@@ -61,3 +61,5 @@ commit that makes the change. Design decisions live in
   model as its escape, so a subject cannot move the cursor or fake a line.
 - The gateway is reached over https, or over http to this machine. http to
   another machine needs `MAILBOX_AGENT_GATEWAY_ALLOW_HTTP`.
+- A second writer of a state file, such as `run` beside a running
+  `worker`, is refused with a message naming the agent.

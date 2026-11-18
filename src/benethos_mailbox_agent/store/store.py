@@ -12,13 +12,14 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import sys
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from types import TracebackType
-from typing import Any
+from typing import IO, Any
 
 from ..errors import ConfigError
 from ..records import MessageRef, OpenItem, StepResult
@@ -38,6 +39,37 @@ STATES = ("pending", "skipped", "decided", "done", "failed")
 def path_for(data_dir: Path, agent: str) -> Path:
     """Where the state file of ``agent`` lives."""
     return data_dir / f"{agent}.db"
+
+
+def _lock(path: Path) -> IO[bytes]:
+    """An exclusive lock on ``<path>.lock``, held while the handle is open:
+    one writer per state file. Another writer is refused at once."""
+    handle = path.with_name(path.name + ".lock").open("a+b")
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        raise ConfigError(
+            f"{path.stem} is already running: one writer per state file"
+        ) from None
+    return handle
+
+
+def _unlock(handle: IO[bytes]) -> None:
+    if sys.platform == "win32":
+        import msvcrt
+
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    handle.close()
 
 
 def _text(moment: datetime) -> str:
@@ -74,26 +106,41 @@ class ActionRow:
 class Store:
     """The state file of one agent."""
 
-    def __init__(self, connection: sqlite3.Connection, read_only: bool) -> None:
+    def __init__(
+        self,
+        connection: sqlite3.Connection,
+        read_only: bool,
+        lock: IO[bytes] | None = None,
+    ) -> None:
         self._db = connection
         self.read_only = read_only
+        self._lock = lock
 
     # -- opening ----------------------------------------------------------------
 
     @classmethod
     def open(cls, path: Path, *, read_only: bool = False) -> Store:
         """Open the file at ``path``. A writer creates it and runs the
-        migrations it lacks. A reader needs it to exist and to be current."""
+        migrations it lacks. A reader needs it to exist and to be current.
+        A writer holds a lock beside the file until it is closed, so a
+        second writer, such as ``run`` beside a running ``worker``, is
+        refused."""
         if read_only:
             if not path.is_file():
                 raise ConfigError(f"no state file {path.name}")
             connection = sqlite3.connect(
                 f"{path.resolve().as_uri()}?mode=ro", uri=True, isolation_level=None
             )
+            lock = None
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            connection = sqlite3.connect(path, isolation_level=None)
-        store = cls(connection, read_only)
+            lock = _lock(path)
+            try:
+                connection = sqlite3.connect(path, isolation_level=None)
+            except BaseException:
+                _unlock(lock)
+                raise
+        store = cls(connection, read_only, lock)
         try:
             connection.execute("PRAGMA busy_timeout = 5000")
             if read_only:
@@ -103,12 +150,15 @@ class Store:
                 connection.execute("PRAGMA synchronous = NORMAL")
                 store.migrate()
         except BaseException:
-            connection.close()
+            store.close()
             raise
         return store
 
     def close(self) -> None:
         self._db.close()
+        if self._lock is not None:
+            _unlock(self._lock)
+            self._lock = None
 
     def __enter__(self) -> Store:
         return self
