@@ -70,7 +70,7 @@ other. A new action is added here first, with how it is taken back.
 The runtime carries out an action only on these terms: it is declared, a
 keyword is the agent's own, a move goes into a folder that exists and is
 neither the trash, junk or spam nor below them, the message itself is
-not in one of them, and the account is one the agent works on. A folder
+in none of them nor in a folder below one, and the account is one the agent works on. A folder
 is made only when the agent's `may_create` answers yes for its path, the
 folder above it exists and is none of those three nor below them, and no
 folder of the same name exists in another case. A folder below a missing

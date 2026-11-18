@@ -5,7 +5,7 @@ agent declared, a keyword only if it is the agent's own, a move only into a
 folder that exists and is not the trash, junk or spam, nor below them, and
 makes only a folder the agent may make, below a folder that exists and not
 below those three, nor one whose name exists in another case. A message in
-one of them is left alone. What the stage allows is
+one of them, or in a folder below one, is left alone. What the stage allows is
 carried out, the rest is recorded as what would have been done, and so is
 an action the agent asks to be held. Every
 action records what was there before, so it can be taken back. An action
@@ -201,11 +201,11 @@ class Executor:
     ) -> tuple[str, dict[str, Any], str] | None:
         """The argument to record, what was there before and the target, or
         None when the result is already there."""
-        if any(f.role in FORBIDDEN_ROLES for f in message.folders):
+        account = request.ref.account_id
+        if await self._in_forbidden(account, message):
             raise ActionRefusedError("the message is in the trash, junk or spam")
         if request.action is Action.MOVE_TO_FOLDER:
             path = request.folder or ""  # never empty, _admissible checked it
-            account = request.ref.account_id
             folder = await self._mailbox.folder_at(account, path)
             if folder is None and (account, path) in self._recorded_folders:
                 # Made in a stage that records only: so is the move.
@@ -213,7 +213,7 @@ class Executor:
                 return path, {"folders": before}, ""
             if folder is None:
                 raise ActionRefusedError("the target folder does not exist")
-            if await self._forbidden(request.ref.account_id, folder):
+            if await self._forbidden(account, folder):
                 raise ActionRefusedError("no agent moves a message there")
             before = [f.id for f in message.folders]
             if before == [folder.id]:
@@ -222,7 +222,7 @@ class Executor:
                 raise ActionRefusedError("the agent moved this message before")
             return folder.path, {"folders": before}, folder.id
         if request.action is Action.CREATE_FOLDER:
-            return await self._plan_folder(request.ref.account_id, request.folder)
+            return await self._plan_folder(account, request.folder)
         keyword = self.agent.keyword
         # IMAP keywords ignore case, and a service may answer them in lower
         # case (measured 2026-11-18 at Stalwart through service 0.7.5).
@@ -261,6 +261,13 @@ class Executor:
             if await self._forbidden(account_id, parent):
                 raise ActionRefusedError("no agent makes a folder there")
         return path, {}, path
+
+    async def _in_forbidden(self, account_id: str, message: MailMessage) -> bool:
+        """Whether ``message`` lies in the trash, junk or spam, or below one."""
+        for folder in message.folders:
+            if await self._forbidden(account_id, folder):
+                return True
+        return False
 
     async def _forbidden(self, account_id: str, folder: FolderRef) -> bool:
         """Whether ``folder`` is the trash, junk or spam, or lies below one."""

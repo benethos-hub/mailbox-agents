@@ -174,3 +174,6 @@ commit that makes the change. Design decisions live in
   is the loop's last sign of progress, not its last complete pass.
 - The commands that open a state file to write log when they made it or
   brought its schema forward.
+- A message in a folder below the trash, junk or spam, such as
+  `Trash/Old`, is left alone like one in the folder itself: no agent
+  moves it or sets a keyword on it.

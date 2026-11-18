@@ -141,7 +141,7 @@ async def test_a_refused_action_is_neither_taken_nor_recorded(
     assert world.store.actions() == []
 
 
-@pytest.mark.parametrize("folder", ["trash", "junk"])
+@pytest.mark.parametrize("folder", ["trash", "junk", "trash-sub"])
 @pytest.mark.parametrize("request_", [ADD, MOVE], ids=["keyword", "move"])
 async def test_a_message_in_the_trash_or_junk_is_left_alone(
     tmp_path: Path, folder: str, request_: ActionRequest
