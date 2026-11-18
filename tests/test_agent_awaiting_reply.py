@@ -245,6 +245,22 @@ async def test_a_quote_not_in_the_message_opens_nothing(world: World) -> None:
 # -- what closes an item ------------------------------------------------------------
 
 
+async def test_a_reply_to_a_sent_message_deleted_since_blocks_nothing(
+    world: World,
+) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    del world.w.service.messages[(ACCOUNT, "s1")]
+
+    world.add(received("r1"))
+    await world.run()
+
+    found = world.w.store.message(ref("r1"))
+    assert found is not None and found.state == "skipped"
+    assert world.w.store.cursor() == world.w.service.state
+
+
 async def test_a_reply_in_the_thread_closes_it_and_takes_the_keyword_off(
     world: World,
 ) -> None:

@@ -77,6 +77,22 @@ async def test_a_new_message_is_decided_and_marked(world: Wired) -> None:
     assert world.store.cursor() == "2"
 
 
+async def test_a_refused_write_blocks_nothing(world: Wired) -> None:
+    run = worker(world)
+    await run.run_pass()
+    world.service.write_refusal = (422, "keyword_refused")
+    world.service.add(wire_message("m1", subject="Your invoice"))
+    world.service.add(wire_message("m2", subject="Your invoice too"))
+    world.fake_gateway.answer(MATCH, MATCH)
+
+    await run.run_pass()
+
+    assert world.store.cursor() == "2"
+    assert (_state(world, "m1"), _state(world, "m2")) == ("done", "done")
+    assert world.store.actions() == []
+    assert world.service.messages[(ACCOUNT, "m1")]["keywords"] == []
+
+
 def test_an_agent_reads_the_mailbox_and_cannot_write_it(world: Wired) -> None:
     reader = worker(world).context().reader
 

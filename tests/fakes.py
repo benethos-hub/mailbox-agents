@@ -104,6 +104,8 @@ class FakeService:
         self.down = False
         # Status and code every request is refused with while set.
         self.refusal: tuple[int, str] | None = None
+        # Status and code every write is refused with while set.
+        self.write_refusal: tuple[int, str] | None = None
         self.requests: list[httpx.Request] = []
 
     # -- filling ---------------------------------------------------------------
@@ -150,6 +152,8 @@ class FakeService:
             return _error(503, "unavailable")
         if self.refusal:
             return _error(*self.refusal)
+        if self.write_refusal and request.method == "PATCH":
+            return _error(*self.write_refusal)
         parts = [unquote(p) for p in request.url.path.split("/")[2:]]
         route: Callable[[httpx.Request, list[str]], httpx.Response] | None = {
             ("GET", "changes"): self._changes,

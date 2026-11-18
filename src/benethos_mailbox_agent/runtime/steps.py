@@ -152,8 +152,25 @@ class StepRunner:
         if not decision.actionable:
             self.metrics.answer_refused(decision.refused or "")
             return self._state(ref, "decided")
-        requests = await self.agent.effect(decision, message, self.context(calls))
-        await self._effects(requests)
+        return await self._act(decision, message, calls, attempts)
+
+    async def _act(
+        self, decision: Decision, message: MailMessage, calls: Calls, attempts: int
+    ) -> str:
+        """Ask the agent what to do and have it done. A refusal of what the
+        agent read for it, such as an earlier message of the thread deleted
+        since, ends the message as skipped when it is gone, and counts as
+        an attempt otherwise."""
+        ref = message.ref
+        try:
+            requests = await self.agent.effect(decision, message, self.context(calls))
+            await self._effects(requests)
+        except MailboxRefusedError as exc:
+            logbook.step_failed(self.agent.name, ref.message_id, "effect", exc)
+            self.metrics.step_failed(exc.code)
+            if exc.status == 404:
+                return self._state(ref, "skipped")
+            return self._retry(ref, attempts)
         return self._state(ref, "done")
 
     def _baseline(self, message: MailMessage) -> None:

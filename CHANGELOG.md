@@ -65,3 +65,10 @@ commit that makes the change. Design decisions live in
   `worker`, is refused with a message naming the agent.
 - The state file and the secrets of the live setup are written readable
   by their owner only.
+
+### Fixed
+
+- A write the mailbox service refuses, such as a keyword the provider
+  does not take, and a message an agent reads for its actions that was
+  deleted since, no longer stop the agent before its cursor. The refusal
+  is logged and the next messages are taken up.
