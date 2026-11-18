@@ -171,9 +171,14 @@ def report(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def health(args: argparse.Namespace, settings: Settings) -> int:
-    """0 while the agent's loop makes progress, 1 when it does not."""
+    """0 while the agent's loop makes progress, 1 when it does not, a
+    state file not there yet included: Docker keeps 2 for itself."""
     name = load(args.agent).name
-    with Store.open(path_for(settings.data_dir, name), read_only=True) as store:
+    path = path_for(settings.data_dir, name)
+    if not path.is_file():
+        print(f"{name}: unhealthy, no pass yet")
+        return 1
+    with Store.open(path, read_only=True) as store:
         found = check(store, settings, now())
     print(f"{name}: {'healthy' if found.healthy else 'unhealthy'}, {found.reason}")
     return 0 if found.healthy else 1

@@ -78,3 +78,5 @@ commit that makes the change. Design decisions live in
 - A gateway that is away holds up only the messages that need it: the
   others are taken up, and the tick marks what is due, unless a message
   still due waits for another reason.
+- `health` answers 1 for an agent without a state file yet, not 2, which
+  Docker keeps for itself.

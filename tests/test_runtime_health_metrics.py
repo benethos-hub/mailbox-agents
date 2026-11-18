@@ -143,7 +143,8 @@ def test_health_on_the_command_line(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     configure(monkeypatch)
-    assert main(["health", "--agent", "counting"]) == 2
+    assert main(["health", "--agent", "counting"]) == 1
+    assert "counting: unhealthy, no pass yet" in capsys.readouterr().out
 
     main(["run", "--agent", "counting"])
     assert main(["health", "--agent", "counting"]) == 0
