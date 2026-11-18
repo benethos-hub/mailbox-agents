@@ -21,8 +21,8 @@ that carries the invoice for its payment is an invoice too, whatever it
 calls itself. Only a confirmation of a payment with no invoice is the near
 miss `payment_receipt` (decided 2026-11-18: the owner's receipts of a
 subscription carry the invoice, and prompt `v1` left them out). A credit
-note (German `Gutschrift`) counts as an invoice too: it books like one with the
-opposite sign (decided 2026-11-18 for now, prompt `v3`).
+note (German `Gutschrift`) counts as an invoice too: it books like one with
+the opposite sign (decided 2026-11-18 for now, prompt `v3`).
 
 **The folder says whose invoice it is (decided 2026-11-18).** `invoices`
 asks one question: is this message an invoice? It no longer asks from which

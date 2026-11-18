@@ -41,11 +41,11 @@ Further rules:
   found (decided 2026-11-17, case and punctuation forgiven 2026-11-18: of
   13 quotes the shadow run on the owner's account refused, none was
   invented, and every one differed in such marks or in a few characters).
-  A value code found by a rule,
-  such as the group of a sender rule of `sorting`, carries no quote, so
-  nothing of the mail is stored for it. A field whose quote is not found is dropped, and
-  a label whose quote is not found is recorded and not acted on. A
-  confidence the model reports about itself is not used.
+  A value code found by a rule, such as the group of a sender rule of
+  `sorting`, carries no quote, so nothing of the mail is stored for it. A
+  field whose quote is not found is dropped, and a label whose quote is
+  not found is recorded and not acted on. A confidence the model reports
+  about itself is not used.
 - **Reversible only.** Every action records what was there before.
 - **Secrets never travel.** The service token and the gateway key are never
   logged, never stored in the state file and redacted from error text.

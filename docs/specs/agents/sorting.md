@@ -150,12 +150,12 @@ contract](../agent-contract.md)). The keyword is its own and no other agent
 sets it, so a move by `sorting` and a move by `invoices` stay told apart.
 The keyword is asked for after the move in every stage. The runtime takes
 nothing after a refused move and records only what follows a move recorded
-only, by the stage or for a held group, so it never stands without the
-move (decided 2026-11-18). Below `full` and for a held group the state
-file holds it as recorded and not set. The name has no `$` in front, as IMAP registers
-such keywords with meanings (`$Junk`, `$label1`), and it carries the
-prefix `agent-` of the [agent contract](../agent-contract.md), which no mail
-client or other tool is known to use. `MAILBOX_AGENTS_KEYWORD` names
+only, by the stage or for a held group, so it never stands without the move
+(decided 2026-11-18). Below `full` and for a held group the state file
+holds it as recorded and not set. The name has no `$` in front, as IMAP
+registers such keywords with meanings (`$Junk`, `$label1`), and it carries
+the prefix `agent-` of the [agent contract](../agent-contract.md), which no
+mail client or other tool is known to use. `MAILBOX_AGENTS_KEYWORD` names
 another.
 
 ### By stage
