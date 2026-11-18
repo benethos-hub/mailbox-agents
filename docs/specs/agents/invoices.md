@@ -44,7 +44,12 @@ looks in are a setting, and it knows nothing of groups or sender rules.
 
 The inbox is always looked in. A folder is named by its path, case
 counting. A message in a folder below a named one, such as the subfolder
-itself, is not looked at, so an invoice is not asked about twice.
+itself, is not looked at, so an invoice is not asked about twice. The
+subfolder of a folder it looks in, the folders between the two and the
+inbox folder are never looked in, even where the settings would take them
+in: `Invoices,Invoices/*` takes in `Invoices/Rechnungen`, and `*` an inbox
+folder at the top. An invoice put there is not filed again, and no empty
+subfolder is made below it.
 
 **`*` takes in the owner's own folders (decided 2026-11-18).** It covers
 every folder at the top that has no role, the owner's own among them, so

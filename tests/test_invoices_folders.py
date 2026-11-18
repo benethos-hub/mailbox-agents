@@ -127,6 +127,25 @@ def test_the_inbox_folder_is_needed_and_not_made() -> None:
     assert not found.may_create("Rechnungen/Eingang", by_path(folder("Rechnungen")))
 
 
+def test_the_subfolder_of_a_folder_it_looks_in_is_not_looked_in() -> None:
+    found = places("Invoices", "Invoices/*", subfolder="{folder}/Rechnungen/Eingang")
+
+    assert found.looks_in(folder("Invoices"))
+    assert found.looks_in(folder("Invoices/Hosting"))
+    assert not found.looks_in(folder("Invoices/Rechnungen"))
+    known = by_path(folder("Invoices"), folder("Invoices/Rechnungen"))
+    assert not found.may_create("Invoices/Rechnungen/Rechnungen", known)
+    assert found.may_create("Invoices/Rechnungen", known)
+
+
+def test_the_inbox_folder_is_not_looked_in() -> None:
+    found = places("*", subfolder="{folder}/Rechnungen", inbox="Invoices")
+
+    assert not found.looks_in(folder("Invoices"))
+    assert found.looks_in(folder("Acme"))
+    assert not found.may_create("Invoices/Rechnungen", by_path(folder("Invoices")))
+
+
 @pytest.mark.parametrize(
     ("folders", "subfolder", "inbox", "says"),
     [

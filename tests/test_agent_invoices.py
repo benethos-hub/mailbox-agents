@@ -166,6 +166,45 @@ async def test_star_takes_in_every_folder_at_the_top(world: Wired) -> None:
     assert mail(world, "at-top")["folder_ids"] == ["inv/Rechnungen"]
 
 
+async def again(world: Wired, message_id: str, the_agent: Invoices) -> str:
+    """Take a message up anew, as ``backfill`` does, and run it."""
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    world.store.enqueue(ref, world.clock(), again=True)
+    await worker(world, the_agent).process_due()
+    row = world.store.message(ref)
+    assert row is not None
+    return row.state
+
+
+async def test_a_filed_invoice_in_a_folder_named_too_is_not_filed_again(
+    world: Wired,
+) -> None:
+    named = agent(invoices_folders=["Invoices", "Invoices/*"])
+    world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-78"))
+    await run(world, "at-top", named)
+    assert mail(world, "at-top")["folder_ids"] == ["inv/Rechnungen"]
+    made = world.service.made()
+
+    assert await again(world, "at-top", named) == "skipped"
+
+    assert world.service.made() == made
+    assert mail(world, "at-top")["folder_ids"] == ["inv/Rechnungen"]
+
+
+async def test_an_invoice_in_the_inbox_folder_is_not_filed_again(
+    world: Wired,
+) -> None:
+    top = agent(invoices_folders=["*"], invoices_inbox_folder="Invoices")
+    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
+    await run(world, "inv-unlisted", top)
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv"]
+
+    assert await again(world, "inv-unlisted", top) == "skipped"
+
+    assert world.service.made() == []
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv"]
+
+
 async def test_without_a_subfolder_an_invoice_is_marked_and_stays(
     world: Wired,
 ) -> None:

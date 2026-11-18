@@ -13,7 +13,10 @@ commas, each written in one of three ways:
 
 The inbox is always looked in. A message in a folder below one looked in,
 such as the subfolder an invoice was put in, is not looked at, so an
-invoice is not asked about twice. ``Parent/*`` and ``*`` are matched
+invoice is not asked about twice. Neither the subfolder nor the inbox
+folder is looked in even where the settings would take it in, as
+``Invoices`` and ``Invoices/*`` take in ``Invoices/Rechnungen``, and ``*``
+an inbox folder at the top. ``Parent/*`` and ``*`` are matched
 against the path of the folder a message lies in, so a folder made after
 the start, by ``sorting`` say, is looked in too.
 
@@ -113,7 +116,15 @@ class Places:
 
     def _by_path(self, path: str, role: str | None) -> bool:
         """Whether the folder at ``path`` is one it looks in, the inbox
-        aside."""
+        aside. Never the inbox folder, nor the subfolder of a folder it
+        looks in or a folder between the two, whatever the settings
+        match: an invoice put there is not filed again."""
+        if path == self.inbox_folder or self._below_one(path):
+            return False
+        return self._matches(path, role)
+
+    def _matches(self, path: str, role: str | None) -> bool:
+        """Whether the settings take in the folder at ``path``."""
         if role in _NEVER:
             return False
         if path in self.named:
@@ -124,6 +135,18 @@ class Places:
         if parent:
             return parent in self.parents
         return self.top
+
+    def _below_one(self, path: str) -> bool:
+        """Whether ``path`` is the subfolder of a folder the settings take
+        in, or a folder between the two. The folder above is judged by
+        its path alone, its role unknown here."""
+        for count in range(1, len(self.subfolder) + 1):
+            suffix = "/".join(self.subfolder[:count])
+            if path.endswith("/" + suffix) and self._matches(
+                path[: -len(suffix) - 1], None
+            ):
+                return True
+        return False
 
     def looks_in(self, folder: FolderRef) -> bool:
         """Whether a message in ``folder`` is one to ask about."""
