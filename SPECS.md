@@ -112,4 +112,4 @@ that only read and sort have been measured.
 | `invoices` | is this an invoice, and from which listed supplier? | built, prompt `v3` | [invoices.md](docs/specs/agents/invoices.md) |
 | `awaiting_reply` | does this sent message wait for an answer? | built | [awaiting_reply.md](docs/specs/agents/awaiting_reply.md) |
 | `inquiries` | is this a project inquiry, and what does it say? | built, prompt `v3` | [inquiries.md](docs/specs/agents/inquiries.md) |
-| `sorting` | which folder does a known sender's mail belong in, and which category within it? | planned, may replace `invoices` | [sorting.md](docs/specs/agents/sorting.md) |
+| `sorting` | is the sender one of a listed group, and which folder is the group's? | planned, no model. `invoices` is planned to move an invoice on within the folder it lies in | [sorting.md](docs/specs/agents/sorting.md) |
