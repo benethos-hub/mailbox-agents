@@ -20,7 +20,7 @@ leaves them `pending`, the cursor moves, and the next pass waits twice as
 long as the last, up to `BACKOFF_CEILING_SECONDS`.
 
 Message states: `pending`, `skipped` (not admitted, or gone from the
-mailbox), `decided` (recorded and not acted on, such as a label whose quote
+mailbox, also when it went in the middle of its actions), `decided` (recorded and not acted on, such as a label whose quote
 was not found), `done` (its effect carried out, in whatever stage),
 `failed` (given up after `MAX_ATTEMPTS`, or more model calls asked for
 than the limit per message allows).

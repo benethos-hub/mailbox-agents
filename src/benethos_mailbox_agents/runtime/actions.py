@@ -55,7 +55,6 @@ class Outcome(StrEnum):
     PRESENT = "present"  # its result was already there
     RECORDED = "recorded"  # the stage does not allow it, it was recorded only
     REFUSED = "refused"  # the executor or the mailbox service refused it
-    GONE = "gone"  # the message is not there any more
     SKIPPED = "skipped"  # a folder for a move that will be refused, not made
 
 
@@ -117,12 +116,13 @@ class Executor:
         """Take the actions of one message in order. Answers what became of
         each, in the order of ``requests``, up to the last one handled.
 
-        After a refused folder or move, or a message that is gone, those
-        after it are not taken and have no outcome: an action asked after
-        a move, such as a keyword that says the message was moved, must not
-        stand without it. For a message the agent moved before, the folders
-        made for its move are skipped: the move will be refused, and an
-        empty folder would stay."""
+        After a refused folder or move, those after it are not taken and
+        have no outcome: an action asked after a move, such as a keyword
+        that says the message was moved, must not stand without it. For a
+        message the agent moved before, the folders made for its move are
+        skipped: the move will be refused, and an empty folder would stay.
+        A message that is gone is logged and raised as MessageGoneError, so
+        the caller ends it as gone, whatever was taken before."""
         self._recorded_folders = set()
         moved = {
             request.ref
@@ -137,9 +137,7 @@ class Executor:
                 continue
             outcome = await self._run(request)
             outcomes.append(outcome)
-            if outcome is Outcome.GONE or (
-                outcome is Outcome.REFUSED and request.action in _FOLDER_ACTIONS
-            ):
+            if outcome is Outcome.REFUSED and request.action in _FOLDER_ACTIONS:
                 break
         return outcomes
 
@@ -150,7 +148,8 @@ class Executor:
         taken, so a crash between the two leaves what is needed to take it
         back. A refused action is logged and not recorded, whether the
         executor or the mailbox service refused it, the write itself
-        included. A mailbox service that is away is raised to the loop.
+        included. A message that is gone is raised after it is logged, and
+        so is a mailbox service that is away, to the loop.
         """
         try:
             self._admissible(request)
@@ -200,8 +199,8 @@ class Executor:
     def _refused(
         self, request: ActionRequest, exc: ActionRefusedError | MailboxRefusedError
     ) -> Outcome:
-        """Log the refusal and count it. Answers ``GONE`` when the message is
-        not there any more, ``REFUSED`` otherwise."""
+        """Log the refusal and count it. Answers ``REFUSED``, and raises the
+        error again when the message is not there any more."""
         record(
             actions.Refused(
                 agent=self.agent.name,
@@ -211,7 +210,9 @@ class Executor:
             )
         )
         self.metrics.step_failed(exc.code)
-        return Outcome.GONE if isinstance(exc, MessageGoneError) else Outcome.REFUSED
+        if isinstance(exc, MessageGoneError):
+            raise exc
+        return Outcome.REFUSED
 
     def _admissible(self, request: ActionRequest) -> None:
         if request.action not in self.agent.actions:

@@ -146,6 +146,24 @@ async def test_an_invoice_in_a_folder_moves_to_its_subfolder(world: Wired) -> No
     assert (found["label"], found["fields"], found["details"]) == ("invoice", {}, {})
 
 
+async def test_an_invoice_gone_while_it_is_filed_is_skipped(
+    world: Wired, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    make = world.service._create_folder
+
+    def and_gone(request: httpx.Request, parts: list[str]) -> httpx.Response:
+        answered = make(request, parts)
+        del world.service.messages[(ACCOUNT, "filed")]
+        return answered
+
+    monkeypatch.setattr(world.service, "_create_folder", and_gone)
+    world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-77"))
+
+    assert await run(world, "filed") == "skipped"
+
+    assert world.service.made() == [{"name": "Rechnungen", "parent_id": "inv-hosting"}]
+
+
 async def test_a_subfolder_that_is_there_is_not_made_again(world: Wired) -> None:
     world.service.folders[ACCOUNT].append(
         {"id": "hz-re", "name": "Rechnungen", "role": None, "parent_id": "inv-hosting"}

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from benethos_mailbox_agents.contract import Action, ActionRequest
-from benethos_mailbox_agents.errors import MailboxUnavailableError
+from benethos_mailbox_agents.errors import MailboxUnavailableError, MessageGoneError
 from benethos_mailbox_agents.records import FolderRef, MessageRef
 from benethos_mailbox_agents.runtime.actions import Executor, Outcome
 from fakes import ACCOUNT, wire_message
@@ -134,9 +134,11 @@ async def test_a_refused_action_is_neither_taken_nor_recorded(
         now=world.clock,
     )
 
-    gone = request_.ref.message_id == "gone"
-    expected = Outcome.GONE if gone else Outcome.REFUSED
-    assert await run([request_]) == [expected]
+    if request_.ref.message_id == "gone":
+        with pytest.raises(MessageGoneError):
+            await run([request_])
+    else:
+        assert await run([request_]) == [Outcome.REFUSED]
     assert world.service.writes() == []
     assert world.store.actions() == []
 

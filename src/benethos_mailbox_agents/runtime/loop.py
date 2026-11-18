@@ -23,6 +23,7 @@ from ..errors import (
     GatewayUnavailableError,
     MailboxAgentError,
     MailboxRefusedError,
+    MessageGoneError,
     UnavailableError,
 )
 from ..logbook import feed, messages, record, worker
@@ -184,8 +185,12 @@ class Worker:
         return observe
 
     async def _observe(self, ref: MessageRef) -> None:
+        """Hand an updated message to the agent and take its actions. A
+        message gone, before or in the middle of its actions, is logged and
+        left."""
         try:
             message = await self._mailbox.message(ref)
+            await self.executor(await self.agent.observe(message, self.context()))
         except MailboxRefusedError as exc:
             record(
                 messages.StepFailed(
@@ -195,8 +200,6 @@ class Worker:
                     error=exc,
                 )
             )
-            return
-        await self.executor(await self.agent.observe(message, self.context()))
 
     async def process_due(self) -> int:
         """Run the steps of the pending messages that are due. Answers how
@@ -251,10 +254,14 @@ class Worker:
         by_message: dict[MessageRef, list[ActionRequest]] = {}
         for request in requests:
             by_message.setdefault(request.ref, []).append(request)
-        for group in by_message.values():
-            for request, outcome in zip(
-                group, await self.executor(group), strict=False
-            ):
+        for ref, group in by_message.items():
+            try:
+                outcomes = await self.executor(group)
+            except MessageGoneError:
+                # No tick could set its keyword again.
+                self.store.close_item(ref, "message_gone", self._now())
+                continue
+            for request, outcome in zip(group, outcomes, strict=False):
                 self._note(request, outcome)
         self._last_tick = now
         record(worker.TickDone(agent=self.agent.name, actions=len(requests)))
@@ -263,11 +270,7 @@ class Worker:
         """Keep on an open item what became of its keyword: set when it is on
         the message, recorded in this stage when the stage did not allow it.
         A refused keyword leaves the item due. An item whose message is not
-        there any more closes as ``message_gone``: no tick could set its
-        keyword again."""
-        if outcome is Outcome.GONE:
-            self.store.close_item(request.ref, "message_gone", self._now())
-            return
+        there any more is closed by the tick as ``message_gone``."""
         if request.action is not Action.ADD_KEYWORD:
             return
         if outcome in (Outcome.DONE, Outcome.PRESENT):
