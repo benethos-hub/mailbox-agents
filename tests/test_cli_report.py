@@ -18,7 +18,7 @@ from benethos_mailbox_agent.records import (
 )
 from benethos_mailbox_agent.store import ActionRow, MessageRow
 from fakes import ACCOUNT, FakeService, wire_message
-from test_cli import configure, service  # noqa: F401 - the fixture
+from helpers import configure
 
 NOW = datetime(2026, 11, 17, 9, 0, tzinfo=UTC)
 REF = MessageRef(account_id=ACCOUNT, message_id="m1")
@@ -86,7 +86,7 @@ def test_render_a_refused_decision_and_a_message_gone() -> None:
 
 
 def test_report_after_a_run(
-    service: FakeService,  # noqa: F811
+    service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -111,7 +111,7 @@ def test_report_after_a_run(
 
 
 def test_report_offline_needs_no_service(
-    service: FakeService,  # noqa: F811
+    service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -136,7 +136,7 @@ def test_report_offline_needs_no_service(
     ],
 )
 def test_report_refusals(
-    service: FakeService,  # noqa: F811
+    service: FakeService,
     capsys: pytest.CaptureFixture[str],
     argv: list[str],
     said: str,

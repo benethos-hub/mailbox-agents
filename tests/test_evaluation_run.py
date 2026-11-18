@@ -15,8 +15,7 @@ from benethos_mailbox_agent.evaluation.gold import GoldItem
 from benethos_mailbox_agent.evaluation.report import build, render, write
 from benethos_mailbox_agent.evaluation.run import evaluate
 from fakes import ACCOUNT, FakeService, wire_message
-from helpers import Echo, settings, wired
-from test_cli import configure, service  # noqa: F401 - the fixture
+from helpers import Echo, configure, settings, wired
 
 WHEN = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
 
@@ -111,7 +110,7 @@ def test_the_report_file_is_named_by_date_versions_and_model(tmp_path: Path) -> 
 
 
 def test_eval_on_the_command_line(
-    service: FakeService,  # noqa: F811
+    service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     tmp_path: Path,
@@ -136,7 +135,7 @@ def test_eval_on_the_command_line(
 
 
 def test_eval_needs_a_gold_file(
-    service: FakeService,  # noqa: F811
+    service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:

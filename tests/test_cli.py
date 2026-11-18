@@ -6,40 +6,18 @@ import asyncio
 import os
 import stat
 import sys
-from collections.abc import Iterator
 from importlib.metadata import version
 from pathlib import Path
 
 import httpx
 import pytest
 
-from benethos_mailbox_agent import __version__, errors
+from benethos_mailbox_agent import __version__
 from benethos_mailbox_agent.cli import PROG, main, session
 from benethos_mailbox_agent.runtime.loop import Worker
 from benethos_mailbox_agent.settings import PREFIX
-from fakes import FakeGateway, FakeService, wire_message
-
-
-@pytest.fixture
-def service(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[FakeService]:
-    """A working directory of its own, settings for the fakes, the fakes
-    as the transports of the command line."""
-    import os
-
-    for name in list(os.environ):
-        if name.startswith(PREFIX):
-            monkeypatch.delenv(name)
-    monkeypatch.chdir(tmp_path)
-    found = FakeService()
-    monkeypatch.setitem(session.TRANSPORTS, "service", found.transport())
-    monkeypatch.setitem(session.TRANSPORTS, "gateway", FakeGateway().transport())
-    yield found
-    errors.forget_secrets()
-
-
-def configure(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_URL", "https://mailbox.example.test")
-    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN", "service-token")
+from fakes import FakeService, wire_message
+from helpers import configure
 
 
 def test_version_is_the_distributions() -> None:

@@ -10,6 +10,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 
+import pytest
 from pydantic import BaseModel
 
 from benethos_mailbox_agent.contract import (
@@ -28,6 +29,7 @@ from benethos_mailbox_agent.records import (
     Evidence,
     MailMessage,
 )
+from benethos_mailbox_agent.runtime.loop import Worker
 from benethos_mailbox_agent.settings import Settings
 from benethos_mailbox_agent.sources.mailbox import Mailbox, connect
 from benethos_mailbox_agent.store import Store
@@ -145,3 +147,20 @@ async def wired(tmp_path: Path) -> AsyncIterator[Wired]:
 
 def settings(**values: object) -> Settings:
     return Settings(model="alias", **values)
+
+
+def configure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The settings the command line needs to reach the fake service."""
+    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_URL", "https://mailbox.example.test")
+    monkeypatch.setenv("MAILBOX_AGENT_SERVICE_TOKEN", "service-token")
+
+
+def worker(world: Wired, agent: Agent | None = None, **values: object) -> Worker:
+    """A worker over the fakes, for ``agent`` or an Echo in stage full."""
+    return Worker(
+        agent=agent or Echo(settings(stage="full", **values)),
+        store=world.store,
+        mailbox=world.mailbox,
+        gateway=world.gateway,
+        now=world.clock,
+    )

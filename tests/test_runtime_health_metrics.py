@@ -5,9 +5,7 @@ from __future__ import annotations
 import asyncio
 import socket
 import urllib.request
-from collections.abc import AsyncIterator
 from datetime import timedelta
-from pathlib import Path
 
 import httpx
 import pytest
@@ -17,16 +15,9 @@ from benethos_mailbox_agent.runtime.health import check, window
 from benethos_mailbox_agent.runtime.loop import Worker
 from benethos_mailbox_agent.runtime.metrics import Metrics
 from fakes import FakeService, wire_message
-from helpers import Echo, Wired, settings, wired
-from test_cli import configure, service  # noqa: F401 - the fixture
+from helpers import Echo, Wired, configure, settings
 
 MATCH = {"label": "match", "quote": "Your invoice"}
-
-
-@pytest.fixture
-async def world(tmp_path: Path) -> AsyncIterator[Wired]:
-    async with wired(tmp_path) as found:
-        yield found
 
 
 def test_the_window_is_three_polls_and_a_model_call() -> None:
@@ -138,7 +129,7 @@ def test_the_metrics_are_served() -> None:
 
 
 def test_health_on_the_command_line(
-    service: FakeService,  # noqa: F811
+    service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -157,7 +148,7 @@ def test_health_on_the_command_line(
 
 
 def test_the_worker_serves_metrics_while_it_runs(
-    service: FakeService,  # noqa: F811
+    service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     configure(monkeypatch)

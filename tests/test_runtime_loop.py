@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from pathlib import Path
 
 import httpx
 import pytest
@@ -24,29 +22,13 @@ from benethos_mailbox_agent.runtime.health import check
 from benethos_mailbox_agent.runtime.loop import Worker
 from benethos_mailbox_agent.runtime.model import Calls
 from fakes import ACCOUNT, wire_message
-from helpers import Echo, Wired, settings, wired
+from helpers import Echo, Wired, settings, worker
 
 MATCH = {"label": "match", "quote": "Your invoice"}
 
 
 def ref(message_id: str) -> MessageRef:
     return MessageRef(account_id=ACCOUNT, message_id=message_id)
-
-
-@pytest.fixture
-async def world(tmp_path: Path) -> AsyncIterator[Wired]:
-    async with wired(tmp_path) as found:
-        yield found
-
-
-def worker(world: Wired, agent: Echo | None = None, **values: object) -> Worker:
-    return Worker(
-        agent=agent or Echo(settings(stage="full", **values)),
-        store=world.store,
-        mailbox=world.mailbox,
-        gateway=world.gateway,
-        now=world.clock,
-    )
 
 
 def _state(world: Wired, message_id: str) -> str:

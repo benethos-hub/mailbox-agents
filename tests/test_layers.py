@@ -254,3 +254,17 @@ def test_the_check_finds_a_relative_import(
 
     assert found == ["benethos_mailbox_agent.store"]
     assert _layer(found[0]) not in MAY_IMPORT["records"]
+
+
+TESTS = Path(__file__).resolve().parent
+
+
+@pytest.mark.parametrize("path", sorted(TESTS.glob("test_*.py")), ids=lambda p: p.name)
+def test_a_test_module_imports_no_other(path: Path) -> None:
+    """What test modules share lives in conftest.py, helpers.py and fakes.py."""
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert not node.module.startswith("test_"), f"imports {node.module}"
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                assert not alias.name.startswith("test_"), f"imports {alias.name}"

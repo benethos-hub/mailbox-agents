@@ -38,9 +38,14 @@ def test_the_file_is_named_after_the_agent(tmp_path: Path) -> None:
     assert path_for(tmp_path, "invoices").name == "invoices.db"
 
 
-def test_a_new_file_runs_every_migration_in_wal_mode(store: Store) -> None:
+def _read(path: Path, sql: str) -> list[tuple[object, ...]]:
+    with closing(sqlite3.connect(path)) as db:
+        return db.execute(sql).fetchall()
+
+
+def test_a_new_file_runs_every_migration_in_wal_mode(path: Path, store: Store) -> None:
     assert store.version == len(MIGRATIONS)
-    assert store._one("PRAGMA journal_mode")[0] == "wal"
+    assert _read(path, "PRAGMA journal_mode") == [("wal",)]
 
 
 def test_opening_again_runs_nothing_twice(path: Path, store: Store) -> None:
@@ -62,15 +67,16 @@ def test_one_writer_per_state_file(path: Path, store: Store) -> None:
         again.set_cursor("s2", NOW)
 
 
-def test_the_tables_are_those_of_specs_section_9(store: Store) -> None:
+def test_the_tables_are_those_of_specs_section_9(path: Path, store: Store) -> None:
     text = (ROOT / "SPECS.md").read_text(encoding="utf-8")
     section = text[text.index("\n## 9. ") : text.index("\n## 10. ")]
     named = set(re.findall(r"^\| `([a-z_]+)` \|", section, flags=re.MULTILINE))
     tables = {
         row[0]
-        for row in store._all(
+        for row in _read(
+            path,
             "SELECT name FROM sqlite_master WHERE type = 'table' "
-            "AND name NOT LIKE 'sqlite_%'"
+            "AND name NOT LIKE 'sqlite_%'",
         )
     }
 
@@ -83,7 +89,8 @@ def test_a_reader_needs_the_file(tmp_path: Path) -> None:
 
 
 def test_a_reader_refuses_a_newer_schema(path: Path, store: Store) -> None:
-    store._write(f"PRAGMA user_version = {len(MIGRATIONS) + 1}")
+    with closing(sqlite3.connect(path)) as db:
+        db.execute(f"PRAGMA user_version = {len(MIGRATIONS) + 1}")
 
     with pytest.raises(ConfigError, match="schema version"):
         Store.open(path, read_only=True)
