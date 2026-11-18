@@ -102,7 +102,10 @@ $compose up -d mailbox-service gateway >/dev/null 2>&1
 model=mail-classifier
 if [ -n "$backend" ]; then
     # The model behind the alias mail-classifier-<gpu|cpu> in litellm.yaml.
-    name=$(sed -n "/model_name: mail-classifier-$backend\$/{n;s#.*model: openai/\([^}]*\)}.*#\1#p}" "$here/litellm.yaml")
+    name=$(awk -v alias="mail-classifier-$backend" '
+        $0 ~ "model_name: " alias "$" { found = 1; next }
+        found && /model: openai\// { sub(/.*model: openai\//, ""); print; exit }
+    ' "$here/litellm.yaml")
     say "the local model $name on the $backend, fetched once into containers/live/models"
     (umask 022 && sh "$here/fetch-models.sh" "$name")
     $compose --profile "$backend" up -d "llama-$backend" >/dev/null 2>&1

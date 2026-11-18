@@ -53,11 +53,11 @@ model_list:
   # 100 W for the rest of the machine (220 W where the CPU computes, as for
   # the 35B model's experts), at $0.40 a kWh. The hardware is not in it.
   - model_name: mail-classifier-gpu
-    litellm_params: &gpu-35b
+    litellm_params: &gpu-qwen35-9b
       <<: *gpu
-      model: openai/qwen3.6-35b-a3b
-      input_cost_per_token: 0.000000036
-      output_cost_per_token: 0.00000064
+      model: openai/qwen3.5-9b
+      input_cost_per_token: 0.0000000066
+      output_cost_per_token: 0.0000004
   - model_name: mail-classifier-cpu
     litellm_params: &cpu-qwen35-4b
       <<: *cpu
@@ -74,11 +74,7 @@ model_list:
       input_cost_per_token: 0.000000002
       output_cost_per_token: 0.00000039
   - model_name: gpu/qwen3.5-9b
-    litellm_params:
-      <<: *gpu
-      model: openai/qwen3.5-9b
-      input_cost_per_token: 0.0000000066
-      output_cost_per_token: 0.0000004
+    litellm_params: *gpu-qwen35-9b
   - model_name: gpu/gemma-4-12b
     litellm_params:
       <<: *gpu
@@ -86,7 +82,11 @@ model_list:
       input_cost_per_token: 0.00000001
       output_cost_per_token: 0.0000005
   - model_name: gpu/qwen3.6-35b-a3b
-    litellm_params: *gpu-35b
+    litellm_params:
+      <<: *gpu
+      model: openai/qwen3.6-35b-a3b
+      input_cost_per_token: 0.000000036
+      output_cost_per_token: 0.00000064
   - model_name: cpu/qwen3-4b-2507
     litellm_params:
       <<: *cpu

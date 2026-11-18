@@ -152,12 +152,14 @@ What decided:
   nine answers of `inquiries` out of eleven.
 - `gemma-4-e4b` named a listed supplier where the gold set has none, the
   one kind of mistake that moves mail into a wrong folder.
-- On the card, `qwen3.6-35b-a3b` is the largest model, and llama.cpp
-  worked 4.1 s on an inquiry with it, against 2.4 s for `qwen3.5-9b`. It
-  fills the card, `--fit` keeps the rest of its experts in main memory.
-  With the prompt `v3` of `inquiries` it gave one quote the mail does not
-  hold, on the card and on the CPU alike, and the evidence check refused
-  that answer. `qwen3.5-9b` and `gemma-4-12b` lost none.
+- On the card, `qwen3.5-9b` agrees on every label, and llama.cpp worked
+  2.4 s on an inquiry with it, for about half the electricity of the
+  largest model, `qwen3.6-35b-a3b`. That one took 4.1 s and fills the card,
+  `--fit` keeps the rest of its experts in main memory. With the prompt
+  `v3` of `inquiries` it gave one quote the mail does not hold, on the
+  card and on the CPU alike, and the evidence check refused that answer.
+  So `mail-classifier-gpu` is `qwen3.5-9b` since 2026-11-18. It was the
+  35B model before `v3`.
 - On the CPU, `qwen3.5-4b` agrees on every label of `inquiries` and
   `invoices`, in an eighth of the 35B model's memory. The 35B model stays
   at hand as `cpu/qwen3.6-35b-a3b`, for a server with 32 GB or more.
