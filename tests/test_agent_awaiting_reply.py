@@ -3,6 +3,7 @@ closing rules of docs/specs/agents/awaiting_reply.md, and each known miss."""
 
 from __future__ import annotations
 
+import time
 import unicodedata
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
@@ -157,6 +158,17 @@ def test_own_text_leaves_the_quote_out() -> None:
 
     assert own_text(text) == "Danke."
     assert own_text("Ok\n> quoted") == "Ok"
+
+
+@pytest.mark.parametrize("start", ["am ", "on "], ids=["german", "english"])
+def test_a_long_line_does_not_hold_up_the_loop(start: str) -> None:
+    """A line that starts like a quote and never ends like one: the
+    patterns of the quote must not try every split of a megabyte."""
+    line = start + ("schrieb " if start == "am " else "wrote ") * 130_000
+    began = time.perf_counter()
+
+    assert own_text(line) == line.strip()
+    assert time.perf_counter() - began < 0.1
 
 
 @pytest.mark.parametrize(

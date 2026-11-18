@@ -31,6 +31,11 @@ _QUOTE_START = re.compile(
     flags=re.IGNORECASE,
 )
 
+# How much of a line the start of a quote is looked for in. The pattern
+# with two ``.+`` takes time in the square of the line's length, and a
+# line that opens a quote is short.
+_QUOTE_LINE = 1000
+
 REQUEST_PHRASES = (
     "bitte",
     "please",
@@ -84,10 +89,13 @@ def _nfc(text: str) -> str:
 
 
 def own_text(text: str) -> str:
-    """The text its sender wrote: everything before the quoted part."""
+    """The text its sender wrote: everything before the quoted part. A
+    line is looked at for the start of a quote in its first
+    :data:`_QUOTE_LINE` characters, so a long line costs no more time than
+    a short one."""
     lines = []
     for line in text.splitlines():
-        if _QUOTE_START.match(_nfc(line).strip()):
+        if _QUOTE_START.match(_nfc(line).strip()[:_QUOTE_LINE]):
             break
         lines.append(line)
     return "\n".join(lines).strip()
