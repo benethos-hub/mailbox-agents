@@ -27,7 +27,7 @@ from ..errors import (
     UnavailableError,
 )
 from ..logbook import feed, messages, record, worker
-from ..records import Event, MessageRef
+from ..records import MESSAGE_GONE, Event, MessageRef
 from ..store import Store
 from .actions import Executor, Outcome, Writer
 from .metrics import Metrics
@@ -261,7 +261,7 @@ class Worker:
                 outcomes = await self.executor(group)
             except MessageGoneError:
                 # No tick could set its keyword again.
-                self.store.close_item(ref, "message_gone", self._now())
+                self.store.close_item(ref, MESSAGE_GONE, self._now())
                 continue
             for request, outcome in zip(group, outcomes, strict=False):
                 self._note(request, outcome)

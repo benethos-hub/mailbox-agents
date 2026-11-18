@@ -28,7 +28,15 @@ from ...contract import (
     Trigger,
 )
 from ...contract.prompts import load_prompt
-from ...records import LABEL, Decision, Event, Evidence, MailMessage, OpenItem
+from ...records import (
+    KEYWORD_REMOVED,
+    LABEL,
+    Decision,
+    Event,
+    Evidence,
+    MailMessage,
+    OpenItem,
+)
 from .schema import Answer, parts, render
 from .text import add_working_days, asks, automatic
 
@@ -204,7 +212,7 @@ class AwaitingReply(Agent):
             and item.keyword_set
             and not message.has_keyword(self.keyword)
         ):
-            await context.items.close(message.ref, "keyword_removed")
+            await context.items.close(message.ref, KEYWORD_REMOVED)
         return []
 
     async def tick(self, now: datetime, context: Context) -> list[ActionRequest]:

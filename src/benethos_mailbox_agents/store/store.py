@@ -22,7 +22,7 @@ from types import TracebackType
 from typing import IO, Any
 
 from ..errors import ConfigError
-from ..records import MessageRef, OpenItem, Step, StepResult
+from ..records import KEYWORD_REMOVED, MessageRef, OpenItem, Step, StepResult
 from .migrations import MIGRATIONS, SCHEMA_VERSION
 
 __all__ = [
@@ -506,11 +506,12 @@ class Store:
             "UPDATE open_items SET opened = ?, due = ?, keyword_set = 0, "
             "keyword_recorded_stage = NULL, closed = NULL, reason = NULL "
             "WHERE account_id = ? AND message_id = ? "
-            "AND (reason IS NULL OR reason != 'keyword_removed')",
+            "AND (reason IS NULL OR reason != ?)",
             _text(now),
             _text(due),
             ref.account_id,
             ref.message_id,
+            KEYWORD_REMOVED,
         )
 
     def item(self, ref: MessageRef) -> OpenItem | None:

@@ -16,7 +16,12 @@ from pathlib import Path
 import pytest
 
 from benethos_mailbox_agents.errors import ConfigError
-from benethos_mailbox_agents.records import MessageRef, StepResult
+from benethos_mailbox_agents.records import (
+    KEYWORD_REMOVED,
+    MESSAGE_GONE,
+    MessageRef,
+    StepResult,
+)
 from benethos_mailbox_agents.store import (
     MIGRATIONS,
     SCHEMA_VERSION,
@@ -24,6 +29,7 @@ from benethos_mailbox_agents.store import (
     Store,
     path_for,
 )
+from benethos_mailbox_agents.store import store as store_module
 from benethos_mailbox_agents.store.migrations import (
     Migration,
     MigrationRegistry,
@@ -289,6 +295,15 @@ def test_an_item_a_person_closed_is_not_restarted(store: Store) -> None:
     item = store.item(REF)
     assert item is not None
     assert (item.is_open, item.reason) == (False, "keyword_removed")
+
+
+def test_the_store_spells_no_reason_an_item_closed_for() -> None:
+    """Why an item closed is the records' to name: the state file only
+    stores it, and reads the one that matters through KEYWORD_REMOVED."""
+    source = inspect.getsource(store_module)
+
+    assert KEYWORD_REMOVED not in source
+    assert MESSAGE_GONE not in source
 
 
 def test_kept_calls_are_purged(store: Store) -> None:
