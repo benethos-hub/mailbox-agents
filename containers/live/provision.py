@@ -32,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import mail  # noqa: E402 - beside this file
+import mail
 
 STALWART = os.environ["STALWART_URL"]
 SERVICE = os.environ["SERVICE_URL"]

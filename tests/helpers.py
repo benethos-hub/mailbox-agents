@@ -143,4 +143,4 @@ async def wired(tmp_path: Path) -> AsyncIterator[Wired]:
 
 
 def settings(**values: object) -> Settings:
-    return Settings(model="alias", **values)  # type: ignore[arg-type]
+    return Settings(model="alias", **values)

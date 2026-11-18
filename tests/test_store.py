@@ -176,7 +176,7 @@ def test_an_unknown_state_is_refused(store: Store) -> None:
 
 def test_a_naive_time_is_refused(store: Store) -> None:
     with pytest.raises(ValueError, match="zone"):
-        store.set_cursor("s", datetime(2026, 1, 1))  # noqa: DTZ001
+        store.set_cursor("s", datetime(2026, 1, 1))
 
 
 def test_a_step_is_found_by_prompt_version_and_model(store: Store) -> None:

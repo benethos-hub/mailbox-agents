@@ -22,7 +22,7 @@ def gold(label: str, **fields: str | None) -> GoldItem:
 def decided(label: str, source: str = "model", **values: str) -> Decision:
     details = {k: v for k, v in values.items() if k.endswith("_source")}
     fields = {k: v for k, v in values.items() if not k.endswith("_source")}
-    return Decision(label=label, source=source, fields=fields, details=details)  # type: ignore[arg-type]
+    return Decision(label=label, source=source, fields=fields, details=details)
 
 
 def test_same_ignores_case_and_whitespace() -> None:

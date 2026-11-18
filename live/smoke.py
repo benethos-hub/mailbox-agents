@@ -164,7 +164,7 @@ async def run(settings: Settings) -> int:
                 said = await check(live)
             except Skip as skip:
                 print(f"skipped  {name}: {skip}")
-            except Exception as exc:  # noqa: BLE001 - every failure is reported
+            except Exception as exc:
                 failed += 1
                 print(f"FAILED   {name}: {type(exc).__name__}: {exc}")
             else:

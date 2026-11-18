@@ -119,6 +119,6 @@ class Metrics:
     def text(self) -> bytes:
         return generate_latest(self.registry)
 
-    def serve(self, port: int, addr: str = "0.0.0.0") -> tuple[WSGIServer, Thread]:  # noqa: S104 - the container's port
+    def serve(self, port: int, addr: str = "0.0.0.0") -> tuple[WSGIServer, Thread]:
         """Serve the metrics on ``port`` in a thread of their own."""
         return start_http_server(port, addr=addr, registry=self.registry)

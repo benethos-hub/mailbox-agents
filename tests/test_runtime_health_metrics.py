@@ -127,7 +127,7 @@ def test_the_metrics_are_served() -> None:
     port = _free_port()
     server, thread = metrics.serve(port, addr="127.0.0.1")
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics") as answer:  # noqa: S310
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics") as answer:
             body = answer.read()
     finally:
         server.shutdown()
@@ -168,7 +168,7 @@ def test_the_worker_serves_metrics_while_it_runs(
     async def one_pass(self: Worker, stop: asyncio.Event) -> None:
         await self.run_pass()
         url = f"http://127.0.0.1:{port}/metrics"
-        with urllib.request.urlopen(url) as answer:  # noqa: S310
+        with urllib.request.urlopen(url) as answer:
             seen.append(answer.read())
 
     monkeypatch.setattr(Worker, "run", one_pass)
