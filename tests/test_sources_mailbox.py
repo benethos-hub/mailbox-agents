@@ -201,6 +201,17 @@ async def test_an_answer_of_the_wrong_shape_is_a_refusal() -> None:
             await mailbox.start()
 
 
+async def test_the_environment_sets_no_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example.test:3128")
+    monkeypatch.setenv("ALL_PROXY", "http://proxy.example.test:3128")
+
+    async with connect("https://mailbox.example.test", "token-value") as mailbox:
+        http = mailbox._client._http
+
+    assert http._mounts == {}
+    assert isinstance(http._transport, httpx.AsyncHTTPTransport)
+
+
 async def test_http_to_another_machine_needs_allowing() -> None:
     with pytest.raises(ConfigError, match="mailbox service"):
         async with connect("http://mailbox.example.test", "token-value"):

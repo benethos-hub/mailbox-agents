@@ -302,7 +302,13 @@ async def connect(
     allow_http: bool = False,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> AsyncIterator[Mailbox]:
-    """A :class:`Mailbox` over a client of its own, closed on the way out."""
+    """A :class:`Mailbox` over a client of its own, closed on the way out.
+
+    Without a transport of a test, the client gets one that reads no proxy
+    and no certificate setting from the environment, as the gateway does.
+    """
+    if transport is None:
+        transport = httpx.AsyncHTTPTransport(trust_env=False)
     try:
         client = MailboxClient(
             base_url=base_url, token=token, transport=transport, allow_http=allow_http
