@@ -61,6 +61,16 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- The agent `invoices` is version 4 with the prompt `v4`. It asks only
+  whether a message is an invoice, no longer from which supplier. It looks
+  in the inbox and in the folders `MAILBOX_AGENT_INVOICES_FOLDERS` names,
+  with `Parent/*` for the folders below one and `*` for every folder at the
+  top without a role, and moves an invoice into the subfolder
+  `MAILBOX_AGENT_INVOICES_SUBFOLDER` names below the folder it lies in,
+  `{folder}/Rechnungen`, made when missing. An invoice in the inbox is
+  marked and stays, unless `MAILBOX_AGENT_INVOICES_INBOX_FOLDER` names a
+  folder. The rules no longer take a listed sender with a file for an
+  invoice. `status` names a folder an agent expects that is missing.
 - An agent moves a message at most once. A message its owner moved back,
   into the inbox or anywhere, stays there, also when `backfill --again`
   takes it up anew. After a refused move the rest of the message's

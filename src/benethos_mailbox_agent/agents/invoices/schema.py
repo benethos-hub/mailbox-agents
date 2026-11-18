@@ -1,19 +1,20 @@
 """What the model must answer, and the text it is given.
 
-The supplier the model may name is one of the list's names or null, as an
-enum in the schema: no other value passes the validation, so no answer can
-name a folder that is not on the list.
+The model answers whether a message is an invoice and, for one that is
+not, which near miss it is, with a quote. It names no supplier and no
+folder (prompt ``v4``): where an invoice goes follows from the folder it
+lies in.
 """
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, create_model
+from pydantic import AfterValidator, BaseModel, ConfigDict
 
 from ...records import MailMessage
 
-__all__ = ["MAX_TEXT", "Answer", "answer_schema", "render"]
+__all__ = ["MAX_ANSWER_TEXT", "MAX_TEXT", "Answer", "parts", "render"]
 
 # The text of a mail is cut here. An invoice says what it is near the top.
 MAX_TEXT = 6000
@@ -34,7 +35,7 @@ Short = Annotated[str, AfterValidator(_short)]
 
 
 class Answer(BaseModel):
-    """The answer, its supplier narrowed to the list by answer_schema."""
+    """The answer of the model."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -43,18 +44,6 @@ class Answer(BaseModel):
         "reminder", "quotation", "order_confirmation", "payment_receipt", "none"
     ]
     quote: Short
-    supplier: str | None
-    supplier_quote: Short | None
-
-
-def answer_schema(names: tuple[str, ...]) -> type[Answer]:
-    """The schema of an answer, its supplier one of ``names`` or null."""
-    supplier: Any = Literal[names] | None if names else type(None)
-    return create_model(
-        "InvoiceAnswer",
-        __base__=Answer,
-        supplier=(supplier, ...),
-    )
 
 
 def render(message: MailMessage) -> str:

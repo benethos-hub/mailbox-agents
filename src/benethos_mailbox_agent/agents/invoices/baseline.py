@@ -4,16 +4,14 @@ A near-miss word in the subject makes a message ``other`` with that near
 miss, except a receipt that carries its invoice: a PDF or XML attachment,
 and an invoice word in its name or in the text. Otherwise an invoice word
 in the subject or an attachment name, a phrase that says an invoice is
-ready, or a listed sender with a PDF or XML attachment makes it an
-``invoice``. The supplier comes from the list. The
-evaluation sets these rules beside the model, so what the model adds is a
-number. See docs/specs/agents/invoices.md.
+ready makes it an ``invoice``. The sender plays no part (agent version
+4). The evaluation sets these rules beside the model, so what the model
+adds is a number. See docs/specs/agents/invoices.md.
 """
 
 from __future__ import annotations
 
 from ...records import Decision, MailMessage
-from .suppliers import Suppliers
 
 __all__ = ["baseline"]
 
@@ -84,7 +82,7 @@ NEAR_MISS_WORDS: dict[str, tuple[str, ...]] = {
 FILE_TYPES = ("application/pdf", "application/xml", "text/xml")
 
 
-def baseline(message: MailMessage, suppliers: Suppliers) -> Decision:
+def baseline(message: MailMessage) -> Decision:
     subject = (message.subject or "").lower()
     names = " ".join((a.filename or "").lower() for a in message.attachments)
     text = message.text[:2000].lower()
@@ -99,23 +97,9 @@ def baseline(message: MailMessage, suppliers: Suppliers) -> Decision:
             return Decision(
                 label="other", source="baseline", fields={"near_miss": near_miss}
             )
-    sender = message.sender.email if message.sender else None
-    rule = suppliers.match(sender)
     invoice = (
         carries_invoice
         or any(word in subject or word in names for word in INVOICE_WORDS)
         or any(phrase in subject or phrase in text for phrase in READY_PHRASES)
-        or (rule is not None and has_file)
     )
-    if not invoice:
-        return Decision(label="other", source="baseline")
-    if rule is None:
-        return Decision(
-            label="invoice", source="baseline", details={"supplier_source": "none"}
-        )
-    return Decision(
-        label="invoice",
-        source="baseline",
-        fields={"supplier": rule.supplier.name},
-        details={"supplier_source": "rule", "supplier_rule": rule.kind.name.lower()},
-    )
+    return Decision(label="invoice" if invoice else "other", source="baseline")

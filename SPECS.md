@@ -109,7 +109,7 @@ that only read and sort have been measured.
 | Agent | Question | Status | Spec |
 |---|---|---|---|
 | `counting` | none: counts what arrives and is sent, changes nothing | built | [counting.md](docs/specs/agents/counting.md) |
-| `invoices` | is this an invoice, and from which listed supplier? | built, prompt `v3` | [invoices.md](docs/specs/agents/invoices.md) |
+| `invoices` | is this an invoice? It moves one into the subfolder of the folder it lies in | built, version 4, prompt `v4` | [invoices.md](docs/specs/agents/invoices.md) |
 | `awaiting_reply` | does this sent message wait for an answer? | built | [awaiting_reply.md](docs/specs/agents/awaiting_reply.md) |
 | `inquiries` | is this a project inquiry, and what does it say? | built, prompt `v3` | [inquiries.md](docs/specs/agents/inquiries.md) |
-| `sorting` | is the sender one of a listed group, and which folder is the group's? | built, no model. `invoices` is planned to move an invoice on within the folder it lies in | [sorting.md](docs/specs/agents/sorting.md) |
+| `sorting` | is the sender one of a listed group, and which folder is the group's? | built, no model. `invoices` moves an invoice on within the folder it lies in | [sorting.md](docs/specs/agents/sorting.md) |

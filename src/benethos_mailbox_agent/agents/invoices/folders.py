@@ -139,6 +139,14 @@ class Places:
             return None
         return "/".join((folder.path, *self.subfolder))
 
+    def steps(self, folder: FolderRef) -> tuple[str, ...]:
+        """The folders from the one below ``folder`` down to its subfolder,
+        the top first: those made when missing."""
+        return tuple(
+            "/".join((folder.path, *self.subfolder[:count]))
+            for count in range(1, len(self.subfolder) + 1)
+        )
+
     def may_create(self, path: str) -> bool:
         """Whether ``path`` is the subfolder of a folder it looks in, or a
         folder between the two: what the runtime may make for it. The
