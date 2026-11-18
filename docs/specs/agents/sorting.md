@@ -223,13 +223,17 @@ scoring there is serves.
 7. No model call is made and no call is counted.
 8. A held group in `full` moves nothing.
 
-## 11. To measure first, on the live setup
+## 11. Measured first, on the live setup
 
-1. Whether a move made through the service reaches the change feed as an
-   update of the same message. That a moved message keeps its id is
-   measured (IMAP at Stalwart, service 0.7.5).
-2. Creating a folder through the service: at the top, and below another.
-3. How the service answers a folder that exists under another case.
+Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
+[mailbox service](../mailbox-service.md).
+
+1. A move made through the service reaches the change feed as
+   `message.updated` of the same message, which keeps its id.
+2. Creating a folder works at the top and below another.
+3. A folder that exists in another case is not refused: the service makes
+   a second one. The executor compares names ignoring case before it makes
+   a folder.
 
 ## 12. Order of the build
 

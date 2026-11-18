@@ -34,6 +34,20 @@ What the agents rely on:
 - Keywords are not available on every provider **(to verify per account
   before an agent is switched to the keyword stage)**.
 
+Folders and moves, measured 2026-11-18 against 0.7.5 with IMAP at
+Stalwart, on the test account:
+
+- A move through `update_message` keeps the message's id. The feed names
+  it as `message.updated` of that id, once per move.
+- `create_folder` makes a folder at the top without a parent, and below
+  another with the parent's id. At IMAP a folder's id follows its path.
+- A name that exists in the same case is refused, `409 conflict`. The same
+  name in another case is made as a second folder beside the first, as IMAP
+  names differ by case. So the runtime compares names ignoring case itself
+  before it makes one.
+- `delete_folder` is refused, `403 forbidden`, to a user with `mail.read`
+  and `mail.write`. A folder an agent made is removed by the owner.
+
 Rights. Each agent has a user of its own in the service:
 
 | Agent | Rights | Not granted |
