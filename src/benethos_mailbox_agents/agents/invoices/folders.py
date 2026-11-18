@@ -16,9 +16,9 @@ such as the subfolder an invoice was put in, is not looked at, so an
 invoice is not asked about twice. Neither the subfolder nor the inbox
 folder is looked in even where the settings would take it in, as
 ``Invoices`` and ``Invoices/*`` take in ``Invoices/Rechnungen``, and ``*``
-an inbox folder at the top. ``Parent/*`` and ``*`` are matched
-against the path of the folder a message lies in, so a folder made after
-the start, by ``sorting`` say, is looked in too.
+an inbox folder at the top. ``Parent/*`` and ``*`` are matched against
+the path of the folder a message lies in, so a folder made after the
+start, by ``sorting`` say, is looked in too.
 
 ``MAILBOX_AGENTS_INVOICES_SUBFOLDER`` is where an invoice goes, as
 ``{folder}/Rechnungen``: below the folder the message lies in.
