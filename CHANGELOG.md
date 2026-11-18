@@ -55,3 +55,5 @@ commit that makes the change. Design decisions live in
   model's choice of a supplier set the keyword only.
 - The agent `invoices` takes the model's choice of a supplier only with a
   quote that names the supplier or a domain of its sender rules.
+- `report` writes a control character or line separator from a mail or a
+  model as its escape, so a subject cannot move the cursor or fake a line.

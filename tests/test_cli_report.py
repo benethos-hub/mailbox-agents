@@ -143,3 +143,33 @@ def test_report_refusals(
 ) -> None:
     assert main(argv) == 2
     assert said in capsys.readouterr().err
+
+
+def test_no_control_character_reaches_the_terminal() -> None:
+    nasty = "Invoice 42\x1b]0;owned\x07\x1b[2K\r subject: harmless\u2028\x9b"
+    entry = Entry(
+        row=MessageRow(REF, "done", 0, NOW, NOW, NOW),
+        message=MailMessage(
+            ref=REF,
+            subject=nasty,
+            sender=Address(email="a@b.test", name="Billing\naction: fake"),
+        ),
+        decision=Decision(
+            label="invoice",
+            source="model",
+            fields={"supplier": "x\ny"},
+            evidence=(Evidence(field=LABEL, value="invoice", quote=nasty, found=True),),
+        ),
+        model="m",
+        baseline=None,
+    )
+
+    lines = render([entry])
+
+    assert all(
+        not any(ord(ch) < 0x20 or 0x7F <= ord(ch) <= 0x9F for ch in line)
+        and "\u2028" not in line
+        for line in lines
+    )
+    assert "  subject: Invoice 42\\x1b]0;owned\\x07\\x1b[2K\\r subject:" in lines[2]
+    assert not any(line.startswith("action: fake") for line in lines)
