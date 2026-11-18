@@ -22,7 +22,7 @@ from types import TracebackType
 from typing import IO, Any
 
 from ..errors import ConfigError
-from ..records import MessageRef, OpenItem, StepResult
+from ..records import MessageRef, OpenItem, Step, StepResult
 from .migrations import MIGRATIONS
 
 __all__ = [
@@ -380,7 +380,7 @@ class Store:
         )
 
     def step(
-        self, ref: MessageRef, step: str, prompt_version: str, model_alias: str
+        self, ref: MessageRef, step: Step, prompt_version: str, model_alias: str
     ) -> StepResult | None:
         """The latest result of ``step`` for this message under this prompt
         version and model alias, the key of idempotency."""
@@ -407,7 +407,8 @@ class Store:
 
     def model_calls_since(self, since: datetime) -> int:
         row = self._one(
-            "SELECT COUNT(*) FROM steps WHERE step = 'model' AND at >= ?",
+            "SELECT COUNT(*) FROM steps WHERE step = ? AND at >= ?",
+            "model",
             _text(since),
         )
         return int(row[0])

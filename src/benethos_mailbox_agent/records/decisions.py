@@ -7,7 +7,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ["LABEL", "Decision", "Evidence", "StepResult"]
+__all__ = ["LABEL", "Decision", "Evidence", "Step", "StepResult"]
+
+# The steps of a message, as the state file names them.
+Step = Literal["baseline", "model", "decision"]
 
 # The field name under which the evidence of the label itself is kept.
 LABEL = "label"
@@ -60,7 +63,7 @@ class StepResult(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    step: str
+    step: Step
     prompt_version: str = ""
     model: str = ""
     result: dict[str, Any] = Field(default_factory=dict)

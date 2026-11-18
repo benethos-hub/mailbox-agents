@@ -63,3 +63,8 @@ def test_a_step_result_round_trips_as_json() -> None:
     )
 
     assert StepResult.model_validate_json(step.model_dump_json()) == step
+
+
+def test_a_step_is_one_of_the_three() -> None:
+    with pytest.raises(ValidationError):
+        StepResult(step="other", at=datetime(2026, 11, 17, tzinfo=UTC))

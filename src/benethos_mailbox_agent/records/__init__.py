@@ -3,7 +3,7 @@ what reads a field."""
 
 from __future__ import annotations
 
-from .decisions import LABEL, Decision, Evidence, StepResult
+from .decisions import LABEL, Decision, Evidence, Step, StepResult
 from .items import OpenItem
 from .mail import (
     EVENTS,
@@ -28,6 +28,7 @@ __all__ = [
     "MailMessage",
     "MessageRef",
     "OpenItem",
+    "Step",
     "StepResult",
     "Thread",
 ]
