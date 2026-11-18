@@ -86,6 +86,7 @@ config/           # .env.example and *.example.json versioned, .env local
 docs/             # specs/ (the details of SPECS.md), LOGGING.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
+assets/           # brand/: icon.svg and the PNGs build.py renders from it
 ```
 
 Which layer may import which is a table in `tests/test_layers.py`. A new

@@ -1,4 +1,4 @@
-# benethos-mailbox-agents
+# <img src="https://raw.githubusercontent.com/benethos-hub/mailbox-agents/main/assets/brand/icon.svg" alt="" height="36" align="absmiddle"> benethos-mailbox-agents
 
 Small agents that work on a mailbox continuously. Each one looks at mail as
 it arrives or leaves, decides one narrow question about it and takes one
