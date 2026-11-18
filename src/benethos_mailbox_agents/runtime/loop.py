@@ -178,9 +178,7 @@ class Worker:
         observe: list[MessageRef] = []
         selected = 0
         for event in events:
-            if event.type not in self.agent.triggers.events:
-                continue
-            route = self.agent.select(event)
+            route = self._route(event)
             if route is Route.DECIDE:
                 self.store.enqueue(event.ref, now)
                 selected += 1
@@ -189,6 +187,13 @@ class Worker:
                 selected += 1
         record(feed.Read(agent=self.agent.name, changes=len(events), selected=selected))
         return observe
+
+    def _route(self, event: Event) -> Route | None:
+        """Where the agent wants ``event``: None for a type it does not
+        listen to, else what its ``select`` answers."""
+        if event.type not in self.agent.triggers.events:
+            return None
+        return self.agent.select(event)
 
     async def _observe(self, ref: MessageRef) -> None:
         """Hand an updated message to the agent and take its actions. A
@@ -309,10 +314,7 @@ class Worker:
         refs += await self._in_folders(since)
         for ref in dict.fromkeys(refs):
             event = Event(type="message.created", ref=ref, at=now)
-            if (
-                event.type in self.agent.triggers.events
-                and self.agent.select(event) is Route.DECIDE
-            ):
+            if self._route(event) is Route.DECIDE:
                 added += self.store.enqueue(ref, now, again=again)
         record(feed.Backfilled(agent=self.agent.name, messages=added, days=days))
         return added
