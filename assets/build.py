@@ -31,7 +31,7 @@ SOCIAL_SIZE = (1280, 640)
 
 _ROOT_SIZE = re.compile(r'^(<svg [^>]*?)width="([\d.]+)" height="([\d.]+)"')
 
-NAME = "mailbox-agents"
+NAME = "Mailbox Agents"
 CLAIM = "Small agents that sort your mailbox"
 ADDRESS = "github.com/benethos-hub/mailbox-agents"
 # What sets the project apart, each with a sign of 24 by 24.
@@ -105,7 +105,7 @@ _STYLE = """
   .logo svg { width: 100%; height: auto; display: block; }
   .name {
     margin-top: 22px; font-size: 70px; font-weight: 700;
-    letter-spacing: -1.5px; line-height: 1; padding-bottom: 6px;
+    letter-spacing: -1.5px; line-height: 1.15; padding-bottom: 10px;
     background: linear-gradient(100deg, #FFE3CC 0%, #FFA552 55%, #F26430 100%);
     -webkit-background-clip: text; color: transparent;
   }

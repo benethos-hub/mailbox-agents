@@ -66,6 +66,7 @@ on one runtime, and each process runs one of them.
 
 | Where | Name |
 |---|---|
+| Display name, in the README and the brand | Mailbox Agents |
 | Repository | `mailbox-agents` |
 | PyPI distribution | `benethos-mailbox-agents` |
 | Import package | `benethos_mailbox_agents` |
