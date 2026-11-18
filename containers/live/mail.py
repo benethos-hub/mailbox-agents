@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 from email.utils import format_datetime
 
-__all__ = ["FOLDERS", "SUPPLIER_FOLDERS", "messages"]
+__all__ = ["FOLDERS", "GOLD", "SUPPLIER_FOLDERS", "messages"]
 
 # The parent of the supplier folders and one folder per listed supplier,
 # as suppliers.json beside this file names them.
@@ -257,7 +257,7 @@ def messages(me: str) -> Iterator[tuple[str, str, EmailMessage]]:
 # What each invented message is, per agent: the label and the fields, by
 # the local part of its Message-ID. live/gold.py writes the gold files of
 # the test account from it.
-_INVOICE_OTHER = {"supplier": None, "near_miss": None}
+_NO_SUPPLIER = {"supplier": None, "near_miss": None}
 
 GOLD: dict[str, dict[str, tuple[str, dict[str, str | None]]]] = {
     "inv-cloudhost-1": {
@@ -269,7 +269,7 @@ GOLD: dict[str, dict[str, tuple[str, dict[str, str | None]]]] = {
         "inquiries": ("other", {}),
     },
     "inv-paperworks-1": {
-        "invoices": ("invoice", _INVOICE_OTHER),
+        "invoices": ("invoice", _NO_SUPPLIER),
         "inquiries": ("other", {}),
     },
     "near-reminder-1": {
@@ -289,19 +289,19 @@ GOLD: dict[str, dict[str, tuple[str, dict[str, str | None]]]] = {
         "inquiries": ("other", {}),
     },
     "inquiry-1": {
-        "invoices": ("other", _INVOICE_OTHER),
+        "invoices": ("other", _NO_SUPPLIER),
         "inquiries": ("inquiry", {}),
     },
     "newsletter-1": {
-        "invoices": ("other", _INVOICE_OTHER),
+        "invoices": ("other", _NO_SUPPLIER),
         "inquiries": ("other", {}),
     },
     "reply-partner": {
-        "invoices": ("other", _INVOICE_OTHER),
+        "invoices": ("other", _NO_SUPPLIER),
         "inquiries": ("other", {}),
     },
     "autoreply-office": {
-        "invoices": ("other", _INVOICE_OTHER),
+        "invoices": ("other", _NO_SUPPLIER),
         "inquiries": ("other", {}),
     },
     "sent-asked-answered": {"awaiting_reply": ("expects_reply", {})},

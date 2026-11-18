@@ -32,11 +32,21 @@ from benethos_mailbox_agent.sources.mailbox import Mailbox, connect
 from benethos_mailbox_agent.store import Store
 
 ROOT = Path(__file__).resolve().parent.parent
-ENV = ROOT / "containers" / "live" / "secrets" / "agent.env"
+LIVE = ROOT / "containers" / "live"
+ENV = LIVE / "secrets" / "agent.env"
+sys.path.insert(0, str(LIVE))
+
+import mail  # noqa: E402 - beside the setup, not a package
 
 # What containers/live/mail.py puts into the test account.
-INVENTED = 14
-PDFS = 3
+INVENTED = len(list(mail.messages("me@invented.example")))
+PDFS = sum(
+    1
+    for _, _, message in mail.messages("me@invented.example")
+    for part in message.iter_attachments()
+    if part.get_content_type() == "application/pdf"
+)
+SUPPLIER_FOLDER = mail.SUPPLIER_FOLDERS[0]
 
 
 class Skip(Exception):  # noqa: N818 - a reason to skip, not an error
@@ -66,9 +76,9 @@ async def folders(live: Live) -> str:
     missing = {"inbox", "sent"} - {f.role for f in found.values()}
     if missing:
         raise AssertionError(f"no folder with the roles {sorted(missing)}")
-    if "Invoices/CloudHost" not in {f.path for f in found.values()}:
-        raise AssertionError("the supplier folder Invoices/CloudHost is missing")
-    return f"{len(found)} folders, inbox and sent, Invoices/CloudHost"
+    if SUPPLIER_FOLDER not in {f.path for f in found.values()}:
+        raise AssertionError(f"the supplier folder {SUPPLIER_FOLDER} is missing")
+    return f"{len(found)} folders, inbox and sent, {SUPPLIER_FOLDER}"
 
 
 async def recent(live: Live) -> str:
