@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from ..contract import Action, Agent, Reader, Shown
 from ..errors import MailboxRefusedError
 from ..logbook import escaped
-from ..records import Decision, MailMessage, MessageRef
+from ..records import Decision, MailMessage, StepResult
 from ..settings import Settings
 from ..store import ActionRow, MessageRow, Store, path_for
 from .session import mailbox_for
@@ -34,8 +34,9 @@ class Entry:
     actions: list[ActionRow] = field(default_factory=list)
 
 
-def _latest(store: Store, ref: MessageRef, step: str) -> tuple[Decision | None, str]:
-    found = [s for s in store.steps(ref) if s.step == step]
+def _latest(steps: list[StepResult], step: str) -> tuple[Decision | None, str]:
+    """The decision of the last ``step`` of ``steps``, and its model."""
+    found = [s for s in steps if s.step == step]
     if not found:
         return None, ""
     return Decision.model_validate(found[-1].result), found[-1].model
@@ -58,8 +59,9 @@ async def collect(
                 message = await mailbox.message(row.ref)
             except MailboxRefusedError:
                 message = None
-        decision, model = _latest(store, row.ref, "decision")
-        baseline, _ = _latest(store, row.ref, "baseline")
+        steps = store.steps(row.ref)
+        decision, model = _latest(steps, "decision")
+        baseline, _ = _latest(steps, "baseline")
         entries.append(
             Entry(row, message, decision, model, baseline, store.actions(row.ref))
         )
