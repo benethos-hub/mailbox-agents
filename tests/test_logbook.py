@@ -263,6 +263,28 @@ def test_escaped_leaves_printable_text_alone() -> None:
     assert escaped("Rechnung über 12 € – ok") == "Rechnung über 12 € – ok"
 
 
+@pytest.mark.parametrize(
+    "mark",
+    [
+        "؜",
+        "‎",
+        "‏",
+        "‪",
+        "‫",
+        "‬",
+        "‭",
+        "‮",
+        "⁦",
+        "⁧",
+        "⁨",
+        "⁩",
+    ],
+)
+def test_escaped_writes_a_direction_mark_as_its_escape(mark: str) -> None:
+    """A sender or subject cannot turn the text of a report around."""
+    assert escaped(f"a{mark}b") == f"a\\u{ord(mark):04x}b"
+
+
 def test_an_error_is_named_never_quoted(stream: io.StringIO) -> None:
     error = errors.MailboxRefusedError(
         "Subject: secret plans", status=404, reason="not_found"

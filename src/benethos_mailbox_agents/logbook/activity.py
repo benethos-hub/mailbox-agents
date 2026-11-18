@@ -22,6 +22,13 @@ __all__ = ["Activity", "Failure", "describe", "escaped", "plural", "record"]
 # characters, C1 among them, and the separators of lines and paragraphs.
 _BREAKS = frozenset({"Cc", "Zl", "Zp"})
 
+# What turns the direction of the text after it: the Arabic letter mark,
+# the marks left to right and right to left, the embeddings and overrides,
+# and the isolates. A sender or subject would turn a report around.
+_BIDI = frozenset(
+    map(chr, (0x061C, 0x200E, 0x200F, *range(0x202A, 0x202F), *range(0x2066, 0x206A)))
+)
+
 
 @dataclass(frozen=True, kw_only=True)
 class Activity:
@@ -95,13 +102,14 @@ def describe(error: BaseException) -> str:
 
 
 def escaped(text: str) -> str:
-    """``text`` as one line: each control character and line separator
-    written as its escape, such as a line feed as backslash and n. Nothing
-    an upstream chose then starts a line of its own, moves the cursor or
-    sets the title of a terminal."""
+    """``text`` as one line: each control character, line separator and
+    mark of direction written as its escape, such as a line feed as
+    backslash and n. Nothing an upstream chose then starts a line of its
+    own, moves the cursor, sets the title of a terminal or turns the text
+    around."""
     return "".join(
         ch.encode("unicode_escape").decode("ascii")
-        if unicodedata.category(ch) in _BREAKS
+        if ch in _BIDI or unicodedata.category(ch) in _BREAKS
         else ch
         for ch in text
     )

@@ -111,6 +111,10 @@ written as if there were no redaction.
 4. **An activity is one line.** `record` writes each control character
    and each line and paragraph separator of the message as its escape,
    such as `\n` or `\u2028`, so no value from an upstream starts a line of its own.
+   So it does with each mark that sets the direction of text, U+061C,
+   U+200E, U+200F, U+202A to U+202E and U+2066 to U+2069, so no value
+   turns the text after it around. `report` writes what it shows the same
+   way.
 5. **After the fact.** A line says what happened, so it is written once
    the state file holds it. A refusal is written where it is refused.
 6. **Every new activity gets a row** in the table of section 6 and a line

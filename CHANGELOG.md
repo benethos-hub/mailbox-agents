@@ -185,3 +185,6 @@ commit that makes the change. Design decisions live in
   `MAILBOX_AGENTS_` variable exported in the shell no longer points them
   at another account, a mailbox service not on this machine stops them
   with exit code 2, and each prints its account before it starts.
+- A log line and `report` write a mark that sets the direction of text,
+  such as U+202E, as its escape, so a sender's name or a subject can no
+  longer turn the text after it around.
