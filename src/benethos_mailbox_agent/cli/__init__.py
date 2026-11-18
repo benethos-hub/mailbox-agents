@@ -9,6 +9,7 @@ for an upstream that is away. See SPECS.md section 4.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -99,6 +100,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line and answer with the exit code."""
+    # The state file holds what the agents decided about the mail: readable
+    # by its owner only. Windows keeps its own rights and ignores this.
+    os.umask(0o077)
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command is None:

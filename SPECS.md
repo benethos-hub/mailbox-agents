@@ -168,6 +168,9 @@ data/             # state files and the gold set, never versioned
 - **A state file can be read by another process.** It runs in WAL mode and
   its schema is part of this document, so a later overview of what every
   agent did (section 16) reads the files without the agents knowing of it.
+  Another process of the same user, that is: the command line sets the
+  umask to 077, so a state file is readable by its owner only (decided
+  2026-11-17).
 
 ## 5. Upstream: the mailbox service
 

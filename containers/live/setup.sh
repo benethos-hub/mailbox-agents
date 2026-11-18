@@ -20,6 +20,9 @@
 # The Claude API key and the fetched models are kept across runs.
 
 set -eu
+# Secrets readable by their owner only. What a container reads as another
+# user is opened up below, one file at a time.
+umask 077
 
 here=$(cd "$(dirname "$0")" && pwd)
 secrets="$here/secrets"
@@ -48,7 +51,8 @@ esac
 say "removing an earlier run"
 $compose --profile gpu --profile cpu down --volumes --remove-orphans >/dev/null 2>&1 || true
 rm -rf "$secrets"
-mkdir -p "$secrets/tls" "$here/models"
+mkdir -p "$secrets/tls"
+(umask 022 && mkdir -p "$here/models")
 if [ -n "$anthropic_key" ]; then
     printf '%s\n' "$anthropic_key" > "$secrets/anthropic_api_key"
 fi
@@ -95,7 +99,7 @@ if [ -n "$backend" ]; then
     # The model behind the alias mail-classifier-<gpu|cpu> in litellm.yaml.
     name=$(sed -n "/model_name: mail-classifier-$backend\$/{n;s#.*model: openai/\([^}]*\)}.*#\1#p}" "$here/litellm.yaml")
     say "the local model $name on the $backend, fetched once into containers/live/models"
-    sh "$here/fetch-models.sh" "$name"
+    (umask 022 && sh "$here/fetch-models.sh" "$name")
     $compose --profile "$backend" up -d "llama-$backend" >/dev/null 2>&1
     model="mail-classifier-$backend"
 fi

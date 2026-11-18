@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import stat
+import sys
 from collections.abc import Iterator
 from importlib.metadata import version
 from pathlib import Path
@@ -64,6 +67,21 @@ def test_status_names_what_is_missing(
 
     out = capsys.readouterr().out
     assert "counting 1: misses MAILBOX_AGENT_SERVICE_URL" in out
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows keeps no Unix rights")
+def test_the_state_file_is_for_its_owner_only(
+    service: FakeService, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}DATA_DIR", str(tmp_path / "data"))
+    previous = os.umask(0o022)
+    try:
+        assert main(["run", "--agent", "counting"]) == 0
+    finally:
+        os.umask(previous)
+
+    assert stat.S_IMODE((tmp_path / "data" / "counting.db").stat().st_mode) == 0o600
 
 
 def test_run_and_status_with_a_state_file(

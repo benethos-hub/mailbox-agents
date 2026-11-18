@@ -63,3 +63,5 @@ commit that makes the change. Design decisions live in
   another machine needs `MAILBOX_AGENT_GATEWAY_ALLOW_HTTP`.
 - A second writer of a state file, such as `run` beside a running
   `worker`, is refused with a message naming the agent.
+- The state file and the secrets of the live setup are written readable
+  by their owner only.

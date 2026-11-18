@@ -377,6 +377,7 @@ def gateway() -> None:
 
 
 def main() -> None:
+    os.umask(0o077)
     password = stalwart()
     fill(password)
     service(password)

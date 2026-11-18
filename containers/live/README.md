@@ -58,6 +58,12 @@ What it makes stays in `secrets/` beside it, never versioned:
 | `master_key` | the service's master key, a test key readable by all |
 | `tls/` | the test CA, and the mail server's certificate and key |
 
+The script writes them readable by their owner only, except the CA
+certificate and the service's master key, which a container reads as
+another user. On a Windows drive under WSL, such as `/mnt/d`, the file
+system keeps no Unix rights, and every file shows as readable by all.
+Keep the checkout on the Linux file system where that matters.
+
 ## Local models
 
 Two llama.cpp services serve the local models, each as a router that loads
