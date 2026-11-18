@@ -179,6 +179,7 @@ async def test_a_folder_below_a_missing_one_is_refused(
         await mailbox.create_folder(ACCOUNT, "Missing/CloudHost")
 
     assert raised.value.reason == "parent_missing"
+    assert raised.value.status is None
     assert service.made() == []
 
 

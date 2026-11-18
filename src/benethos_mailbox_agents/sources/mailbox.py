@@ -299,9 +299,7 @@ class Mailbox:
             parent = await self.folder_at(account_id, parent_path)
             if parent is None:
                 raise MailboxRefusedError(
-                    "the parent folder does not exist",
-                    status=404,
-                    reason="parent_missing",
+                    "the parent folder does not exist", reason="parent_missing"
                 )
             parent_id = parent.id
         made = await _call(self._client.create_folder(account_id, name, parent_id))
