@@ -14,8 +14,8 @@ group, and which folder is the group's?
 | Triggers | `message.created` in the inbox, and `backfill` for older mail |
 | Baseline | the sender rules of the list. They are the whole agent |
 | Model | none |
-| Actions | `move_to_folder`, and the new `create_folder` |
-| Keyword | none is set. The contract asks for a default, it is `sorted` and unused |
+| Actions | `move_to_folder`, the new `create_folder`, and `add_keyword` with the move |
+| Keyword | `agent-sorted`, set with each move, see section 3 |
 
 ## 1. Two stages, two agents (decided 2026-11-18)
 
@@ -116,6 +116,7 @@ write `*@domain` or `*@*.domain`.
 | The message | What happens | State |
 |---|---|---|
 | is not in the inbox | nothing | `skipped` |
+| is in the inbox and carries the agent's keyword: a person put it back | nothing | `skipped` |
 | is in the inbox, no rule matches its sender | nothing. `report` counts the sender | `done`, label `none` |
 | is in the inbox, rules of two groups match alike | nothing. `report` names it as ambiguous | `done`, label `none` |
 | is in the inbox, one group matches, the folder exists | a move to the folder | `done`, label the group |
@@ -125,13 +126,30 @@ write `*@domain` or `*@*.domain`.
 
 A message already in another folder is the owner's choice and stays.
 
+**The keyword (decided 2026-11-18).** With each move the agent sets its
+keyword, `agent-sorted` by default, so a message it sorted is known as such
+to a person in a mail client and to a state file made anew. A message in
+the inbox that carries it was put back by a person and is left alone.
+Besides, the runtime moves a message at most once for an agent ([agent
+contract](../agent-contract.md)). The keyword is its own and no other agent
+sets it, so a move by `sorting` and a move by `invoices` stay told apart.
+The keyword is asked for only in `full` and for a group not held, after the
+move, and the runtime takes nothing after a refused move, so it never
+stands without the move. The name has no `$` in front, as IMAP registers
+such keywords with meanings (`$Junk`, `$label1`), and a prefix that no mail
+client or other tool is known to use. `MAILBOX_AGENT_KEYWORD` names
+another.
+
 ### By stage
 
 | Stage | Folder creation | Move |
 |---|---|---|
 | `shadow` | recorded | recorded |
-| `keyword` | recorded | recorded. The agent sets no keyword, so the stage acts like `shadow` |
+| `keyword` | recorded | recorded. The keyword goes with the move, so the stage acts like `shadow` |
 | `full` | made | made, but for a held group |
+
+Below `full` a folder recorded as to be made counts as there for the
+folder and the move below it in the same effect, so both are recorded.
 
 ### What is stored
 

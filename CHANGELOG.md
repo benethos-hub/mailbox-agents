@@ -49,6 +49,16 @@ commit that makes the change. Design decisions live in
 - `docs/LOGGING.md`: the levels, the shape of a line, what never goes
   into one, and the catalogue of every line the agents write.
 
+- The agent `sorting`: moves mail of listed senders from the inbox into
+  the folder of their group, makes a missing folder first, and sets the
+  keyword `agent-sorted` with the move. No model. The groups are a JSON
+  file in `MAILBOX_AGENT_SORTING_FILE`. A sender rule is an address, a
+  pattern of one domain or `*@*.domain` for its subdomains, and a group
+  with `"hold": true` has its moves recorded only.
+- The action `create_folder`: the runtime makes a folder an agent's
+  configuration names, below one that exists, never below the trash, junk
+  or spam.
+
 ### Changed
 
 - An agent moves a message at most once. A message its owner moved back,

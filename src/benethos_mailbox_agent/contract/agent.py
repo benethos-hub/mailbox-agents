@@ -102,6 +102,9 @@ class ActionRequest:
     folder to make: the path of the folder, ``/`` between the names. The
     runtime resolves it, refuses a move into a folder that does not exist,
     and makes only a folder the agent may make, see :meth:`Agent.may_create`.
+    ``held`` asks for the action to be recorded only, as in ``shadow``,
+    whatever the stage: for a group of ``sorting`` whose folder would lend
+    a forged mail trust.
     """
 
     action: Action
@@ -109,6 +112,7 @@ class ActionRequest:
     keyword: str | None = None
     folder: str | None = None
     why: str = field(default="", compare=False)
+    held: bool = False
 
 
 class Agent(ABC):

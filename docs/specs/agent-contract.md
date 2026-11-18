@@ -60,7 +60,12 @@ message whose move needs it. `create_folder` is the one action without a
 reverse of its own. It is accepted because it changes no message
 (decided 2026-11-18). An
 action whose result is already there is not taken again. What the stage
-does not allow is recorded as what would have been done.
+does not allow is recorded as what would have been done, and so is an
+action the agent asks to be `held`, whatever the stage: for a group of
+[sorting](agents/sorting.md) whose folder would lend a forged mail trust.
+A folder recorded and not made counts as there for the folder and the move
+below it in the same effect, so a stage that records only records all
+three.
 
 **A message is moved at most once by one agent (decided 2026-11-18).** A
 move of a message the agent has moved before is refused, so a message the

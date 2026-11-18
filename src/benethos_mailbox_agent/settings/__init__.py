@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     # --- inquiries, docs/specs/agents/inquiries.md ------------------------------------
     inquiries_patterns_file: Path | None = None
 
+    # --- sorting, docs/specs/agents/sorting.md ----------------------------------------
+    sorting_file: Path | None = None
+
     @field_validator("accounts", mode="before")
     @classmethod
     def _split_accounts(cls, value: Any) -> Any:

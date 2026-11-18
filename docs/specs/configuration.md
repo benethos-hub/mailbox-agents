@@ -29,6 +29,7 @@ may be given as a file with the suffix `_FILE`.
 from. A secret given directly wins over its file.
 
 Settings of one agent, such as `INVOICES_FOLDER`, `INVOICES_SUPPLIERS_FILE`,
-`REPLY_DAYS` and `INQUIRIES_PATTERNS_FILE`, are named in its section. The
+`REPLY_DAYS`, `INQUIRIES_PATTERNS_FILE` and `SORTING_FILE`, are named in its
+section. The
 `.env` file is `config/benethos-mailbox-agent/.env` below the working
 directory unless the command line names another.

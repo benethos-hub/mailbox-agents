@@ -6,7 +6,8 @@ folder that exists and is not the trash, junk or spam, nor below them, and
 makes only a folder the agent may make, below a folder that exists and not
 below those three, nor one whose name exists in another case. A message in
 one of them is left alone. What the stage allows is
-carried out, the rest is recorded as what would have been done. Every
+carried out, the rest is recorded as what would have been done, and so is
+an action the agent asks to be held. Every
 action records what was there before, so it can be taken back. An action
 whose result is already there is not taken again, and a message the
 agent moved once is not moved again, so one the owner moved back stays.
@@ -93,12 +94,16 @@ class Executor:
         self._store = store
         self._mailbox = mailbox
         self._now = now
+        # The folders of this call recorded as to be made and not made, by
+        # account and path: a folder or a move below one is recorded too.
+        self._recorded_folders: set[tuple[str, str]] = set()
 
     async def __call__(self, requests: list[ActionRequest]) -> None:
         """Take the actions in order. After a refused folder or move, or a
         message that is gone, those after it are not taken: an action
         asked after a move, such as a keyword that says the message was
         moved, must not stand without it."""
+        self._recorded_folders = set()
         for request in requests:
             outcome = await self.run(request)
             if outcome is Outcome.GONE or (
@@ -124,7 +129,7 @@ class Executor:
         if planned is None:
             return Outcome.PRESENT
         argument, before, target = planned
-        executed = request.action in STAGE_ALLOWS[self.stage]
+        executed = request.action in STAGE_ALLOWS[self.stage] and not request.held
         recorded = self._store.add_action(
             request.ref,
             action=request.action.value,
@@ -141,6 +146,8 @@ class Executor:
                 self._store.drop_action(recorded)
                 return self._refused(request, exc)
             self._store.mark_action_executed(recorded)
+        elif request.action is Action.CREATE_FOLDER:
+            self._recorded_folders.add((request.ref.account_id, argument))
         self.metrics.action(request.action.value, executed)
         done = actions.Done if executed else actions.Recorded
         record(
@@ -198,7 +205,12 @@ class Executor:
             raise ActionRefusedError("the message is in the trash, junk or spam")
         if request.action is Action.MOVE_TO_FOLDER:
             path = request.folder or ""  # never empty, _admissible checked it
-            folder = await self._mailbox.folder_at(request.ref.account_id, path)
+            account = request.ref.account_id
+            folder = await self._mailbox.folder_at(account, path)
+            if folder is None and (account, path) in self._recorded_folders:
+                # Made in a stage that records only: so is the move.
+                before = [f.id for f in message.folders]
+                return path, {"folders": before}, ""
             if folder is None:
                 raise ActionRefusedError("the target folder does not exist")
             if await self._forbidden(request.ref.account_id, folder):
@@ -242,7 +254,7 @@ class Executor:
         if any(f.path.casefold() == path.casefold() for f in known.values()):
             raise ActionRefusedError("a folder of that name exists in another case")
         above = path.rpartition("/")[0]
-        if above:
+        if above and (account_id, above) not in self._recorded_folders:
             parent = await self._mailbox.folder_at(account_id, above)
             if parent is None:
                 raise ActionRefusedError("the folder above it does not exist")

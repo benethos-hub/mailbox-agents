@@ -1,0 +1,278 @@
+"""The agent sorting, on invented mail: each row of docs/specs/agents/sorting.md."""
+
+from __future__ import annotations
+
+import json
+from collections.abc import AsyncIterator
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from benethos_mailbox_agent.agents.sorting.agent import Sorting
+from benethos_mailbox_agent.records import MessageRef
+from benethos_mailbox_agent.runtime.loop import Worker
+from benethos_mailbox_agent.runtime.model import NoModel
+from benethos_mailbox_agent.runtime.readiness import readiness
+from fakes import ACCOUNT, wire_message
+from helpers import Wired, settings, wired
+
+GROUPS: list[dict[str, Any]] = [
+    {
+        "name": "Bank",
+        "folder": "Providers/Bank",
+        "senders": ["service@bank-two.example", "*@bank-one.example"],
+        "hold": True,
+    },
+    {
+        "name": "CloudHost",
+        "folder": "Providers/CloudHost",
+        "senders": ["*@cloudhost.example"],
+    },
+    {"name": "Hosting", "folder": "Invoices/Hosting", "senders": ["*@hosting.example"]},
+    {"name": "TelcoA", "folder": "TelcoA", "senders": ["bill*@telco.example"]},
+    {"name": "TelcoB", "folder": "TelcoB", "senders": ["*ing@telco.example"]},
+]
+
+MESSAGES = {
+    "unknown": "someone@elsewhere.example",
+    "alike": "billing@telco.example",
+    "hosting": "billing@hosting.example",
+    "cloudhost": "billing@cloudhost.example",
+    "bank": "service@bank-two.example",
+}
+
+
+def listed(tmp_path: Path, groups: list[dict[str, Any]] | None = None) -> Path:
+    path = tmp_path / "sorting.json"
+    path.write_text(json.dumps({"groups": GROUPS if groups is None else groups}))
+    return path
+
+
+def agent(tmp_path: Path, stage: str = "full", **values: Any) -> Sorting:
+    found = {"sorting_file": listed(tmp_path)}
+    return Sorting(settings(stage=stage, **{**found, **values}))
+
+
+@pytest.fixture
+async def world(tmp_path: Path) -> AsyncIterator[Wired]:
+    async with wired(tmp_path) as found:
+        for message_id, sender in MESSAGES.items():
+            found.service.add(wire_message(message_id, sender=sender), change=None)
+        found.service.add(
+            wire_message("filed", sender="billing@hosting.example", folder_ids=["inv"]),
+            change=None,
+        )
+        found.service.add(
+            wire_message(
+                "binned", sender="billing@hosting.example", folder_ids=["trash"]
+            ),
+            change=None,
+        )
+        found.service.add(
+            wire_message(
+                "put-back", sender="billing@hosting.example", keywords=["Agent-Sorted"]
+            ),
+            change=None,
+        )
+        yield found
+
+
+async def run(
+    world: Wired, message_id: str, the_agent: Sorting, *, again: bool = False
+) -> str:
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    worker = Worker(
+        agent=the_agent,
+        store=world.store,
+        mailbox=world.mailbox,
+        gateway=NoModel(),
+        now=world.clock,
+    )
+    world.store.enqueue(ref, world.clock(), again=again)
+    await worker.process_due()
+    row = world.store.message(ref)
+    assert row is not None
+    return row.state
+
+
+def mail(world: Wired, message_id: str) -> dict[str, Any]:
+    return world.service.messages[(ACCOUNT, message_id)]
+
+
+def decision(world: Wired, message_id: str) -> dict[str, Any]:
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    found = world.store.step(ref, "decision", Sorting.prompt_version, "")
+    assert found is not None
+    return found.result
+
+
+def actions(world: Wired, message_id: str) -> list[tuple[str, str, bool]]:
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    return [(a.action, a.argument, a.executed) for a in world.store.actions(ref)]
+
+
+# -- section 3: what happens to a message -------------------------------------------
+
+
+@pytest.mark.parametrize("message_id", ["filed", "binned", "put-back"])
+async def test_a_message_not_for_the_agent_is_skipped(
+    world: Wired, tmp_path: Path, message_id: str
+) -> None:
+    before = dict(mail(world, message_id))
+
+    assert await run(world, message_id, agent(tmp_path)) == "skipped"
+
+    assert mail(world, message_id) == before
+    assert world.service.writes() == []
+
+
+async def test_a_sender_in_no_group_is_left_alone(world: Wired, tmp_path: Path) -> None:
+    assert await run(world, "unknown", agent(tmp_path)) == "done"
+
+    assert decision(world, "unknown")["label"] == "none"
+    assert decision(world, "unknown")["details"] == {"match": "none"}
+    assert world.service.writes() == []
+    assert world.service.made() == []
+
+
+async def test_a_sender_of_two_groups_alike_is_left_alone(
+    world: Wired, tmp_path: Path
+) -> None:
+    assert await run(world, "alike", agent(tmp_path)) == "done"
+
+    found = decision(world, "alike")
+    assert found["label"] == "none"
+    assert found["details"] == {"match": "ambiguous", "groups": "TelcoA,TelcoB"}
+    assert world.service.writes() == []
+
+
+async def test_a_message_of_a_group_is_moved_and_marked(
+    world: Wired, tmp_path: Path
+) -> None:
+    assert await run(world, "hosting", agent(tmp_path)) == "done"
+
+    assert mail(world, "hosting")["folder_ids"] == ["inv-hosting"]
+    assert mail(world, "hosting")["keywords"] == ["agent-sorted"]
+    assert world.service.made() == []
+    found = decision(world, "hosting")
+    assert (found["label"], found["source"]) == ("Hosting", "baseline")
+    assert found["details"] == {"match": "group", "rule": "pattern"}
+    assert "@" not in json.dumps(found)
+
+
+async def test_a_missing_folder_is_made_from_the_top_first(
+    world: Wired, tmp_path: Path
+) -> None:
+    assert await run(world, "cloudhost", agent(tmp_path)) == "done"
+
+    assert world.service.made() == [
+        {"name": "Providers"},
+        {"name": "CloudHost", "parent_id": "Providers"},
+    ]
+    assert mail(world, "cloudhost")["folder_ids"] == ["Providers/CloudHost"]
+    assert actions(world, "cloudhost") == [
+        ("create_folder", "Providers", True),
+        ("create_folder", "Providers/CloudHost", True),
+        ("move_to_folder", "Providers/CloudHost", True),
+        ("add_keyword", "agent-sorted", True),
+    ]
+
+
+async def test_a_held_group_moves_nothing_in_full(world: Wired, tmp_path: Path) -> None:
+    assert await run(world, "bank", agent(tmp_path)) == "done"
+
+    assert world.service.writes() == []
+    assert world.service.made() == []
+    assert decision(world, "bank")["details"]["hold"] == "yes"
+    assert actions(world, "bank") == [
+        ("create_folder", "Providers", False),
+        ("create_folder", "Providers/Bank", False),
+        ("move_to_folder", "Providers/Bank", False),
+    ]
+
+
+# -- the stages -----------------------------------------------------------------
+
+
+@pytest.mark.parametrize("stage", ["shadow", "keyword"])
+async def test_below_full_the_folders_and_the_move_are_recorded(
+    world: Wired, tmp_path: Path, stage: str
+) -> None:
+    assert await run(world, "cloudhost", agent(tmp_path, stage)) == "done"
+
+    assert world.service.writes() == []
+    assert world.service.made() == []
+    assert actions(world, "cloudhost") == [
+        ("create_folder", "Providers", False),
+        ("create_folder", "Providers/CloudHost", False),
+        ("move_to_folder", "Providers/CloudHost", False),
+    ]
+
+
+async def test_below_full_a_folder_that_exists_is_not_recorded(
+    world: Wired, tmp_path: Path
+) -> None:
+    assert await run(world, "hosting", agent(tmp_path, "shadow")) == "done"
+
+    assert actions(world, "hosting") == [("move_to_folder", "Invoices/Hosting", False)]
+
+
+# -- the list as it is when the agent acts --------------------------------------
+
+
+async def test_a_sender_added_to_the_list_reaches_a_message_decided_before(
+    world: Wired, tmp_path: Path
+) -> None:
+    without = [g for g in GROUPS if g["name"] != "Hosting"]
+    first = Sorting(settings(stage="full", sorting_file=listed(tmp_path, without)))
+    assert await run(world, "hosting", first) == "done"
+    assert world.service.writes() == []
+
+    assert await run(world, "hosting", agent(tmp_path), again=True) == "done"
+
+    assert mail(world, "hosting")["folder_ids"] == ["inv-hosting"]
+
+
+# -- no model -------------------------------------------------------------------
+
+
+async def test_no_model_is_asked_and_none_counted(world: Wired, tmp_path: Path) -> None:
+    worker = Worker(
+        agent=agent(tmp_path),
+        store=world.store,
+        mailbox=world.mailbox,
+        gateway=world.gateway,
+        now=world.clock,
+    )
+    for message_id in MESSAGES:
+        world.store.enqueue(
+            MessageRef(account_id=ACCOUNT, message_id=message_id), world.clock()
+        )
+
+    await worker.process_due()
+
+    assert world.fake_gateway.requests == []
+    assert world.store.counts()["done"] == len(MESSAGES)
+
+
+# -- readiness ------------------------------------------------------------------
+
+
+def test_the_list_is_a_required_setting() -> None:
+    found = readiness(
+        Sorting, settings(service_url="https://x.test", service_token="t")
+    )
+
+    assert found.missing == ("MAILBOX_AGENT_SORTING_FILE",)
+
+
+def test_a_wrong_list_stops_the_start(tmp_path: Path) -> None:
+    path = listed(tmp_path, [{"name": "A", "folder": "A", "senders": ["a.example"]}])
+    values = settings(
+        service_url="https://x.test", service_token="t", sorting_file=path
+    )
+
+    found = readiness(Sorting, values)
+
+    assert found.problem is not None and "*@a.example" in found.problem
