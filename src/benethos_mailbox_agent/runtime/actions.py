@@ -175,7 +175,9 @@ class Executor:
                 return None
             return folder.path, {"folders": before}, folder.id
         keyword = self.agent.keyword
-        present = keyword in message.keywords
+        # IMAP keywords ignore case, and a service may answer them in lower
+        # case (measured 2026-11-18 at Stalwart through service 0.7.5).
+        present = keyword.casefold() in {k.casefold() for k in message.keywords}
         if (request.action is Action.ADD_KEYWORD) == present:
             return None
         return keyword, {"keywords": list(message.keywords)}, keyword

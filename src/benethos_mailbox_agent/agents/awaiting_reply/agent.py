@@ -202,7 +202,7 @@ class AwaitingReply(Agent):
             item is not None
             and item.is_open
             and item.keyword_set
-            and self.keyword not in message.keywords
+            and self.keyword.casefold() not in {k.casefold() for k in message.keywords}
         ):
             await context.items.close(message.ref, "keyword_removed")
         return []

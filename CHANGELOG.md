@@ -94,3 +94,6 @@ commit that makes the change. Design decisions live in
   holds a later answer, as after a backfill that took up the reply first.
 - `backfill --again` no longer opens an `awaiting_reply` item again that a
   reply or a person closed.
+- Keywords are compared without case, since the mailbox service may
+  answer them in lower case. A `MAILBOX_AGENT_KEYWORD` with capitals no
+  longer closes every `awaiting_reply` item at once.

@@ -415,6 +415,36 @@ async def test_taking_a_message_up_again_reopens_nothing(world: World) -> None:
     assert world.keywords("s1") == []
 
 
+async def test_a_keyword_the_service_answers_in_lower_case(tmp_path: Path) -> None:
+    async with wired(tmp_path) as found:
+        world = World(found)
+        world.agent = AwaitingReply(
+            settings(stage="full", reply_days=3, keyword="Awaiting-Reply")
+        )
+        world.worker = Worker(
+            agent=world.agent,
+            store=found.store,
+            mailbox=found.mailbox,
+            gateway=found.gateway,
+            now=found.clock,
+        )
+        await world.start()
+        world.add(sent("s1", ASK), "message.sent")
+        world.w.fake_gateway.answer(expects(QUESTION))
+        await world.run()
+        world.clock.advance(days=4)
+        await world.run()
+        message = world.w.service.messages[(ACCOUNT, "s1")]
+        message["keywords"] = [k.lower() for k in message["keywords"]]
+        world.w.service.change("message.updated", "s1")
+        world.clock.advance(days=1)
+        await world.run()
+
+        assert world.item("s1").is_open
+        assert message["keywords"] == ["awaiting-reply"]
+        assert len(world.w.store.actions(ref("s1"))) == 1
+
+
 async def test_a_reply_in_the_thread_closes_it_and_takes_the_keyword_off(
     world: World,
 ) -> None:
