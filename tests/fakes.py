@@ -26,6 +26,8 @@ FOLDERS = [
     {"id": "inbox", "name": "INBOX", "role": "inbox"},
     {"id": "sent", "name": "Sent", "role": "sent"},
     {"id": "trash", "name": "Trash", "role": "trash"},
+    {"id": "trash-sub", "name": "Sub", "role": None, "parent_id": "trash"},
+    {"id": "junk", "name": "Junk", "role": "junk"},
     {"id": "inv", "name": "Invoices", "role": None},
     {"id": "inv-hosting", "name": "Hosting", "role": None, "parent_id": "inv"},
     {"id": "inv-mo", "name": "mo", "role": None, "parent_id": "inv"},

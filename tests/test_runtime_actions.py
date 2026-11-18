@@ -103,6 +103,7 @@ async def test_removing_a_keyword_that_is_not_there_does_nothing(world: Wired) -
         ActionRequest(Action.ADD_KEYWORD, REF, keyword="someone-elses"),
         ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Missing"),
         ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Trash"),
+        ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Trash/Sub"),
         ActionRequest(Action.MOVE_TO_FOLDER, REF, folder=None),
         ActionRequest(
             Action.ADD_KEYWORD,
@@ -115,6 +116,7 @@ async def test_removing_a_keyword_that_is_not_there_does_nothing(world: Wired) -
         "foreign-keyword",
         "missing-folder",
         "trash",
+        "below-trash",
         "no-folder",
         "gone",
     ],
@@ -135,6 +137,19 @@ async def test_a_refused_action_is_neither_taken_nor_recorded(
     assert not await run.run(request_)
     assert world.service.writes() == []
     assert world.store.actions() == []
+
+
+@pytest.mark.parametrize("folder", ["trash", "junk"])
+@pytest.mark.parametrize("request_", [ADD, MOVE], ids=["keyword", "move"])
+async def test_a_message_in_the_trash_or_junk_is_left_alone(
+    tmp_path: Path, folder: str, request_: ActionRequest
+) -> None:
+    async with wired(tmp_path) as found:
+        found.service.add(wire_message("m1", folder_ids=[folder]))
+
+        assert not await executor(found).run(request_)
+        assert found.service.writes() == []
+        assert found.store.actions() == []
 
 
 async def test_an_account_the_agent_does_not_work_on_is_refused(world: Wired) -> None:

@@ -2,7 +2,8 @@
 
 An agent asks, this module decides. It carries out only an action the
 agent declared, a keyword only if it is the agent's own, a move only into a
-folder that exists and is not the trash or junk. What the stage allows is
+folder that exists and is not the trash or junk, nor below them. A
+message in the trash or junk is left alone. What the stage allows is
 carried out, the rest is recorded as what would have been done. Every
 action records what was there before, so it can be taken back. An action
 whose result is already there is not taken again. See SPECS.md sections 7,
@@ -41,6 +42,8 @@ class Writer(Protocol):
     async def message(self, ref: MessageRef) -> MailMessage: ...
 
     async def folder_at(self, account_id: str, path: str) -> FolderRef | None: ...
+
+    async def folders(self, account_id: str) -> dict[str, FolderRef]: ...
 
     async def add_keyword(self, ref: MessageRef, keyword: str) -> None: ...
 
@@ -134,12 +137,14 @@ class Executor:
     ) -> tuple[str, dict[str, Any], str] | None:
         """The argument to record, what was there before and the target, or
         None when the result is already there."""
+        if any(f.role in FORBIDDEN_ROLES for f in message.folders):
+            raise ActionRefusedError("the message is in the trash or junk")
         if request.action is Action.MOVE_TO_FOLDER:
             path = request.folder or ""  # never empty, _admissible checked it
             folder = await self._mailbox.folder_at(request.ref.account_id, path)
             if folder is None:
                 raise ActionRefusedError("the target folder does not exist")
-            if folder.role in FORBIDDEN_ROLES:
+            if await self._forbidden(request.ref.account_id, folder):
                 raise ActionRefusedError("no agent moves a message there")
             before = [f.id for f in message.folders]
             if before == [folder.id]:
@@ -150,6 +155,17 @@ class Executor:
         if (request.action is Action.ADD_KEYWORD) == present:
             return None
         return keyword, {"keywords": list(message.keywords)}, keyword
+
+    async def _forbidden(self, account_id: str, folder: FolderRef) -> bool:
+        """Whether ``folder`` is the trash or junk, or lies below them."""
+        if folder.role in FORBIDDEN_ROLES:
+            return True
+        known = await self._mailbox.folders(account_id)
+        return any(
+            folder.path.startswith(f"{other.path}/")
+            for other in known.values()
+            if other.role in FORBIDDEN_ROLES
+        )
 
     async def _take(self, request: ActionRequest, target: str) -> None:
         if request.action is Action.ADD_KEYWORD:

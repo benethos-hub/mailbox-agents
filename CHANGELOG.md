@@ -42,3 +42,8 @@ commit that makes the change. Design decisions live in
   domains and phrases of `MAILBOX_AGENT_INQUIRIES_PATTERNS_FILE`.
 - The agent `counting`, which counts what arrives and is sent and changes
   nothing, for checking a deployment end to end.
+
+### Changed
+
+- The runtime leaves a message in the trash or junk alone, and moves no
+  message into a folder below the trash or junk.
