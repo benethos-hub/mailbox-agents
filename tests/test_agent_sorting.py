@@ -15,7 +15,7 @@ from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.readiness import readiness
 from fakes import ACCOUNT, wire_message
-from helpers import Wired, actions, decision, mail, run, settings, wired
+from helpers import Wired, actions, decision, mail, run, settings, wired, worker
 
 GROUPS: list[dict[str, Any]] = [
     {
@@ -268,6 +268,31 @@ async def test_a_changed_list_is_decided_anew(world: Wired, tmp_path: Path) -> N
     )
     entries = await collect(world.store, world.mailbox, limit=10)
     assert summary(second, entries) == ["groups:", "  Hosting: 1 moved"]
+
+
+async def test_the_report_shows_the_baseline_of_the_changed_list(
+    world: Wired, tmp_path: Path
+) -> None:
+    """A backfill under a changed list runs the rules anew beside the
+    decision, so the report shows no baseline of the list before."""
+    from benethos_mailbox_agents.cli.report import collect, render
+
+    without = [g for g in GROUPS if g["name"] != "Hosting"]
+    first = Sorting(settings(stage="full", sorting_file=listed(tmp_path, without)))
+    first.prepare()
+    assert await run(world, "hosting", first) == "done"
+
+    second = agent(tmp_path)
+    second.prepare()
+    backfilling = worker(world, second)
+    assert await backfilling.backfill(30, again=True) > 0
+    await backfilling.drain()
+
+    entries = await collect(world.store, world.mailbox, limit=20)
+    [shown] = [e for e in entries if e.row.ref.message_id == "hosting"]
+    lines = render([shown])
+    assert any(line.startswith("  decision: Hosting (baseline") for line in lines)
+    assert "  baseline: Hosting" in lines
 
 
 def test_the_version_is_the_list_read(tmp_path: Path) -> None:

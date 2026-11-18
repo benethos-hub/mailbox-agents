@@ -186,7 +186,9 @@ folder and the move below it in the same effect, so both are recorded.
   gives a new version, and a message taken up again, as by `backfill`, is
   decided anew under it. So the label, the details and `report` follow the
   list the message was acted on with, and a message decided `none` before
-  a sender was added counts as moved once it is.
+  a sender was added counts as moved once it is. The rules of the
+  baseline run anew under the new version too, so `report` shows the
+  baseline of the same list as the decision.
 - The group is looked up again when the agent acts, against the list as it
   is then. So a sender added to the list reaches older mail through
   `backfill`.

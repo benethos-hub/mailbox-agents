@@ -2,8 +2,8 @@
 check and effect.
 
 Each step writes its result before the next begins. The baseline is stored
-once per agent version, the decision once per prompt version and model
-alias, so a message run again, after a crash or a repeated feed entry,
+once per agent version and prompt version, the decision once per prompt
+version and model alias, so a message run again, after a crash or a repeated feed entry,
 reuses what was decided and asks the model nothing. See docs/specs/runtime.md.
 """
 
@@ -296,9 +296,19 @@ class StepRunner:
             return self._retry(ref, attempts)
         return self._state(ref, "done")
 
+    def _baseline_version(self) -> str:
+        """What the baseline is stored under: the agent version, and the
+        prompt version beside it when there is one. For ``sorting`` the
+        prompt version is the list, which its rules read as well, so a
+        changed list runs the rules anew beside the new decision."""
+        if not self.agent.prompt_version:
+            return self.agent.version
+        return f"{self.agent.version}/{self.agent.prompt_version}"
+
     def _baseline(self, message: MailMessage) -> None:
         ref = message.ref
-        if self._store.step(ref, "baseline", self.agent.version, "") is not None:
+        version = self._baseline_version()
+        if self._store.step(ref, "baseline", version, "") is not None:
             return
         started = time.monotonic()
         decided = self.agent.baseline(message)
@@ -306,7 +316,7 @@ class StepRunner:
             ref,
             StepResult(
                 step="baseline",
-                prompt_version=self.agent.version,
+                prompt_version=version,
                 result=decided.model_dump(mode="json"),
                 duration_ms=_since(started),
                 at=self._now(),

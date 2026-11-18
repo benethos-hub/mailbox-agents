@@ -30,7 +30,9 @@ The steps of one message: fetch, `admit`, baseline, decision, effect. The
 message is fetched anew before the effect when the decision asked the
 model, so the agent acts on where it lies now: another agent or a person
 may move it while the model answers, and one deleted meanwhile is
-skipped. The baseline is stored once per agent version. The decision, with the model
+skipped. The baseline is stored once per agent version and prompt
+version, so `report` never shows a baseline older than the decision
+beside it (since 2026-11-18). The decision, with the model
 calls it made and its evidence checked, is stored once per prompt version
 and model alias. A message that reached its daily limit of model calls
 waits for the next day.

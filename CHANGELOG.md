@@ -148,6 +148,10 @@ commit that makes the change. Design decisions live in
 - `status` without `MAILBOX_AGENTS_ACCOUNTS` checks the folders an agent
   expects in every account its user is granted, as the worker takes them,
   instead of saying that no account is named.
+- The baseline is stored per agent version and prompt version. After a
+  changed `sorting` list, `report` shows the baseline of the new list
+  beside the decision, not that of the list before. A state file of an
+  earlier build runs the rules once more for a message taken up again.
 
 ### Removed
 
