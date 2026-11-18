@@ -87,7 +87,11 @@ on one runtime, and each process runs one of them.
   code finds in the mail, word for word, before anything is done with it
   ([safety](docs/specs/safety.md)).
 - **The sender is not proof.** Only a rule naming an address or a pattern
-  moves a message. A domain rule and a model's choice mark only.
+  moves a message. A domain rule and a model's choice mark only, with one
+  exception since 2026-11-18: `invoices` moves a message its model takes
+  for an invoice, into the subfolder of a folder it looks in, and out of
+  the inbox only into the inbox folder the owner set. The model names no
+  folder ([invoices](docs/specs/agents/invoices.md)).
 - **Reversible only.** Every action records what was there before.
 - **Nothing of a mail in a log line, secrets never travel**
   ([safety](docs/specs/safety.md), [docs/LOGGING.md](docs/LOGGING.md)).

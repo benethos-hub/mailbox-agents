@@ -20,6 +20,15 @@ Further rules:
 - **The sender is not proof.** From is not authenticated. A move that
   rests on the sender needs a rule naming the address or its pattern. A
   domain rule and the model's choice mark only (decided 2026-11-17).
+  `invoices` from version 4 is the one exception (decided 2026-11-18): it
+  moves a message its model takes for an invoice. The model answers only
+  whether it is one, and the folder follows from where the message lies
+  and the settings: the subfolder of a folder the agent looks in, and out
+  of the inbox only the inbox folder, and only when the owner set one.
+  Unset, an invoice in the inbox is marked and stays. So in `full` a
+  forged invoice that lies in such a folder is filed beside the real
+  ones. The folder it lies in was chosen by a rule or by hand, never by
+  the model ([invoices](agents/invoices.md)).
 - **A value needs evidence.** A label and every extracted field carry a
   quote. The code looks for the quote in the parts of the mail the model
   was given, each on its own: sender, subject, attachment names, text.
