@@ -11,6 +11,8 @@ commit that makes the change. Design decisions live in
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-19
+
 The first release. Nothing was released before it, so each entry says
 what the release holds, not how it came about.
 
@@ -166,3 +168,6 @@ Each sets a keyword of its own, of the form `agent-<word>`.
   machine or an id of the mailbox service.
 - The concept: `docs/CONCEPT.md` as its overview, and in `docs/concept/`
   one file per topic and one per agent.
+
+[Unreleased]: https://github.com/benethos-hub/mailbox-agents/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/benethos-hub/mailbox-agents/releases/tag/v0.1.0
