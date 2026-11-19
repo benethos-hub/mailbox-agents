@@ -348,9 +348,12 @@ def test_a_failed_migration_leaves_the_file_as_it_was(
 
 # The fingerprint of each step that shipped in a release: a file of that
 # release has run it, so it is never changed. A release adds its own. The
-# fingerprint covers the step's whole module, comments included. No
-# release has shipped yet.
-RELEASED: dict[int, str] = {}
+# fingerprint covers the step's whole module, comments included.
+RELEASED: dict[int, str] = {
+    # 0.1.0
+    1: "7d0c1acff1d2e09ab1f24e0ff0f76f50c4b86e4210309a07e96b5ee945bc12ad",
+    2: "c1bb1bdec56c2a961402d2453861d2cd6049d8f5196265df26207ce8a4a46409",
+}
 
 
 def test_a_released_migration_is_never_changed() -> None:

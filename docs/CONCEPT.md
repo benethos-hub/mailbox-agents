@@ -1,6 +1,6 @@
 # Concept of Mailbox Agents
 
-> **Status: 2026-11-19. The runtime and the agents `counting`, `invoices`,
+> **Status: alpha, 2026-11-19. The runtime and the agents `counting`, `invoices`,
 > `awaiting_reply`, `inquiries` and `sorting` are built and run against a
 > test account of invented mail. `invoices` version 3 ran in `shadow` on its
 > owner's real account, read-only, and changed nothing. Version 5, which

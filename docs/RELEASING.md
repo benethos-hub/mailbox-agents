@@ -29,12 +29,13 @@ The steps in order:
 4. **The changelog.** Close `[Unreleased]` in `CHANGELOG.md` as
    `[X.Y.Z] - <date>`, in the same commit as step 3, and open an empty
    `[Unreleased]` above it. The section names the lines of the mailbox
-   service the release works against. In the same commit, the top row of
-   [COMPATIBILITY.md](COMPATIBILITY.md) names the version without "(not
-   released yet)", and a test holds it to `pyproject.toml`. At the foot
-   of the file, set the
+   service the release works against. At the foot of the file, set the
    link `[Unreleased]` to `compare/vX.Y.Z...HEAD` and add the link
-   `[X.Y.Z]`.
+   `[X.Y.Z]`. In the same commit, the top row of
+   [COMPATIBILITY.md](COMPATIBILITY.md) names the version, its lines and
+   the pin of the client, without the note "(not released yet)" a row
+   carries before its release. A test holds the row to `pyproject.toml`
+   and to `TESTED`.
 5. **The migrations.** Freeze the ones new in this release: add the
    fingerprint of each, `MIGRATIONS.step(N).fingerprint()`, to `RELEASED`
    in `tests/test_store.py`. A migration that shipped is never changed.
@@ -65,5 +66,5 @@ The steps in order:
   switch it to public under the packages of the organisation.
 - **After it.** In `freshness.yml` set `index: true` and the `index-check`
   its comment names, since the index job installs the published package.
-  Take the sentence that no image is published yet out of
-  `containers/production/README.md`.
+
+Once all three are done, this part goes.

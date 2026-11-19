@@ -19,8 +19,7 @@ agent runs over it and the scoring counts where it agrees.
   it is rightly empty. Values are compared with case and whitespace made
   uniform. A decision the evidence check refused counts as no answer.
   Tokens and time per message. A field is not counted apart by who chose
-  it: no agent records that since `invoices` version 4, so the count by
-  `<field>_source` went (2026-11-18).
+  it, a rule or the model: no agent records that.
 - **Always against the baseline.** Every report shows the rules alone
   beside the model, so what the model adds is a number.
 - **The judgement, not the filter.** The evaluation runs the baseline and

@@ -2,11 +2,11 @@
 
 Part of the [concept](../CONCEPT.md).
 
-> **Status: version 5 since 2026-11-19, the inbox folder an end station,
-> steps E1 to E6 at the end. Version 4 was rebuilt on 2026-11-18 after
-> [sorting](agent-sorting.md), steps I1 to I6, evaluated on the invented mail of
-> the test account and run there in `shadow` beside `sorting`.
-> Not run on a real mailbox in this version.**
+> **Status: version 5, prompt `v4`. Evaluated on the invented mail of the
+> test account and run there in `shadow` beside
+> [sorting](agent-sorting.md). Not run on a real mailbox in this version.
+> A run on the owner's account is the owner's decision, in `shadow`
+> first.**
 
 **Question:** is this message an invoice?
 
@@ -66,11 +66,11 @@ folder like any other, but nothing moves on from it:
 | the inbox folder | when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, as `*` takes in one at the top or `Invoices/*` takes in `Invoices/Telco` | the keyword, and it stays. No subfolder is made below it |
 | a subfolder, such as `Invoices/Hosting/Rechnungen` | never | |
 
-Before 2026-11-19 the inbox folder was never looked in. An inbox folder
-that was also a folder of a group of `sorting`, or one the settings took
-in, then left an invoice put there by `sorting` or by hand neither marked
-nor filed, silently. Now such an invoice is asked about and marked. An
-invoice the owner puts into the end station by hand costs a model call.
+It is looked in because an inbox folder that is also a folder of a group
+of `sorting`, or one the settings take in, would otherwise leave an
+invoice put there by `sorting` or by hand neither marked nor filed,
+silently. Such an invoice is asked about and marked. An invoice the owner
+puts into the end station by hand costs a model call.
 One the agent moved there itself is known to its state file and costs
 none. The test of the subfolder comes first: an inbox folder where the
 pattern of the subfolder points, such as `Invoices/Rechnungen` beside
@@ -116,10 +116,6 @@ invoices 5: ready
 
 `backfill` takes up the messages of the last days in the inbox and in every
 folder it looks in, account by account, each folder by its id.
-
-`MAILBOX_AGENTS_INVOICES_FOLDER` and `MAILBOX_AGENTS_INVOICES_SUPPLIERS_FILE`
-are retired with the supplier list and its examples (step I5). A `.env`
-that still names them starts, as an unknown setting is ignored.
 
 ## What happens to a message
 
@@ -226,16 +222,8 @@ has no tick. Every update of a message is fetched and looked at, as for
 | Prompt | `v4` | `v4`, unchanged |
 
 The agent version is 5, and it starts in `shadow` (decided 2026-11-19).
-Its steps, one commit each:
 
-| Step | Content | Done when |
-|---|---|---|
-| E1 | Measured first: a move by a mail client, its id and its feed events, in [mailbox service](mailbox-service.md) | done 2026-11-19 |
-| E2 | The inbox folder as an end station | done 2026-11-19 |
-| E3 | `status` lists the folders that matter | done 2026-11-19 |
-| E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | done 2026-11-19 |
-| E5 | `invoices` declares it | done 2026-11-19 |
-| E6 | Live on the test account | done 2026-11-19, below |
+## Measured, version 5
 
 `live/invoices.py` ran on the test account on 2026-11-19 with version 5,
 `invoices` in `shadow` and the model of the live setup, and all its checks
@@ -251,10 +239,11 @@ passed. The two orders beside `sorting` ended as with version 4. Then:
   the keyword `agent-invoice` beforehand ended as `skipped`, with no step
   and no model call, and the other three invoices were decided.
 
-Each check put the mail back, compared by Message-ID: two of the four
-messages `sorting` had moved, both of the group of `Providers/CloudHost`,
-were named under another id after they were moved back, in each of four
-runs ([mailbox service](mailbox-service.md)).
+Each check put the mail back, compared by Message-ID. Against the mailbox
+service 0.7.5 two of the four messages `sorting` had moved were named
+under another id after they were moved back, in each of four runs.
+Against 0.8.0, on the same day, none was
+([mailbox service](mailbox-service.md)).
 
 ## What changed from version 3
 
@@ -285,33 +274,9 @@ the business of [sorting](agent-sorting.md), which moves by the sender before
 The existing gold set still serves: its labels stay. The invented gold sets
 dropped their supplier field. In a gold file that still names one, the
 supplier counts as missing, as the agent no longer answers it: drop the
-field. The agent version is 4, and it starts in `shadow`.
-
-## Measured first
-
-Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
-[mailbox service](mailbox-service.md).
-
-1. A message that arrives in a folder other than the inbox reaches the
-   feed as `message.created`.
-2. `backfill` can list the messages of a folder by its id, account by
-   account, not by its path. It looks the id up first.
-
-## Order of the build
-
-Steps S1 to S7 of [sorting](agent-sorting.md) came first: this version needed the
-action `create_folder` and the measurements. Each step is one commit.
-
-| Step | Content | Done when |
-|---|---|---|
-| I1 | The two measurements above | done 2026-11-18 |
-| I2 | The three settings, checked at the start, `status` names a folder that is missing | done 2026-11-18 |
-| I3 | `admit` by folder, the supplier taken out of the schema, the baseline and the decision, prompt `v4` | done 2026-11-18 |
-| I4 | The open item and the look at an updated message | done 2026-11-18 |
-| I5 | `report` and the evaluation without the supplier, the old settings and the supplier list removed | done 2026-11-18 |
-| I6 | Evaluation of `v4` on the gold set, then `shadow` on the test account beside `sorting` | done 2026-11-18, below |
-
-A run on the owner's account is the owner's decision, in `shadow` first.
+field. The settings of version 3, `MAILBOX_AGENTS_INVOICES_FOLDER` and
+`MAILBOX_AGENTS_INVOICES_SUPPLIERS_FILE`, went with the supplier list. A
+`.env` that still names them starts, as an unknown setting is ignored.
 
 ## Measured, version 4
 

@@ -60,4 +60,5 @@ It runs as uid 10001, keeps the state file in the volume `/data`, serves
 metrics on 9464 and holds no secret. A container runs one agent, named in
 its command: `worker --agent <name>`. Its health check is
 `benethos-mailbox-agents health --agent <name>`, set per service in
-compose. No image is published yet.
+compose. A release publishes it for linux/amd64 and linux/arm64 under its
+version, see [docs/RELEASING.md](../docs/RELEASING.md).

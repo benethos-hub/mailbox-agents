@@ -2,12 +2,12 @@
 
 Part of the [concept](../CONCEPT.md).
 
-> **Status: built on 2026-11-18, steps S1 to S7, and run in `shadow` and in
-> `full` on the test account. Not run on a real mailbox.** Planned the same
-> day and revised after a review against the code. Its purpose: the mail of
-> providers such as a shop, a hoster or a bank goes into a folder of its
-> own, and one folder may take several, such as all banks. The name is a
-> working name. A decision is marked with its date.
+> **Status: built, and run in `shadow` and in `full` on the test account.
+> Not run on a real mailbox. A run on the owner's account is the owner's
+> decision, in `shadow` first.** Its purpose: the mail of providers such
+> as a shop, a hoster or a bank goes into a folder of its own, and one
+> folder may take several, such as all banks. A decision is marked with
+> its date.
 
 **Question:** is the sender of this message in the inbox one of a listed
 group, and which folder is the group's?
@@ -128,9 +128,8 @@ write `*@domain` or `*@*.domain`.
   itself, as a rule often names a person (decided 2026-11-18).
 - A changed list takes effect at the next start. It is new work: the
   decision is stored under a version made from the list, see section 3.
-- `sorting` reads and matches it with code of its own. The supplier list
-  of `invoices` version 3, whose rules differed, is gone with its rebuild
-  (step I5).
+- `sorting` reads and matches it with code of its own, which no other
+  agent shares.
 
 ## 3. What happens to a message
 
@@ -236,13 +235,13 @@ mailbox service exposes no header of a message (measured 2026-11-17 against
 receiving server set (measured 2026-11-19 on the test account). The agents
 do not read it yet.
 
-Until then **a group can be held (decided 2026-11-18)**: `"hold": true`
+Until they do **a group can be held (decided 2026-11-18)**: `"hold": true`
 records its moves as `shadow` does, whatever the stage of the agent, and
 `report` shows them. It is meant for a group whose folder would lend trust.
 Left out, a group is not held.
 
-Once the service answers per message whether the sender's domain was
-verified, a group gets a switch that moves verified mail only.
+What is planned on top of it: a switch for a group that moves only mail
+whose sender was verified ([roadmap](../ROADMAP.md)).
 
 ## 6. Settings
 
@@ -289,36 +288,14 @@ and a report is versioned (decided 2026-11-19).
 7. No model call is made and no call is counted.
 8. A held group in `full` moves nothing.
 
-## 11. Measured first, on the live setup
+On the live setup, `live/sorting.py` runs the agent in `shadow` and in
+`full` on the test account: folders made, mail moved and put back
+([testing](testing.md)). What the agent relies on of the mailbox service,
+a move that keeps the message's id and a folder made at the top or below
+another, was measured there first
+([mailbox service](mailbox-service.md)).
 
-Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
-[mailbox service](mailbox-service.md).
-
-1. A move made through the service reaches the change feed as
-   `message.updated` of the same message, which keeps its id.
-2. Creating a folder works at the top and below another.
-3. A folder that exists in another case is not refused: the service makes
-   a second one. The executor compares names ignoring case before it makes
-   a folder.
-
-## 12. Order of the build
-
-Each step is one commit with the gates green and the documents it touches.
-
-| Step | Content | Done when |
-|---|---|---|
-| S1 | The three measurements of section 11 | their results stand in [mailbox service](mailbox-service.md) |
-| S2 | `sources/mailbox.py`: creating a folder | offline tests against the fake service |
-| S3 | Contract and executor: `create_folder`, the folders an agent declares | tests 5 of section 10, the tables of the agent contract |
-| S4 | The list: reading, validating, matching, in `agents/sorting/` | tests 3 and 4. `invoices` keeps its own list until I5 |
-| S5 | `agents/sorting/`: select, admit, baseline, decide without a model, effect | tests 1, 2, 6, 7, 8 |
-| S6 | `report` for `sorting`, the setting, the example list | section 8 shown on invented mail |
-| S7 | Live: `sorting` in `shadow` and in `full` on the test account | `live/sorting.py`, folders made, mail moved and put back. Not `live/smoke.py`, which writes nothing |
-| S8 | [invoices](agent-invoices.md) rebuilt, its own steps I1 to I6 | see there |
-
-A run on the owner's account is the owner's decision, in `shadow` first.
-
-## 13. What the revision dropped
+## 11. What was decided against
 
 - **Categories inside `sorting`, one agent that sorts and recognises
   invoices.** Two agents it is (decided 2026-11-18), for three reasons. An
@@ -337,6 +314,7 @@ A run on the owner's account is the owner's decision, in `shadow` first.
 - **One list for both agents.** `invoices` must work without `sorting`
   (decided 2026-11-18), so it takes folders, not groups.
 
-## 14. Open
+## 12. Open
 
-- The switch for verified senders, once the mailbox service can answer it.
+- The switch for verified senders of section 5. The mailbox service
+  answers what it needs since 0.8.0.
