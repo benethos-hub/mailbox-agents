@@ -47,7 +47,7 @@ src/benethos_mailbox_agents/
   cli/            # the console script: worker, run, backfill, report, eval,
                   # status, paths, health, and the wiring of one session
   __main__.py     # enables `python -m benethos_mailbox_agents`
-  errors.py       # the error hierarchy, and redact
+  errors/         # the error hierarchy, one module per error, and redact
   settings/       # settings resolution, secrets from files
   logbook/        # every line on stderr as an activity of its catalogue,
                   # and what a line may never carry (docs/LOGGING.md)
