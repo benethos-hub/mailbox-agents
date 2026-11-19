@@ -230,7 +230,7 @@ class StepRunner:
         try:
             message = await self._reader.message(ref)
         except MailboxRefusedError as exc:
-            return self._not_fetched(ref, attempts, exc)
+            return self._refused(ref, attempts, exc, "fetch")
         if not self.agent.admit(message) or self._marked_before(message):
             return self._state(ref, "skipped")
         self._baseline(message)
@@ -265,7 +265,7 @@ class StepRunner:
             try:
                 message = await self._reader.message(ref)
             except MailboxRefusedError as exc:
-                return self._not_fetched(ref, attempts, exc)
+                return self._refused(ref, attempts, exc, "fetch")
         return await self._act(decision, message, calls, attempts)
 
     def _marked_before(self, message: MailMessage) -> bool:
@@ -279,12 +279,13 @@ class StepRunner:
             and not self._store.steps(message.ref)
         )
 
-    def _not_fetched(
-        self, ref: MessageRef, attempts: int, exc: MailboxRefusedError
+    def _refused(
+        self, ref: MessageRef, attempts: int, exc: MailboxRefusedError, step: str
     ) -> str:
-        """A message the service refused to hand over: skipped when it is
-        gone, else an attempt counted."""
-        self._failed(ref, "fetch", exc)
+        """A message the service refused in ``step``, to hand over or for
+        what the agent read for its actions: skipped when it is gone, else
+        an attempt counted."""
+        self._failed(ref, step, exc)
         if isinstance(exc, MessageGoneError):
             return self._state(ref, "skipped")
         return self._retry(ref, attempts)
@@ -301,10 +302,7 @@ class StepRunner:
             requests = await self.agent.effect(decision, message, self.context(calls))
             await self._effects(requests)
         except MailboxRefusedError as exc:
-            self._failed(ref, "effect", exc)
-            if isinstance(exc, MessageGoneError):
-                return self._state(ref, "skipped")
-            return self._retry(ref, attempts)
+            return self._refused(ref, attempts, exc, "effect")
         return self._state(ref, "done")
 
     def _baseline_version(self) -> str:
