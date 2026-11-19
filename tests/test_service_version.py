@@ -286,3 +286,12 @@ def test_the_live_setup_runs_a_service_of_the_newest_tested_line() -> None:
     width = 2 if newest[0] == 0 else 1
     assert is_tested(found.group(1))
     assert _numbers(found.group(1))[:width] == newest[:width]
+
+
+def test_the_readme_names_the_tested_lines_and_the_service() -> None:
+    """A reader learns which service the agents need, and where it is,
+    before installing anything."""
+    text = " ".join((ROOT / "README.md").read_text("utf-8").split())
+
+    assert f"today {line_names()}," in text
+    assert "[mailbox service](https://github.com/benethos-hub/mailbox)" in text

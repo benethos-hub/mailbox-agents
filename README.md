@@ -26,7 +26,8 @@ inquiries and file the mail of listed senders into folders.
 
 ## How it works
 
-- Mail is reached only through the REST API of a mailbox service, with its
+- Mail is reached only through the REST API of the
+  [mailbox service](https://github.com/benethos-hub/mailbox), with its
   Python client `benethos-mailbox-client`. An agent works only against a
   version of the service it was tested against, today 0.7 from 0.7.5, and
   refuses any other.
