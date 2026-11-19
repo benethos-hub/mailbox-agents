@@ -73,18 +73,12 @@ class Calls:
         self._prompt_version = prompt_version
         self._retention_days = retention_days
         self._now = now
-        self.contents: list[str] = []
         self.parts: list[str] = []
         self.models: list[str] = []
         self.count = 0
         self.tokens_in = 0
         self.tokens_out = 0
         self.duration_ms = 0
-
-    @property
-    def content(self) -> str:
-        """Everything the model was given for this message."""
-        return "\n".join(self.contents)
 
     @property
     def evidence(self) -> tuple[str, ...]:
@@ -111,7 +105,6 @@ class Calls:
                 "the agent made its model calls for today", per_day=True
             )
         self.count += 1
-        self.contents.append(content)
         self.parts.extend(evidence)
         try:
             reply = await self._gateway.ask(
