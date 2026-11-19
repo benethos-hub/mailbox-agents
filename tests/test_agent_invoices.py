@@ -8,19 +8,10 @@ from typing import Any, get_args
 
 import httpx
 import pytest
-from pydantic import BaseModel, ValidationError
 
-from benethos_mailbox_agents.agents.awaiting_reply.schema import (
-    Answer as AwaitingAnswer,
-)
-from benethos_mailbox_agents.agents.inquiries.schema import FIELDS
-from benethos_mailbox_agents.agents.inquiries.schema import (
-    Inquiry as InquiryAnswer,
-)
 from benethos_mailbox_agents.agents.invoices.agent import Invoices
 from benethos_mailbox_agents.agents.invoices.baseline import NEAR_MISS_WORDS
 from benethos_mailbox_agents.agents.invoices.schema import (
-    MAX_ANSWER_TEXT,
     MAX_FILES,
     MAX_FILES_TEXT,
     MAX_NAME,
@@ -33,14 +24,12 @@ from benethos_mailbox_agents.agents.invoices.schema import (
 from benethos_mailbox_agents.contract import Action
 from benethos_mailbox_agents.errors import ConfigError
 from benethos_mailbox_agents.evaluation.gold import load_gold
-from benethos_mailbox_agents.llm.gateway import strict_schema
 from benethos_mailbox_agents.records import (
     Address,
     Attachment,
     MailMessage,
     MessageRef,
 )
-from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.readiness import readiness, start
 from fakes import ACCOUNT, invented, wire_message
 from helpers import (
@@ -634,68 +623,6 @@ def test_the_near_misses_of_the_rules_are_those_of_the_schema() -> None:
     assert set(NEAR_MISS_WORDS) | {"none"} == set(named)
 
 
-LONG = "x" * (MAX_ANSWER_TEXT + 1)
-EMPTY = None
-
-# The Claude API compiles a schema of structured output with at most this
-# many parameters whose type is a union, nullable ones among them, and
-# refuses the request otherwise.
-UNION_PARAMETERS = 16
-
-
-def _unions(node: Any, defs: dict[str, Any]) -> int:
-    """How many properties of ``node``, at any depth, are a union. A
-    definition counts at each place it is used, as the API unfolds it."""
-    if isinstance(node, list):
-        return sum(_unions(item, defs) for item in node)
-    if not isinstance(node, dict):
-        return 0
-    if "$ref" in node:
-        return _unions(defs[node["$ref"].rpartition("/")[2]], defs)
-    found = sum(
-        1
-        for value in node.get("properties", {}).values()
-        if "anyOf" in value or isinstance(value.get("type"), list)
-    )
-    return found + sum(
-        _unions(value, defs) for key, value in node.items() if key != "$defs"
-    )
-
-
-@pytest.mark.parametrize(
-    "schema",
-    [Answer, AwaitingAnswer, InquiryAnswer],
-    ids=["invoices", "awaiting_reply", "inquiries"],
-)
-def test_each_schema_fits_the_claude_api(schema: type[BaseModel]) -> None:
-    found = strict_schema(schema)
-    assert _unions(found, found.get("$defs", {})) <= UNION_PARAMETERS
-
-
-@pytest.mark.parametrize(
-    ("schema", "answer_"),
-    [
-        (Answer, {"label": "invoice", "near_miss": "none", "quote": LONG}),
-        (AwaitingAnswer, {"expects_reply": True, "quote": LONG}),
-        (
-            InquiryAnswer,
-            {
-                "label": "inquiry",
-                "quote": "Projektanfrage",
-                **{name: EMPTY for name in FIELDS},
-                "role": {"value": LONG, "quote": "Python"},
-            },
-        ),
-    ],
-    ids=["invoices", "awaiting_reply", "inquiries"],
-)
-def test_an_answer_that_copies_the_mail_does_not_fit(
-    schema: type[BaseModel], answer_: dict[str, Any]
-) -> None:
-    with pytest.raises(ValidationError, match="longer than 300"):
-        schema.model_validate(answer_)
-
-
 async def test_a_long_quote_is_refused_as_schema(world: Wired) -> None:
     world.fake_gateway.answer(answer("invoice", "y" * 1000))
 
@@ -873,24 +800,6 @@ async def test_backfill_without_accounts_asks_every_account_for_its_folders(
     assert taken == 1
 
 
-async def test_backfill_of_an_agent_that_wants_no_folder(world: Wired) -> None:
-    from benethos_mailbox_agents.agents.counting.agent import Counting
-
-    counting = Worker(
-        agent=Counting(settings()),
-        store=world.store,
-        mailbox=world.mailbox,
-        gateway=world.gateway,
-        now=world.clock,
-    )
-
-    await counting.backfill(30)
-
-    pending = {row.ref.message_id for row in world.store.messages("pending", 100)}
-    assert "filed" not in pending
-    assert "inv-unlisted" in pending
-
-
 # -- marked mail the state file does not know -----------------------------------------
 
 
@@ -943,12 +852,6 @@ async def test_a_marked_inbox_invoice_moved_later_is_still_filed(world: Wired) -
     found = item(world, "inv-unlisted")
     assert found is not None and found.reason == "filed"
     assert len(world.fake_gateway.requests) == 1
-
-
-def test_only_invoices_skips_marked_mail() -> None:
-    from benethos_mailbox_agents.contract import discover
-
-    assert {name for name, cls in discover().items() if cls.skip_marked} == {"invoices"}
 
 
 def test_a_stranger_cannot_blow_up_the_call() -> None:

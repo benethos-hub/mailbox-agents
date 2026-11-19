@@ -6,6 +6,7 @@ import importlib
 import re
 import textwrap
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +26,7 @@ from benethos_mailbox_agents.contract import (
     load,
 )
 from benethos_mailbox_agents.errors import ContractError
-from benethos_mailbox_agents.records import Decision, Event, MailMessage
+from benethos_mailbox_agents.records import Decision, Event, FolderRef, MailMessage
 from benethos_mailbox_agents.settings import Settings
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -70,9 +71,20 @@ async def test_the_defaults_of_the_optional_methods() -> None:
     )
     context: Any = None
 
+    folder = FolderRef(id="f", name="Folder", role=None, path="Folder")
+
     assert agent.admit(message)
     assert await agent.observe(message, context) == []
+    assert await agent.tick(datetime(2026, 11, 19, tzinfo=UTC), context) == []
     assert agent.prepare() is None
+    assert agent.summarize([]) == []
+    assert agent.backfill_folder(folder) is False
+    assert agent.folders_needed() == ()
+    assert agent.describe_folders({"Folder": folder}) == []
+    assert agent.may_create("Folder/Sub", {"Folder": folder}) is False
+    assert agent.skip_marked is False
+    assert agent.report_labels == frozenset()
+    assert agent.report_fields == frozenset()
 
 
 @pytest.mark.parametrize(
@@ -221,3 +233,107 @@ def test_a_name_unlike_its_package_is_refused(package: str, tmp_path: Path) -> N
 def test_sample_has_no_tick_by_default() -> None:
     assert Sample.triggers.tick is False
     assert isinstance(Sample.actions, frozenset)
+
+
+# -- the tables of docs/specs/agent-contract.md against the code -------------------
+
+CONTRACT = ROOT / "docs" / "specs" / "agent-contract.md"
+
+
+def _table(header: str) -> list[list[str]]:
+    """The rows of the table of agent-contract.md whose header row starts
+    with ``header``, each as its cells."""
+    lines = CONTRACT.read_text("utf-8").splitlines()
+    start = next(n for n, line in enumerate(lines) if line.startswith(header))
+    rows = []
+    for line in lines[start + 2 :]:
+        if not line.startswith("|"):
+            break
+        rows.append([cell.strip() for cell in line.strip("|").split("|")])
+    return rows
+
+
+def _names(cell: str) -> list[str]:
+    """The names in backticks of a cell, a call reduced to its name."""
+    return [name.partition("(")[0] for name in re.findall(r"`([^`]+)`", cell)]
+
+
+# Provided by the base class for the registry, not a part an agent writes.
+PROVIDED = {"validate_definition"}
+
+
+def test_the_attribute_table_names_every_attribute_of_an_agent() -> None:
+    named = {name for row in _table("| Attribute |") for name in _names(row[0])}
+
+    declared = {name for name in Agent.__annotations__ if not name.startswith("_")}
+    assert named == declared
+
+
+def test_the_method_table_names_every_method_of_an_agent() -> None:
+    named = {name for row in _table("| Method |") for name in _names(row[0])}
+
+    methods = {
+        name
+        for name, value in vars(Agent).items()
+        if not name.startswith("_") and callable(getattr(Agent, name))
+    }
+    assert named == methods - PROVIDED
+
+
+def test_the_keyword_table_is_each_agents_default() -> None:
+    table = {
+        _names(row[0])[0]: _names(row[1])[0] for row in _table("| Agent | Keyword |")
+    }
+
+    assert table == {name: cls.default_keyword for name, cls in discover().items()}
+
+
+def test_the_skip_marked_table_is_what_each_agent_declares() -> None:
+    table = {_names(row[0])[0]: row[1] for row in _table("| Agent | `skip_marked` |")}
+
+    assert table == {
+        name: "on" if cls.skip_marked else "off" for name, cls in discover().items()
+    }
+
+
+@pytest.mark.parametrize("name", sorted(discover()))
+def test_each_agent_has_its_spec_and_its_settings_for_operation(name: str) -> None:
+    assert (ROOT / "docs" / "specs" / "agents" / f"{name}.md").is_file()
+    assert (
+        ROOT / "containers" / "production" / "agents" / name / ".env.example"
+    ).is_file()
+
+
+def _of_one_agent() -> list[tuple[Path, str]]:
+    """Each test file of one agent, test_agent_<name> or below, with the
+    agent. A test of all agents, such as test_agent_schemas.py, is none."""
+    found = []
+    for path in sorted((ROOT / "tests").glob("test_agent_*.py")):
+        for name in sorted(discover(), key=len, reverse=True):
+            if path.stem == f"test_agent_{name}" or path.stem.startswith(
+                f"test_agent_{name}_"
+            ):
+                found.append((path, name))
+                break
+    return found
+
+
+OF_ONE_AGENT = _of_one_agent()
+
+
+@pytest.mark.parametrize(
+    ("path", "own"), OF_ONE_AGENT, ids=[p.name for p, _ in OF_ONE_AGENT]
+)
+def test_the_tests_of_one_agent_import_no_other_agent(path: Path, own: str) -> None:
+    """A rule for all agents goes to a test of its own, such as
+    test_agent_schemas.py. Only test_agents_together.py brings several
+    agents together."""
+    found = set(
+        re.findall(r"benethos_mailbox_agents\.agents\.(\w+)", path.read_text("utf-8"))
+    )
+
+    assert found <= {own}
+
+
+def test_every_test_of_an_agent_is_found() -> None:
+    assert len(OF_ONE_AGENT) >= len(discover())
