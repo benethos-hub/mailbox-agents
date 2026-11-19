@@ -225,7 +225,26 @@ Its steps, one commit each:
 | E3 | `status` lists the folders that matter | done 2026-11-19 |
 | E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | done 2026-11-19 |
 | E5 | `invoices` declares it | done 2026-11-19 |
-| E6 | Live on the test account | |
+| E6 | Live on the test account | done 2026-11-19, below |
+
+`live/invoices.py` ran on the test account on 2026-11-19 with version 5,
+`invoices` in `shadow` and the model of the live setup, and all its checks
+passed. The two orders beside `sorting` ended as with version 4. Then:
+
+- The end station: an invoice of the inbox moved by hand into
+  `Invoices/Telco`, the inbox folder, which `Invoices/*` takes in. A
+  `backfill` with a new state file decided it an invoice and recorded the
+  keyword alone, no folder and no move below it. The folder line of
+  `status` read `Invoices/Telco: end station, looked in, an invoice is
+  marked and stays`.
+- Marked mail under a state file made anew: an invoice of the inbox given
+  the keyword `agent-invoice` beforehand ended as `skipped`, with no step
+  and no model call, and the other three invoices were decided.
+
+Each check put the mail back, compared by Message-ID: two of the four
+messages `sorting` had moved, both of the group of `Providers/CloudHost`,
+were named under another id after they were moved back, in each of four
+runs ([mailbox service](../mailbox-service.md)).
 
 ## What changed from version 3
 

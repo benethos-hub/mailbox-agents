@@ -56,6 +56,21 @@ Stalwart, on the test account:
   under an id no state file knows, but with an agent's keyword, comes from
   a state file made anew, or from a provider that gives a moved message a
   new id, which this check did not see at Stalwart.
+- A message moved and moved back can come back under another id, measured
+  2026-11-19 in four runs of `live/invoices.py`. `sorting` moved four
+  messages of the inbox into its folders, three of them into
+  `Providers/CloudHost`, and the check moved all four back through
+  `update_message` some minutes later. Afterwards two of the three in
+  `Providers/CloudHost`, each time the same two and none of them an
+  invoice, were no longer read under their old id (`404`) and lay in the
+  inbox under a new one. The two short-lived ids the feed names while
+  moves sync (below) came in the same runs. Moving those three messages
+  into that folder and back through the service by a script, one after
+  the other with a keyword set and taken off, kept every id, as did a
+  single message moved alone. What gives the new id is **(to verify)**.
+  An agent that relies on its state file meets such a message as a new
+  one: `invoices` skips it when it carries the agent's keyword, and asks
+  about it when it does not.
 - `create_folder` makes a folder at the top without a parent, and below
   another with the parent's id. At IMAP a folder's id follows its path.
 - A name that exists in the same case is refused, `409 conflict`. The same

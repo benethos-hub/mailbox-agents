@@ -15,10 +15,20 @@ list containers/live/sorting.json, in both orders:
 2. ``sorting`` first: the mail lies in the folders of the groups, and
    ``invoices`` finds it there through ``backfill``.
 
-Then every message goes back to where it was. ``invoices`` asks the model
-of the settings, so the check costs one call per message and order. Each
-check says ok or FAILED, and the exit code is 1 if one failed. Never point
-it at an account that is not a test account.
+The mail goes back to where it was, and two checks of version 5 follow,
+each with a state file of its own:
+
+3. The end station: an invoice of the inbox is moved by hand into
+   ``Invoices/Telco``, the inbox folder, which ``Invoices/*`` takes in.
+   ``invoices`` records only the keyword for it, no folder and no move.
+4. Marked mail under a state file made anew: an invoice of the inbox gets
+   the keyword ``agent-invoice`` as from an earlier run. ``invoices`` skips
+   it, with no step and no model call, and decides the others.
+
+Then every message goes back to where it was, without either keyword.
+``invoices`` asks the model of the settings, so the check costs one call
+per message and run. Each check says ok or FAILED, and the exit code is 1
+if one failed. Never point it at an account that is not a test account.
 """
 
 from __future__ import annotations
@@ -54,6 +64,7 @@ from benethos_mailbox_agents.agents.invoices.agent import Invoices
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
 from benethos_mailbox_agents.agents.sorting.groups import load_groups
 from benethos_mailbox_agents.llm.gateway import Gateway
+from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.settings import Settings
 from benethos_mailbox_agents.sources.mailbox import Mailbox
@@ -61,6 +72,11 @@ from benethos_mailbox_agents.store import Store
 
 SUBFOLDER = "Rechnungen"
 WAIT = 120
+# The inbox folder of the checks of version 5, a folder of mail.py that
+# Invoices/* takes in, and the invoices of the inbox they use.
+END = "Invoices/Telco"
+TO_END = "inv-telco-1"
+MARKED = "inv-cloudhost-1"
 
 
 def _invoices() -> tuple[int, set[str]]:
@@ -100,19 +116,43 @@ class Live:
         """The keyword sorting sets with these settings."""
         return Sorting(self.settings).keyword
 
-    def invoices(self, name: str) -> tuple[Worker, Store]:
+    def invoices(self, name: str, **values: object) -> tuple[Worker, Store]:
         settings = self.settings.model_copy(
             update={
                 "stage": "shadow",
                 "invoices_folders": ["Providers/*"],
                 "invoices_subfolder": "{folder}/" + SUBFOLDER,
                 "data_dir": self.folder,
+                **values,
             }
         )
         agent = Invoices(settings)
         agent.prepare()
         store = Store.open(self.folder / f"invoices-{name}.db")
         return worker(agent, store, self.mailbox, self.gateway), store
+
+    async def ref_of(self, local: str) -> MessageRef:
+        """The message of the inbox whose Message-ID starts with ``local``,
+        as mail.py names it."""
+        for ref in self.before:
+            message = await self.mailbox.message(ref)
+            header = (message.message_id_header or "").strip("<>")
+            if header.partition("@")[0] == local:
+                return ref
+        raise AssertionError(f"{local} is not in the inbox")
+
+    async def restore(self) -> int:
+        """Every message back as it lay, without the keyword of either
+        agent where it had none. The messages are moved once: a second
+        look right after a move may still see the folder before it."""
+        moved = await put_back(self.mailbox, self.before, self.keyword)
+        marked = Invoices(self.settings).keyword
+        wanted = marked.casefold()
+        for ref, (_, keywords) in (await snapshot(self.mailbox, self.before)).items():
+            was = {k.casefold() for k in self.before[ref][1]}
+            if wanted in {k.casefold() for k in keywords} and wanted not in was:
+                await self.mailbox.remove_keyword(ref, marked)
+        return moved
 
     async def sort(self) -> None:
         await sort_test_account(self.settings, self.mailbox, "full", self.folder)
@@ -123,6 +163,14 @@ def recorded_moves(store: Store) -> set[str]:
         a.argument
         for a in store.actions()
         if a.action == "move_to_folder" and not a.executed
+    }
+
+
+async def by_header(live: Live, found: Snapshot) -> dict[str, MessageRef]:
+    """The messages of ``found`` by their Message-ID."""
+    return {
+        (await live.mailbox.message(ref)).message_id_header or ref.message_id: ref
+        for ref in found
     }
 
 
@@ -187,21 +235,97 @@ async def sorting_first(live: Live) -> str:
     return f"{taken} taken up, {decided} invoices, folders recorded {made}"
 
 
+async def put_back_between(live: Live) -> str:
+    """The mail back, compared by Message-ID: the service may name a
+    message moved by sorting and back under another id afterwards, which
+    docs/specs/mailbox-service.md records. The checks after this one work
+    on the inbox as it is then."""
+    was = await by_header(live, live.before)
+    moved = await live.restore()
+    started = time.monotonic()
+    while True:
+        now = await inbox_snapshot(live.mailbox, live.settings)
+        headers = await by_header(live, now)
+        same = set(headers) == set(was) and all(
+            now[headers[h]][1] == live.before[was[h]][1] for h in was
+        )
+        if same or time.monotonic() - started > WAIT:
+            break
+        await asyncio.sleep(5)
+    if not same:
+        missing = len(set(was) - set(headers))
+        raise AssertionError(
+            f"the inbox is not as it was: {missing} of {len(was)} not there "
+            "or with other keywords"
+        )
+    renewed = sum(headers[h] != was[h] for h in was)
+    live.before = now
+    return (
+        f"{moved} messages back in the inbox, {renewed} of them under another "
+        f"id ({time.monotonic() - started:.0f} s)"
+    )
+
+
+async def end_station(live: Live) -> str:
+    ref = await live.ref_of(TO_END)
+    end = await live.mailbox.folder_at(ref.account_id, END)
+    if end is None:
+        raise AssertionError(f"{END} is missing, run containers/live/setup.sh")
+    await live.mailbox.move(ref, end.id)
+    marking, store = live.invoices(
+        "end-station",
+        invoices_folders=["Providers/*", "Invoices/*"],
+        invoices_inbox_folder=END,
+    )
+    with store:
+        await marking.backfill(DAYS)
+        await marking.drain()
+        decided = [s for s in store.steps(ref) if s.step == "decision"]
+        if not decided or decided[-1].result["label"] != "invoice":
+            raise AssertionError("the invoice in the end station was not decided")
+        found = [(a.action, a.argument) for a in store.actions(ref)]
+        if found != [("add_keyword", "agent-invoice")]:
+            raise AssertionError(f"recorded {found}, the keyword alone expected")
+        made = [a for a in store.actions() if a.argument.startswith(END + "/")]
+        if made:
+            raise AssertionError("an action below the end station was recorded")
+        folders = await live.mailbox.folders(ref.account_id, fresh=True)
+        described = marking.agent.describe_folders(
+            {f.path: f for f in folders.values()}
+        )
+    line = next(line for line in described if line.startswith(END + ":"))
+    await put_back_between(live)
+    return f"marked there and left, status says {line!r}, then put back"
+
+
+async def marked_before(live: Live) -> str:
+    ref = await live.ref_of(MARKED)
+    await live.mailbox.add_keyword(ref, Invoices(live.settings).keyword)
+    marking, store = live.invoices("made-anew")
+    with store:
+        await marking.backfill(DAYS)
+        await marking.drain()
+        row = store.message(ref)
+        if row is None or row.state != "skipped" or store.steps(ref):
+            raise AssertionError("the marked invoice was not skipped")
+        decided = labels(store)["invoice"]
+        if decided != INVOICES - 1:
+            raise AssertionError(f"{decided} invoices decided, {INVOICES - 1} expected")
+    return f"skipped with no step, the other {decided} invoices decided"
+
+
 async def put_back_check(live: Live) -> str:
     live.putting_back = True
-    moved = await put_back(live.mailbox, live.before, live.keyword)
-    after = await snapshot(live.mailbox, live.before)
-    if {r: f for r, (f, _) in after.items()} != {
-        r: f for r, (f, _) in live.before.items()
-    }:
-        raise AssertionError("the inbox is not as it was")
-    return f"{moved} messages back in the inbox"
+    return await put_back_between(live)
 
 
 CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
     ("the inbox before", before),
     ("invoices first, then sorting", invoices_first),
     ("sorting first, then invoices", sorting_first),
+    ("the mail put back after sorting", put_back_between),
+    ("an invoice put into the end station by hand", end_station),
+    ("a marked invoice under a state file made anew", marked_before),
     ("the mail put back", put_back_check),
 ]
 
@@ -217,7 +341,7 @@ async def run(settings: Settings) -> int:
         finally:
             # A check that failed or a run cut short leaves no mail moved.
             if not live.putting_back:
-                moved = await put_back(live.mailbox, live.before, live.keyword)
+                moved = await live.restore()
                 if moved:
                     print(f"         {moved} messages back in the inbox")
     return 1 if failed else 0
