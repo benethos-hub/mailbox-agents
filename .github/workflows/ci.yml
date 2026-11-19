@@ -230,7 +230,8 @@ jobs:
 
       # publish.yml publishes linux/amd64 and linux/arm64, but only amd64 is
       # built above, so an arm64 break would first show at a release. Build
-      # it here as well, into the cache scope buildkit the release reads.
+      # it here as well, into the cache scope buildkit a manual run of
+      # publish.yml reads. A release reads no cache.
       # Nothing is loaded or pushed: that the build completes is the check.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
