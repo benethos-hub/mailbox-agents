@@ -131,6 +131,7 @@ def connect_mailbox(settings: Settings) -> AbstractAsyncContextManager[Mailbox]:
         settings.service_url or "",
         settings.secret("service_token"),
         allow_http=settings.service_allow_http,
+        verify=settings.ssl_context(),
     )
 
 
@@ -142,6 +143,7 @@ def open_gateway(settings: Settings) -> Gateway:
         settings.model or "",
         timeout=settings.gateway_timeout_seconds,
         allow_http=settings.gateway_allow_http,
+        verify=settings.ssl_context(),
     )
 
 

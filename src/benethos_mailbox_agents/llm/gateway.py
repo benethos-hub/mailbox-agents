@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import ssl
 import time
 from copy import deepcopy
 from dataclasses import dataclass
@@ -79,8 +80,10 @@ class Gateway:
         *,
         timeout: float,
         allow_http: bool = False,
+        verify: ssl.SSLContext | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
+        """``verify`` replaces the roots of certifi, as an own CA needs."""
         _check_url(base_url, allow_http)
         self.model = model
         self._http = httpx.AsyncClient(
@@ -88,6 +91,7 @@ class Gateway:
             headers={"Authorization": f"Bearer {key}"},
             timeout=httpx.Timeout(timeout, connect=10.0),
             transport=transport,
+            verify=True if verify is None else verify,
             trust_env=False,
         )
 

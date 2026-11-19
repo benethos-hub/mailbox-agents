@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ssl
 from collections.abc import AsyncIterator
 from datetime import date
 
@@ -281,3 +282,25 @@ async def test_recent_in_lists_one_folder_of_one_account(
         "inv-hosting",
         "2026-11-10",
     )
+
+
+async def test_a_ca_of_the_settings_is_what_the_service_is_trusted_by(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    given: list[object] = []
+    real = httpx.AsyncHTTPTransport
+
+    def transport(**kwargs: object) -> httpx.AsyncHTTPTransport:
+        given.append(kwargs["verify"])
+        assert kwargs["trust_env"] is False
+        return real(**kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(httpx, "AsyncHTTPTransport", transport)
+    context = ssl.create_default_context()
+
+    async with connect("https://mailbox.example.test", "t", verify=context):
+        pass
+    async with connect("https://mailbox.example.test", "t"):
+        pass
+
+    assert given == [context, True]

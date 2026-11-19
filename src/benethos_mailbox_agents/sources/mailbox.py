@@ -11,6 +11,7 @@ failure into an error of :mod:`errors`. See docs/specs/mailbox-service.md.
 
 from __future__ import annotations
 
+import ssl
 from collections.abc import AsyncIterator, Awaitable, Iterable
 from contextlib import asynccontextmanager
 from datetime import date
@@ -358,15 +359,19 @@ async def connect(
     token: str,
     *,
     allow_http: bool = False,
+    verify: ssl.SSLContext | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> AsyncIterator[Mailbox]:
     """A :class:`Mailbox` over a client of its own, closed on the way out.
 
     Without a transport of a test, the client gets one that reads no proxy
     and no certificate setting from the environment, as the gateway does.
+    ``verify`` replaces the roots of certifi, as an own CA needs.
     """
     if transport is None:
-        transport = httpx.AsyncHTTPTransport(trust_env=False)
+        transport = httpx.AsyncHTTPTransport(
+            trust_env=False, verify=True if verify is None else verify
+        )
     try:
         client = MailboxClient(
             base_url=base_url, token=token, transport=transport, allow_http=allow_http

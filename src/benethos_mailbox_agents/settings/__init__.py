@@ -10,6 +10,7 @@ in the same setting with the suffix ``_FILE``. See docs/specs/configuration.md.
 from __future__ import annotations
 
 import re
+import ssl
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -69,6 +70,10 @@ class Settings(BaseSettings):
     gateway_key_file: Path | None = None
     gateway_timeout_seconds: float = Field(default=120.0, gt=0)
     model: str | None = None
+    # The certificates of the authorities https to both upstreams trusts,
+    # in place of the roots of certifi, for a service or gateway with a
+    # certificate of an own CA. SSL_CERT_FILE is not read.
+    ca_file: Path | None = None
 
     # --- what the agent works on and how far it may go ----------------------
     accounts: Annotated[list[str], NoDecode] = Field(default_factory=list)
@@ -108,6 +113,20 @@ class Settings(BaseSettings):
         """``a,b`` in the environment, a list when built in code."""
         if isinstance(value, str):
             return [part.strip() for part in value.split(",") if part.strip()]
+        return value
+
+    @field_validator("ca_file", mode="before")
+    @classmethod
+    def _empty_is_unset(cls, value: Any) -> Any:
+        return None if value == "" else value
+
+    @field_validator("ca_file")
+    @classmethod
+    def _readable_ca(cls, value: Path | None) -> Path | None:
+        """Read at the start: a missing file, or one without a certificate,
+        stops it, not the first call."""
+        if value is not None:
+            _context(value)
         return value
 
     @field_validator("log_level", mode="before")
@@ -156,12 +175,25 @@ class Settings(BaseSettings):
         environment names."""
         return [f"{PREFIX}{name.upper()}" for name in names if not getattr(self, name)]
 
+    def ssl_context(self) -> ssl.SSLContext | None:
+        """The TLS context for both upstreams when ``CA_FILE`` names one,
+        trusting the authorities of that file only. None keeps the roots
+        of certifi."""
+        return None if self.ca_file is None else _context(self.ca_file)
+
     def secret(self, name: Literal["service_token", "gateway_key"]) -> str:
         """The value of a secret, or a :class:`ConfigError` naming it."""
         found: SecretStr | None = getattr(self, name)
         if found is None:
             raise ConfigError(f"{PREFIX}{name.upper()} is not set")
         return found.get_secret_value()
+
+
+def _context(path: Path) -> ssl.SSLContext:
+    try:
+        return ssl.create_default_context(cafile=str(path))
+    except (OSError, ssl.SSLError):
+        raise ValueError("a readable file of PEM certificates") from None
 
 
 def load_settings(env_file: Path | None = None, **overrides: Any) -> Settings:
