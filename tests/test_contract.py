@@ -29,8 +29,7 @@ from benethos_mailbox_agents.contract import (
 from benethos_mailbox_agents.errors import ContractError
 from benethos_mailbox_agents.records import Decision, Event, FolderRef, MailMessage
 from benethos_mailbox_agents.settings import Settings
-
-ROOT = Path(__file__).resolve().parent.parent
+from helpers import ROOT
 
 
 class Sample(Agent):

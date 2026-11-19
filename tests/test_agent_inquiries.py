@@ -25,9 +25,8 @@ from benethos_mailbox_agents.evaluation.report import build
 from benethos_mailbox_agents.evaluation.run import evaluate
 from benethos_mailbox_agents.records import Address, MailMessage, MessageRef
 from fakes import ACCOUNT, invented
-from helpers import Wired, run, settings, wired
+from helpers import ROOT, Wired, run, settings, wired
 
-ROOT = Path(__file__).resolve().parent.parent
 DATA = Path(__file__).resolve().parent / "data"
 PATTERNS = ROOT / "config" / "benethos-mailbox-agents" / "inquiries.example.json"
 MESSAGES = {m["id"]: m for m in invented("invented-inquiries.json")}

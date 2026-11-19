@@ -35,8 +35,8 @@ from benethos_mailbox_agents.store.migrations import (
     MigrationRegistry,
     versions,
 )
+from helpers import ROOT
 
-ROOT = Path(__file__).resolve().parent.parent
 NOW = datetime(2026, 11, 17, 9, 0, tzinfo=UTC)
 REF = MessageRef(account_id="acc", message_id="m1")
 OTHER = MessageRef(account_id="acc", message_id="m2")

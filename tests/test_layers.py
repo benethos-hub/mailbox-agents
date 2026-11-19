@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 import benethos_mailbox_agents
+from helpers import ROOT
 
 PACKAGE = "benethos_mailbox_agents"
 SOURCE = Path(benethos_mailbox_agents.__file__).parent
@@ -351,7 +352,7 @@ def test_the_check_finds_a_relative_import(
     assert _layer(found[0]) not in MAY_IMPORT["records"]
 
 
-TESTS = Path(__file__).resolve().parent
+TESTS = ROOT / "tests"
 
 
 @pytest.mark.parametrize("path", sorted(TESTS.glob("test_*.py")), ids=lambda p: p.name)

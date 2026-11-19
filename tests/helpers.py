@@ -4,11 +4,14 @@ of a message."""
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+import importlib.util
+import sys
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Literal
 
 import pytest
@@ -37,6 +40,35 @@ from benethos_mailbox_agents.settings import Settings
 from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
 from benethos_mailbox_agents.store import Store
 from fakes import ACCOUNT, FakeGateway, FakeService
+
+# The root of the checkout: what the tests of files beside the package read.
+ROOT = Path(__file__).resolve().parent.parent
+
+
+@contextmanager
+def load_script(path: Path, name: str) -> Iterator[ModuleType]:
+    """The script at ``path`` as the module ``name``, loaded by its path as
+    it runs beside what it imports. Afterwards ``sys.path`` is as it was,
+    and the script and every module it brought from a folder it put on the
+    path are gone from ``sys.modules``."""
+    path_before = list(sys.path)
+    modules_before = set(sys.modules)
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+        yield module
+    finally:
+        added = [Path(p) for p in sys.path if p not in path_before]
+        sys.path[:] = path_before
+        for key in set(sys.modules) - modules_before:
+            file = getattr(sys.modules[key], "__file__", None)
+            if key == name or (
+                file and any(Path(file).is_relative_to(d) for d in added)
+            ):
+                del sys.modules[key]
+
 
 START = datetime(2026, 11, 17, 9, 0, tzinfo=UTC)
 

@@ -28,7 +28,8 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
+from helpers import ROOT
+
 ALLOW = "pragma: allowlist secret"
 
 # Domains reserved for examples and tests (RFC 2606, RFC 6761), and the
@@ -125,9 +126,12 @@ def tracked() -> tuple[Path, ...]:
     git = shutil.which("git")
     if git is None:
         pytest.fail("the repository content is read through git, which is missing")
-    listed = subprocess.run(
-        [git, "ls-files", "-z"], cwd=ROOT, capture_output=True, check=True
-    ).stdout.decode()
+    done = subprocess.run(
+        [git, "ls-files", "-z"], cwd=ROOT, capture_output=True, check=False
+    )
+    if done.returncode != 0:
+        pytest.fail("the repository content is read through git: not a git checkout")
+    listed = done.stdout.decode()
     found = []
     for name in filter(None, listed.split("\0")):
         path = ROOT / name
