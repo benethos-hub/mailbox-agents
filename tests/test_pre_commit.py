@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 
-HOOK = Path(__file__).resolve().parent.parent / ".githooks" / "pre-commit"
+from helpers import ROOT
+
+HOOK = ROOT / ".githooks" / "pre-commit"
 
 SH = shutil.which("sh")
 GIT = shutil.which("git")

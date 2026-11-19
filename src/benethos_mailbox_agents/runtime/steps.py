@@ -99,7 +99,6 @@ def make_context(
     """The context an agent is handed, its open items over ``store``
     unless others are named."""
     return Context(
-        settings=agent.settings,
         model=calls,
         reader=reader,
         items=items or StoredItems(store, now),

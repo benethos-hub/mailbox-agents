@@ -7,15 +7,21 @@ builds the agent a command runs, once. See docs/specs/agent-contract.md.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from ..contract import Agent, discover
-from ..errors import ConfigError, ContractError
+from ..errors import ConfigError, ContractError, MailboxAgentError
+from ..records import FolderRef
 from ..settings import Settings
+from .actions import in_another_case
 
 __all__ = [
     "MAILBOX_SETTINGS",
     "MODEL_SETTINGS",
+    "Folders",
     "Readiness",
+    "accounts_of",
+    "folder_lines",
     "readiness",
     "required",
     "start",
@@ -98,3 +104,51 @@ def start(cls: type[Agent], settings: Settings) -> Agent:
     except (ConfigError, ContractError) as exc:
         raise ConfigError(f"{cls.name} is not ready: {exc.message}") from None
     return agent
+
+
+class Folders(Protocol):
+    """What :func:`folder_lines` reads of the mailbox service."""
+
+    async def accounts(self) -> tuple[str, ...]:
+        """The ids of the accounts the user is granted."""
+
+    async def folders(self, account_id: str) -> dict[str, FolderRef]:
+        """The folders of an account, by id."""
+
+
+async def accounts_of(settings: Settings, mailbox: Folders) -> list[str]:
+    """The accounts an agent works on: those the settings name, or else
+    every account the user is granted."""
+    return settings.accounts or list(await mailbox.accounts())
+
+
+async def folder_lines(agent: Agent, mailbox: Folders) -> list[str]:
+    """What ``status`` says of the folders of ``agent``, for each account
+    it works on: the folders it says matter, and a line for each folder
+    it expects that is not there. One whose name is there in another case
+    is said so, as the executor neither moves into it nor makes it. An
+    account whose folders are refused gets a line of its own, and the
+    others are still listed."""
+    accounts = await accounts_of(agent.settings, mailbox)
+    if not accounts:
+        return ["folders not checked: no account is granted"]
+    lines = []
+    for account in accounts:
+        try:
+            found = await mailbox.folders(account)
+        except MailboxAgentError as exc:
+            lines.append(f"folders not checked in {account}: {exc.message}")
+            continue
+        there = {f.path: f for f in found.values()}
+        described = agent.describe_folders(there)
+        if described:
+            lines.append(f"folders in {account}:")
+            lines.extend(f"  {line}" for line in described)
+        for path in agent.folders_needed():
+            if path in there:
+                continue
+            if in_another_case(path, there):
+                lines.append(f"folder in another case in {account}: {path}")
+            else:
+                lines.append(f"folder missing in {account}: {path}")
+    return lines

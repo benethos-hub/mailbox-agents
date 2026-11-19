@@ -6,8 +6,10 @@ the upstreams, the runtime, the agents, and the command line on top.
 Every import statement counts, one inside a function or under
 ``TYPE_CHECKING`` included, since a deferred import is still a dependency.
 
-A new module or subpackage fails :func:`test_every_layer_has_a_row` until
-it is given a row in :data:`MAY_IMPORT`.
+A new top-level module or subpackage fails :func:`test_every_layer_has_a_row`
+until it is given a row in :data:`MAY_IMPORT`. Within a layer any module may
+import another, and no import may close a circle, which
+:func:`test_no_import_closes_a_circle` holds.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from pathlib import Path
 import pytest
 
 import benethos_mailbox_agents
+from helpers import ROOT
 
 PACKAGE = "benethos_mailbox_agents"
 SOURCE = Path(benethos_mailbox_agents.__file__).parent
@@ -190,9 +193,14 @@ def test_a_live_script_imports_nothing_of_the_command_line(path: Path) -> None:
     through it."""
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         if isinstance(node, ast.ImportFrom) and node.module:
-            assert not node.module.startswith("benethos_mailbox_agents.cli"), (
-                f"{path.name} imports {node.module}"
-            )
+            names = [node.module]
+        elif isinstance(node, ast.Import):
+            names = [alias.name for alias in node.names]
+        else:
+            continue
+        for name in names:
+            assert name != f"{PACKAGE}.cli", f"{path.name} imports {name}"
+            assert not name.startswith(f"{PACKAGE}.cli."), f"{path.name} imports {name}"
 
 
 # Where an HTTP status may be read: the modules of the upstreams, and the
@@ -351,7 +359,7 @@ def test_the_check_finds_a_relative_import(
     assert _layer(found[0]) not in MAY_IMPORT["records"]
 
 
-TESTS = Path(__file__).resolve().parent
+TESTS = ROOT / "tests"
 
 
 @pytest.mark.parametrize("path", sorted(TESTS.glob("test_*.py")), ids=lambda p: p.name)
@@ -363,3 +371,79 @@ def test_a_test_module_imports_no_other(path: Path) -> None:
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 assert not alias.name.startswith("test_"), f"imports {alias.name}"
+
+
+def _module(path: Path) -> str:
+    """The module of ``path``, a package by its ``__init__``."""
+    parts = path.relative_to(SOURCE).with_suffix("").parts
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    return ".".join([PACKAGE, *parts])
+
+
+def _graph() -> dict[str, set[str]]:
+    """Which module of the package imports which, the modules as nodes."""
+    nodes = {_module(path): path for path in _modules()}
+    graph: dict[str, set[str]] = {name: set() for name in nodes}
+    for name, path in nodes.items():
+        for target, _ in _imports(path):
+            while target and target not in nodes:
+                target = target.rpartition(".")[0]
+            if target and target != name:
+                graph[name].add(target)
+    return graph
+
+
+def _down_to(node: str, stack: list[str], on_stack: set[str]) -> list[str]:
+    """Take the nodes off ``stack`` down to ``node``: one strongly
+    connected part."""
+    part = []
+    while True:
+        taken = stack.pop()
+        on_stack.discard(taken)
+        part.append(taken)
+        if taken == node:
+            return part
+
+
+def _circles(graph: dict[str, set[str]]) -> list[list[str]]:
+    """The strongly connected parts of ``graph`` of more than one node,
+    by Tarjan's algorithm."""
+    index: dict[str, int] = {}
+    low: dict[str, int] = {}
+    stack: list[str] = []
+    on_stack: set[str] = set()
+    found: list[list[str]] = []
+
+    def visit(node: str) -> None:
+        index[node] = low[node] = len(index)
+        stack.append(node)
+        on_stack.add(node)
+        for target in graph[node]:
+            if target not in index:
+                visit(target)
+                low[node] = min(low[node], low[target])
+            elif target in on_stack:
+                low[node] = min(low[node], index[target])
+        if low[node] == index[node]:
+            part = _down_to(node, stack, on_stack)
+            if len(part) > 1:
+                found.append(sorted(part))
+
+    for node in sorted(graph):
+        if node not in index:
+            visit(node)
+    return found
+
+
+def test_no_import_closes_a_circle() -> None:
+    graph = _graph()
+
+    assert len(graph) > 50
+    assert _circles(graph) == []
+
+
+def test_a_circle_is_found() -> None:
+    assert _circles({"a": {"b"}, "b": {"c"}, "c": {"a"}, "d": {"a"}}) == [
+        ["a", "b", "c"]
+    ]

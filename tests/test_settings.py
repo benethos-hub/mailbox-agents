@@ -11,8 +11,7 @@ import pytest
 
 from benethos_mailbox_agents import errors
 from benethos_mailbox_agents.settings import PREFIX, Settings, load_settings
-
-ROOT = Path(__file__).resolve().parent.parent
+from helpers import ROOT
 
 
 @pytest.fixture(autouse=True)

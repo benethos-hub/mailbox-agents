@@ -187,6 +187,19 @@ async def test_backfill_again_takes_a_decided_message_up_anew(world: Wired) -> N
     assert _state(world, "m1") == "pending"
 
 
+async def test_backfill_of_an_agent_that_wants_no_folder(world: Wired) -> None:
+    """The inbox and sent mail alone: a message in a folder of the owner
+    is not taken up by an agent that wants no folder besides."""
+    world.service.add(wire_message("in-inbox"), change=None)
+    world.service.add(wire_message("filed", folder_ids=["inv-hosting"]), change=None)
+
+    await worker(world).backfill(30)
+
+    pending = {row.ref.message_id for row in world.store.messages("pending", 100)}
+    assert "filed" not in pending
+    assert "in-inbox" in pending
+
+
 class Ticking(Echo):
     """Observes updates, and on the tick asks for its keyword on m1."""
 

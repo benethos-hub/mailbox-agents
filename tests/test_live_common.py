@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import importlib.util
 import os
+import sys
+from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
 
@@ -12,19 +13,28 @@ import pytest
 from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.sources.mailbox import connect
 from fakes import ACCOUNT, FakeService, wire_message
+from helpers import ROOT, load_script
 
 # live/ is no package and lies outside testpaths: the module is loaded by
 # its path, as a script would find it beside itself.
-COMMON = Path(__file__).resolve().parent.parent / "live" / "common.py"
+COMMON = ROOT / "live" / "common.py"
 
 
 @pytest.fixture(scope="module")
-def common() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("live_common", COMMON)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+def common() -> Iterator[ModuleType]:
+    with load_script(COMMON, "live_common") as module:
+        yield module
+
+
+def test_loading_a_script_leaves_the_path_as_it_was() -> None:
+    before = list(sys.path)
+
+    with load_script(COMMON, "live_common_again") as module:
+        assert str(ROOT / "containers" / "live") in sys.path
+        assert module.mail.local("<x@y.example>") == "x"
+
+    assert sys.path == before
+    assert "live_common_again" not in sys.modules
 
 
 def env_file(tmp_path: Path, url: str) -> Path:

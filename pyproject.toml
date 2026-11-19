@@ -114,7 +114,7 @@ max-statements = 50
 
 [tool.mypy]
 python_version = "3.11"
-files = ["src", "live", "assets"]
+files = ["src", "live", "assets", "containers/live"]
 # The live scripts import the invented mail of containers/live/ as mail.
 mypy_path = "containers/live"
 warn_unused_ignores = true

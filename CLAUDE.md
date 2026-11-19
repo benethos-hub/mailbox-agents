@@ -57,7 +57,7 @@ See docs/specs/architecture.md for the full table.
 src/benethos_mailbox_agents/
   cli/            # the console script, its commands, the wiring of a session
   __main__.py     # enables `python -m benethos_mailbox_agents`
-  errors.py       # the error hierarchy, and redact
+  errors/         # the error hierarchy, one module per error, and redact
   settings/       # settings resolution, secrets from files
   logbook/        # every line on stderr, one activity class per line,
                   # see docs/LOGGING.md
@@ -94,8 +94,8 @@ assets/           # brand/: icon.svg and the PNGs build.py renders from it
 ```
 
 Which layer may import which is a table in `tests/test_layers.py`. A new
-module or subpackage needs a row there, and an import against the order
-fails the suite.
+top-level module or subpackage needs a row there, an import against the
+order fails the suite, and so does an import that closes a circle.
 
 ## Verifying
 

@@ -3,26 +3,22 @@ so a change of the SVG always changes them, as the brand check asks."""
 
 from __future__ import annotations
 
-import importlib.util
 import struct
 import zlib
-from pathlib import Path
+from collections.abc import Iterator
 from types import ModuleType
 
 import pytest
 
-BUILD = Path(__file__).resolve().parent.parent / "assets" / "build.py"
+from helpers import ROOT, load_script
+
+BUILD = ROOT / "assets" / "build.py"
 
 
-def _build() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("assets_build", BUILD)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-build = _build()
+@pytest.fixture(scope="module")
+def build() -> Iterator[ModuleType]:
+    with load_script(BUILD, "assets_build") as module:
+        yield module
 
 
 def _chunk(kind: bytes, data: bytes) -> bytes:
@@ -52,7 +48,7 @@ def _texts(png: bytes) -> list[bytes]:
     return found
 
 
-def test_the_stamp_names_the_hash_of_the_svg() -> None:
+def test_the_stamp_names_the_hash_of_the_svg(build: ModuleType) -> None:
     stamped = build.stamped(PNG, "<svg/>")
 
     (text,) = _texts(stamped)
@@ -60,7 +56,7 @@ def test_the_stamp_names_the_hash_of_the_svg() -> None:
     assert stamped.endswith(PNG[33:])
 
 
-def test_another_svg_gives_another_png_and_one_stamp_only() -> None:
+def test_another_svg_gives_another_png_and_one_stamp_only(build: ModuleType) -> None:
     first = build.stamped(PNG, "<svg><title>a</title></svg>")
     second = build.stamped(first, "<svg><title>b</title></svg>")
 
@@ -74,11 +70,13 @@ def test_another_svg_gives_another_png_and_one_stamp_only() -> None:
     [PNG[:35], PNG[:60], PNG + b"\0\1", PNG[:-12]],
     ids=["length-cut", "chunk-cut", "after-iend", "no-iend"],
 )
-def test_a_png_cut_short_or_with_bytes_after_its_end_is_refused(png: bytes) -> None:
+def test_a_png_cut_short_or_with_bytes_after_its_end_is_refused(
+    build: ModuleType, png: bytes
+) -> None:
     with pytest.raises(ValueError, match="PNG"):
         build.stamped(png, "<svg/>")
 
 
-def test_a_file_that_is_no_png_is_refused() -> None:
+def test_a_file_that_is_no_png_is_refused(build: ModuleType) -> None:
     with pytest.raises(ValueError):
         build.stamped(b"GIF89a", "<svg/>")

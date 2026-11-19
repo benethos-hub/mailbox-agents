@@ -20,7 +20,7 @@ and docs/specs/safety.md.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from contextlib import suppress
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -40,7 +40,14 @@ from ..records import DISCARD_ROLES, FolderRef, MailMessage, MessageRef
 from ..store import Store
 from .metrics import Metrics
 
-__all__ = ["FORBIDDEN_ROLES", "STAGE_ALLOWS", "Executor", "Outcome", "Writer"]
+__all__ = [
+    "FORBIDDEN_ROLES",
+    "STAGE_ALLOWS",
+    "Executor",
+    "Outcome",
+    "Writer",
+    "in_another_case",
+]
 
 # What each stage carries out. The rest is recorded only.
 STAGE_ALLOWS: dict[str, frozenset[Action]] = {
@@ -84,6 +91,14 @@ class Outcome(StrEnum):
 class _OwnersChoiceError(Exception):
     """The message was moved by the agent once already: a move asked again
     is not taken, the folder it lies in now is the owner's choice."""
+
+
+def in_another_case(path: str, paths: Iterable[str]) -> bool:
+    """Whether one of ``paths`` is ``path`` in another case only. The
+    service would make such a folder as a second one (measured
+    2026-11-18), so the executor neither makes it nor moves into it, and
+    ``status`` names it."""
+    return any(p != path and p.casefold() == path.casefold() for p in paths)
 
 
 @dataclass(frozen=True)
@@ -400,7 +415,7 @@ class Executor:
         # Read again, not doubled: folder_at replaces the cached list when
         # it misses, and only the fresh list answers for another case.
         fresh = await self._mailbox.folders(account_id)
-        if any(f.path.casefold() == path.casefold() for f in fresh.values()):
+        if in_another_case(path, (f.path for f in fresh.values())):
             raise ActionRefusedError("a folder of that name exists in another case")
         above = path.rpartition("/")[0]
         if above and (account_id, above) in self._recorded_folders:

@@ -127,6 +127,8 @@ Each sets a keyword of its own, of the form `agent-<word>`.
 
 #### The runtime
 
+- The context an agent is handed holds the model, the read-only mailbox,
+  its open items and the clock. Its settings it has as `self.settings`.
 - One SQLite state file per agent, readable by its owner only, with its
   schema brought forward on opening and a second writer refused. A state
   file that cannot be read or written ends the worker.

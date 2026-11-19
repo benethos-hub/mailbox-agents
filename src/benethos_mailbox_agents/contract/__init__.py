@@ -4,7 +4,6 @@ reach, and the registry that finds the agents. See docs/specs/agent-contract.md.
 from __future__ import annotations
 
 from .agent import (
-    EVENTS,
     REVERSED_BY,
     Action,
     ActionRequest,
@@ -19,7 +18,6 @@ from .context import Context, Items, Model, Reader
 from .registry import discover, load
 
 __all__ = [
-    "EVENTS",
     "REVERSED_BY",
     "Action",
     "ActionRequest",
