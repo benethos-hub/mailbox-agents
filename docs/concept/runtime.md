@@ -2,7 +2,9 @@
 
 Part of the [concept](../CONCEPT.md).
 
-One loop per process:
+One loop per process. Each pass first asks the mailbox service for its
+version: one outside the tested lines ends the worker
+([mailbox service](mailbox-service.md#the-version-of-the-service)). Then:
 
 1. Read the feed from the stored cursor. On the first pass, start from the
    state of now. On `410` take a new state and run `backfill` over
@@ -23,7 +25,9 @@ leaves them `pending`, the cursor moves, and the next pass waits twice as
 long as the last, up to `BACKOFF_CEILING_SECONDS`. A state file that
 cannot be read or written, one that is no SQLite file or a full disk,
 ends the worker with a `StateFileError` and exit code 1: no pass goes on
-without it (2026-11-19).
+without it (2026-11-19). A mailbox service outside the tested lines ends
+it with a `ServiceVersionError` and exit code 2, as it ends `run` and
+`backfill`.
 
 Message states: `pending`, `skipped` (not admitted, marked before the
 state file for an agent that declares `skip_marked`, which an update
@@ -81,12 +85,12 @@ changed until the evaluation was run again.
 | `report --agent <name> [--limit N] [--state S] [--offline]` | [report](#report) |
 | `eval --agent <name> --gold <file> [--reports DIR]` | [evaluation](evaluation.md) |
 | `health --agent <name>` | exit 0 while the loop makes progress, [operation](operation.md) |
-| `status` | for each agent whether it is ready, which setting it misses, the folders that matter to it and a folder it expects that is missing or there in another case only, in each account `ACCOUNTS` names or else in each account the user is granted, its counts and its last progress |
+| `status` | the version of the mailbox service and whether it is tested, then for each agent whether it is ready, which setting it misses, the folders that matter to it and a folder it expects that is missing or there in another case only, in each account `ACCOUNTS` names or else in each account the user is granted, its counts and its last progress |
 | `paths` | the settings file, the data folder and each state file |
 
 `--env-file` names the settings file for every command. An error to
-correct ends with exit code 2, an upstream that is away or an unreadable
-state file with 1. `status` and `paths` start no agent and change
+correct ends with exit code 2, a mailbox service outside the tested lines
+among them, an upstream that is away or an unreadable state file with 1. `status` and `paths` start no agent and change
 nothing. `status` names a state file it cannot read and goes on with the
 next agent.
 

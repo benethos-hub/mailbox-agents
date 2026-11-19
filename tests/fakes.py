@@ -102,6 +102,9 @@ class FakeService:
         self.feed: list[dict[str, Any]] = []
         self.expired: set[str] = set()
         self.down = False
+        # What /health names, and how often it was asked.
+        self.version = "0.7.5"
+        self.health_asked = 0
         # Status and code every request is refused with while set.
         self.refusal: tuple[int, str] | None = None
         # Status and code every write is refused with while set.
@@ -155,6 +158,13 @@ class FakeService:
         return httpx.MockTransport(self.handle)
 
     def handle(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/health":
+            # Open to everyone and outside /v1: no refusal reaches it, and
+            # it is kept out of ``requests``, which name the calls of /v1.
+            self.health_asked += 1
+            if self.down:
+                return _error(503, "unavailable")
+            return httpx.Response(200, json={"status": "ok", "version": self.version})
         self.requests.append(request)
         if self.down:
             return _error(503, "unavailable")

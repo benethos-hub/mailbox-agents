@@ -26,7 +26,11 @@ published yet, so `pull` fails until the first release.
 
    Each agent has a user of its own in the mailbox service, with
    `mail.read` and `mail.write` on the accounts it works on and nothing
-   else, and a key of its own at the gateway. See docs/concept/mailbox-service.md and docs/concept/model-gateway.md.
+   else, and a key of its own at the gateway. See
+   docs/concept/mailbox-service.md and docs/concept/model-gateway.md.
+   The mailbox service has to run a version the agents are tested
+   against, which `status` names. An agent refuses any other and ends
+   with exit code 2, so update the agents before the service.
 4. Start the agents, first `counting`, which changes nothing, to see the
    deployment work:
 

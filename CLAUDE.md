@@ -126,6 +126,12 @@ uv lock --check
   assumption about the mailbox service or the gateway with a live check
   before building on it, and mark it **(to verify)** in its file under
   `docs/concept/` until then.
+- **The mailbox service is tested by line.** The agents refuse a service
+  outside `TESTED` in `sources/mailbox.py`. A new line of the service is a
+  change of its own, with its changelog read, the live checks run and what
+  changed measured again: docs/concept/mailbox-service.md has the steps.
+  A test holds the pin of the client and the image of the live setup to
+  the newest line.
 - A live check is a manual run, never a gate: `containers/live/README.md`
   says how to start the mail server of its own, and `live/smoke.py` checks
   the package against it, read-only.

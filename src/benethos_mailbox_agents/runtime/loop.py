@@ -6,7 +6,8 @@ agent selects for a decision as ``pending``, hands each event routed to
 that are due, asks the agent on the tick what is due, and stores the
 cursor last. A crash repeats work and skips no mail. A mailbox service or
 gateway that is away leaves every message where it is, and the next pass
-waits twice as long, up to the ceiling. See docs/concept/runtime.md.
+waits twice as long, up to the ceiling. A service outside the tested
+lines ends the loop. See docs/concept/runtime.md.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from ..errors import (
     MailboxAgentError,
     MailboxRefusedError,
     MessageGoneError,
+    ServiceVersionError,
     StateFileError,
     UnavailableError,
 )
@@ -71,6 +73,9 @@ class Upstream(Reader, Writer, Protocol):
 
     async def accounts(self) -> tuple[str, ...]:
         """The ids of the accounts the user is granted."""
+
+    async def ensure_tested(self) -> str:
+        """The version of the service, once it is in a tested line."""
 
 
 class Worker:
@@ -134,8 +139,13 @@ class Worker:
     # -- one pass ---------------------------------------------------------------
 
     async def run_pass(self) -> float:
-        """One pass. Answers the seconds to wait before the next."""
+        """One pass. Answers the seconds to wait before the next.
+
+        It asks the service for its version first, in every pass: a
+        service can be replaced by another release between two passes
+        without one request failing."""
         started = time.monotonic()
+        await self._mailbox.ensure_tested()
         state, events = await self._read_feed()
         observe = self._record(events)
         for ref in observe:
@@ -175,7 +185,7 @@ class Worker:
         except ChangesExpiredError:
             record(feed.Expired(agent=self.agent.name))
             fresh = await self._mailbox.start(self.accounts)
-            await self.backfill(self.settings.backfill_days)
+            await self._backfill(self.settings.backfill_days)
             return fresh, []
         return fresh, events
 
@@ -332,7 +342,12 @@ class Worker:
         """Record the messages of the last ``days`` days the agent selects,
         as if each had just been created. With ``again`` a message decided
         before is taken up anew, for a new prompt or model. Answers how
-        many are pending because of it."""
+        many are pending because of it. The service is asked for its
+        version first, as a pass does."""
+        await self._mailbox.ensure_tested()
+        return await self._backfill(days, again=again)
+
+    async def _backfill(self, days: int, *, again: bool = False) -> int:
         since = (self._now() - timedelta(days=days)).date()
         now = self._now()
         added = 0
@@ -371,9 +386,10 @@ class Worker:
                 wait = await self.run_pass()
             except UnavailableError as exc:
                 wait = self._wait_after(exc)
-            except StateFileError:
-                # Nothing goes on without the state file: a pass after it
-                # would fail the same way, forever.
+            except (StateFileError, ServiceVersionError):
+                # Nothing goes on without the state file, nor against a
+                # service outside the tested lines: a pass after it would
+                # fail the same way, forever.
                 raise
             except MailboxAgentError as exc:
                 record(worker.PassFailed(agent=self.agent.name, error=exc))

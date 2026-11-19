@@ -15,7 +15,12 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from .. import __version__, logbook
-from ..errors import ConfigError, ContractError, MailboxAgentError
+from ..errors import (
+    ConfigError,
+    ContractError,
+    MailboxAgentError,
+    ServiceVersionError,
+)
 from ..settings import DEFAULT_ENV_FILE, load_settings
 from . import commands
 
@@ -118,7 +123,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings = load_settings(args.env_file)
         logbook.configure(settings.log_level)
         code: int = args.handler(args, settings)
-    except (ConfigError, ContractError) as exc:
+    except (ConfigError, ContractError, ServiceVersionError) as exc:
         print(f"{PROG}: {exc.message}", file=sys.stderr)
         return 2
     except MailboxAgentError as exc:

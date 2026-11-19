@@ -1,17 +1,18 @@
 """The mailbox service: the only module that imports benethos_mailbox_client.
 
-It offers what the agents need of the service and nothing else: the change
-feed, the messages of the last days for a backfill, the accounts, a
-message, a thread, the folders, a keyword set or taken off, a move, and a
-folder made. There is no way here to send, delete or trash, so the runtime
-cannot do any of it whatever an agent asks. Which folder may be made is
-the runtime's to decide. Every answer is turned into a record of
-:mod:`records`, and every failure into an error of :mod:`errors`. See
-docs/concept/mailbox-service.md.
+It offers what the agents need of the service and nothing else: its
+version and whether that is tested, the change feed, the messages of the
+last days for a backfill, the accounts, a message, a thread, the folders,
+a keyword set or taken off, a move, and a folder made. There is no way
+here to send, delete or trash, so the runtime cannot do any of it whatever
+an agent asks. Which folder may be made is the runtime's to decide. Every
+answer is turned into a record of :mod:`records`, and every failure into
+an error of :mod:`errors`. See docs/concept/mailbox-service.md.
 """
 
 from __future__ import annotations
 
+import re
 import ssl
 from collections.abc import AsyncIterator, Awaitable, Iterable
 from contextlib import asynccontextmanager
@@ -36,6 +37,7 @@ from ..errors import (
     MailboxRefusedError,
     MailboxUnavailableError,
     MessageGoneError,
+    ServiceVersionError,
 )
 from ..records import (
     EVENTS,
@@ -48,12 +50,51 @@ from ..records import (
     Thread,
 )
 
-__all__ = ["Mailbox", "connect"]
+__all__ = ["TESTED", "Mailbox", "connect", "is_tested", "line_names"]
 
 T = TypeVar("T")
 
 # The size of one page of the feed and of a message list.
 _PAGE = 200
+
+# The lines of the mailbox service this package is tested against, each as
+# its lowest release, the newest last. A line is the minor version while
+# the major is 0, where a minor release may change what the service does,
+# and the major version after that. The newest one is the pin of the client
+# in pyproject.toml and the line of the image of containers/live, which
+# tests/test_service_version.py holds equal. A line is added by a change of
+# its own, see docs/concept/mailbox-service.md.
+TESTED: tuple[tuple[int, int, int], ...] = ((0, 7, 5),)
+
+_VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
+
+
+def _within(found: tuple[int, int, int], floor: tuple[int, int, int]) -> bool:
+    """Whether ``found`` is in the line of ``floor`` and not below it."""
+    if floor[0] == 0:
+        return found[:2] == floor[:2] and found[2] >= floor[2]
+    return found[0] == floor[0] and found[1:] >= floor[1:]
+
+
+def is_tested(version: str) -> bool:
+    """Whether ``version`` of the service is in a line of :data:`TESTED`.
+    The three numbers at its start count, so a version that starts with
+    none is in no line."""
+    match = _VERSION.match(version)
+    if match is None:
+        return False
+    major, minor, patch = (int(part) for part in match.groups())
+    return any(_within((major, minor, patch), floor) for floor in TESTED)
+
+
+def line_names() -> str:
+    """The lines of :data:`TESTED` in words, for a person."""
+    return " and ".join(
+        f"{floor[0]}.{floor[1]} from {floor[0]}.{floor[1]}.{floor[2]}"
+        if floor[0] == 0
+        else f"{floor[0]} from {floor[0]}.{floor[1]}.{floor[2]}"
+        for floor in TESTED
+    )
 
 
 async def _call(pending: Awaitable[T]) -> T:
@@ -113,6 +154,26 @@ class Mailbox:
 
     async def aclose(self) -> None:
         await self._client.aclose()
+
+    # -- the service itself ---------------------------------------------------------
+
+    async def version(self) -> str:
+        """The version the service names at ``/health``, which it answers
+        without a right and counts against no limit."""
+        found = await _call(self._client.health())
+        return found.version
+
+    async def ensure_tested(self) -> str:
+        """The version of the service, once it is in a tested line. Raises
+        :class:`ServiceVersionError` for any other."""
+        found = await self.version()
+        if not is_tested(found):
+            raise ServiceVersionError(
+                f"the mailbox service runs {found[:40]!r}, and this package "
+                f"is tested against {line_names()}: run a release of the "
+                "agents that is tested against that service"
+            )
+        return found
 
     # -- the change feed ----------------------------------------------------------
 
