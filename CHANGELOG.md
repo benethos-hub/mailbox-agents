@@ -280,8 +280,8 @@ commit that makes the change. Design decisions live in
   when the mailbox service was away while it made the subfolder or moved
   the message: the same update on the next pass files it, where it was
   dropped before.
-- `invoices` no longer looks in its subfolder or its inbox folder when
-  `MAILBOX_AGENTS_INVOICES_FOLDERS` would take them in, as
+- `invoices` no longer looks in its subfolder when
+  `MAILBOX_AGENTS_INVOICES_FOLDERS` would take it in, as
   `Invoices,Invoices/*` takes in `Invoices/Rechnungen`. A `backfill` made
   an empty `Rechnungen` below the filed invoice before.
 - No folder is made for the move of a message the agent moved before.
