@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..contract import Agent
+from ..contract import Agent, discover
 from ..errors import ConfigError, ContractError
 from ..settings import Settings
 
@@ -54,6 +54,21 @@ class Readiness:
         return not self.missing and self.problem is None
 
 
+def _own_keyword(agent: type[Agent], settings: Settings) -> None:
+    """A :class:`ConfigError` when ``MAILBOX_AGENTS_KEYWORD`` is the
+    keyword of another agent. Set in env settings that several agents
+    share, it gives them one keyword, and an agent that skips its marked
+    mail would skip what the other one marked."""
+    if settings.keyword is None:
+        return
+    for other in discover().values():
+        if other.name != agent.name and other.default_keyword == settings.keyword:
+            raise ConfigError(
+                f"MAILBOX_AGENTS_KEYWORD is the keyword of {other.name}: "
+                "give each agent its own env file"
+            )
+
+
 def readiness(agent: type[Agent], settings: Settings) -> Readiness:
     """Whether ``agent`` could start with ``settings``: the settings it
     misses, or what its preparation found wrong, or else the agent
@@ -62,6 +77,7 @@ def readiness(agent: type[Agent], settings: Settings) -> Readiness:
     if missing:
         return Readiness(agent.name, agent.version, missing, None)
     try:
+        _own_keyword(agent, settings)
         prepared = agent(settings)
         prepared.prepare()
     except (ConfigError, ContractError) as exc:
@@ -76,6 +92,7 @@ def start(cls: type[Agent], settings: Settings) -> Agent:
     if missing:
         raise ConfigError(f"{cls.name} misses settings: {', '.join(missing)}")
     try:
+        _own_keyword(cls, settings)
         agent = cls(settings)
         agent.prepare()
     except (ConfigError, ContractError) as exc:

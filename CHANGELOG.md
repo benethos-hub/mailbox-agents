@@ -58,6 +58,10 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- An agent does not start when `MAILBOX_AGENTS_KEYWORD` is the keyword of
+  another agent, and `status` warns when the setting is set at all: in
+  settings several agents share, it gave them one keyword, and
+  `invoices` skipped what `sorting` had marked.
 - `MAILBOX_AGENTS_KEYWORD` takes lower case letters, digits and dashes
   only, as the agents' own keywords. A keyword such as `$Junk`, which
   would make every marked mail spam, or one with capitals or control

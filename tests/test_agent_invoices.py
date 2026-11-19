@@ -538,6 +538,18 @@ def test_a_wrong_folder_setting_stops_the_start() -> None:
         start(Invoices, values)
 
 
+def test_the_keyword_of_another_agent_stops_the_start() -> None:
+    """Set in settings several agents share, the keyword setting gives
+    them one keyword, and invoices would skip what sorting marked."""
+    values = settings(**READY, keyword="agent-sorted")
+
+    assert "of sorting" in (readiness(Invoices, values).problem or "")
+    with pytest.raises(ConfigError, match="own env file"):
+        start(Invoices, values)
+    assert readiness(Invoices, settings(**READY, keyword="agent-invoice")).ready
+    assert readiness(Invoices, settings(**READY, keyword="agent-bills")).ready
+
+
 def test_the_folders_it_expects() -> None:
     found = agent(invoices_folders=["Invoices/*", "Archive"], invoices_inbox_folder="X")
 

@@ -167,6 +167,11 @@ def _say(line: str) -> None:
 
 
 def status(args: argparse.Namespace, settings: Settings) -> int:
+    if settings.keyword is not None:
+        _say(
+            "MAILBOX_AGENTS_KEYWORD is set for every agent of these settings: "
+            "give each agent its own env file"
+        )
     for cls in discover().values():
         found = readiness(cls, settings)
         if found.ready:
