@@ -11,9 +11,9 @@ name: Freshness
 #     the newest versions pyproject.toml allows, as a fresh install of the
 #     package does, and runs the tests on them.
 #
-# The run after each completed Publish is for the index job, once it is on:
-# it installs the release just published from PyPI, so a release that does
-# not install shows within minutes.
+# The run after each completed Publish is for the index job: it installs
+# the release just published from PyPI, so a release that does not install
+# shows within minutes.
 #
 # Nothing here commits anything: the upgraded lockfile stays in the runner.
 
@@ -69,7 +69,7 @@ jobs:
       extra-jobs: newest
       alarm-title: Newest dependency versions break the agents
       alarm-resolved: The newest dependency versions work.
-      # Off until the first release is on PyPI: the index job installs the
-      # published package, and there is none yet. Then index: true, and
-      # index-check: $FRESHNESS_PYTHON -m benethos_mailbox_agents --help.
-      index: false
+      # The package as a user installs it today, from PyPI into a fresh
+      # environment, answering its help through the module entry point.
+      index: true
+      index-check: $FRESHNESS_PYTHON -m benethos_mailbox_agents --help

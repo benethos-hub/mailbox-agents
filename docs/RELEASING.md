@@ -52,19 +52,4 @@ The steps in order:
    image: `X.Y.Z` and `X.Y`, and `latest` for a full release, all on the
    same revision. A pre-release gets its exact version only. The run of
    `freshness.yml` that follows each publish installs the release from
-   PyPI, once its index job is on.
-
-## Once, around the first release
-
-- **Before it.** PyPI trusts `publish.yml` through a pending publisher and
-  the GitHub environment `pypi-benethos-mailbox-agents`, open to tags `v*`
-  only. The head of `publish.yml` names each value.
-- **Before it, a trial.** Run `publish.yml` by hand on `main`. The job
-  `pypi-trial` builds and checks the package and asks PyPI whether it
-  would take it, without an upload, and the image is pushed as `edge`. A
-  new package on ghcr.io is private even when its repository is public:
-  switch it to public under the packages of the organisation.
-- **After it.** In `freshness.yml` set `index: true` and the `index-check`
-  its comment names, since the index job installs the published package.
-
-Once all three are done, this part goes.
+   PyPI and asks it for its help.
