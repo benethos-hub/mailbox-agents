@@ -13,17 +13,19 @@ commas, each written in one of three ways:
 
 The inbox is always looked in. A message in a folder below one looked in,
 such as the subfolder an invoice was put in, is not looked at, so an
-invoice is not asked about twice. Neither the subfolder nor the inbox
-folder is looked in even where the settings would take it in, as
-``Invoices`` and ``Invoices/*`` take in ``Invoices/Rechnungen``, and ``*``
-an inbox folder at the top. ``Parent/*`` and ``*`` are matched against
-the path of the folder a message lies in, so a folder made after the
-start, by ``sorting`` say, is looked in too.
+invoice is not asked about twice. The subfolder is not looked in even
+where the settings would take it in, as ``Invoices`` and ``Invoices/*``
+take in ``Invoices/Rechnungen``. ``Parent/*`` and ``*`` are matched
+against the path of the folder a message lies in, so a folder made after
+the start, by ``sorting`` say, is looked in too.
 
 ``MAILBOX_AGENTS_INVOICES_SUBFOLDER`` is where an invoice goes, as
 ``{folder}/Rechnungen``: below the folder the message lies in.
 ``MAILBOX_AGENTS_INVOICES_INBOX_FOLDER`` is where an invoice found in the
-inbox goes. Unset, it is marked and stays. See docs/specs/agents/invoices.md.
+inbox goes. Unset, it is marked and stays. The inbox folder is an end
+station (decided 2026-11-19): looked in when the settings take it in, as
+``*`` takes in one at the top, and an invoice there is marked and stays,
+nothing is made below it. See docs/specs/agents/invoices.md.
 """
 
 from __future__ import annotations
@@ -112,12 +114,17 @@ class Places:
 
     def _by_path(self, path: str, role: str | None) -> bool:
         """Whether the folder at ``path`` is one it looks in, the inbox
-        aside. Never the inbox folder, nor the subfolder of a folder it
-        looks in or a folder between the two, whatever the settings
-        match: an invoice put there is not filed again."""
-        if path == self.inbox_folder or self._below_one(path):
+        aside. Never the subfolder of a folder it looks in or a folder
+        between the two, whatever the settings match: an invoice put
+        there is not filed again. The inbox folder is looked in when the
+        settings take it in, as an end station."""
+        if self._below_one(path):
             return False
         return self._matches(path, role)
+
+    def is_end(self, folder: FolderRef) -> bool:
+        """Whether ``folder`` is the inbox folder: an invoice there stays."""
+        return folder.role != "inbox" and folder.path == self.inbox_folder
 
     def _matches(self, path: str, role: str | None) -> bool:
         """Whether the settings take in the folder at ``path``."""
@@ -154,16 +161,20 @@ class Places:
 
     def target(self, folder: FolderRef) -> str | None:
         """Where an invoice in ``folder`` goes: the subfolder below it, the
-        inbox folder for the inbox. None when it stays."""
+        inbox folder for the inbox. None when it stays, as in the inbox
+        folder."""
         if folder.role == "inbox":
             return self.inbox_folder
-        if not self.subfolder:
+        if not self.subfolder or self.is_end(folder):
             return None
         return "/".join((folder.path, *self.subfolder))
 
     def steps(self, folder: FolderRef) -> tuple[str, ...]:
         """The folders from the one below ``folder`` down to its subfolder,
-        the top first: those made when missing."""
+        the top first: those made when missing. None below the inbox
+        folder."""
+        if self.is_end(folder):
+            return ()
         return tuple(
             "/".join((folder.path, *self.subfolder[:count]))
             for count in range(1, len(self.subfolder) + 1)
@@ -175,12 +186,16 @@ class Places:
         ``folders`` are the account's folders by path: the folder it looks
         in must be one of them, and is judged with its role, so ``*``
         makes nothing below sent mail or drafts. The inbox folder is not
-        made."""
+        made, nor anything below it."""
         for count in range(1, len(self.subfolder) + 1):
             suffix = "/".join(self.subfolder[:count])
             if path.endswith("/" + suffix):
                 base = folders.get(path[: -len(suffix) - 1])
-                if base is not None and self._by_path(base.path, base.role):
+                if (
+                    base is not None
+                    and not self.is_end(base)
+                    and self._by_path(base.path, base.role)
+                ):
                     return True
         return False
 

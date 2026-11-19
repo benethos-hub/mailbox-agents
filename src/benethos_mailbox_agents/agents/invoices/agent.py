@@ -9,10 +9,12 @@ an inbox folder is set, and gets an open item: when a person or
 ``sorting`` moves it into a folder the agent looks in, the update of the
 message reaches the agent, which moves it on into the subfolder without a
 new model call. The item is opened also when an inbox folder is set, as
-its move may not be taken, and closes when the message reaches it. Who put
-a message into a folder does not matter: ``sorting``, a rule of the mail
-server or the owner by hand. The agent knows nothing of groups and names
-no supplier (agent version 4). See docs/specs/agents/invoices.md.
+its move may not be taken, and closes when the message reaches it. The
+inbox folder is an end station: where the settings take it in, an invoice
+there is marked and stays. Who put a message into a folder does not
+matter: ``sorting``, a rule of the mail server or the owner by hand. The
+agent knows nothing of groups and names no supplier (agent version 5).
+See docs/specs/agents/invoices.md.
 """
 
 from __future__ import annotations
@@ -51,7 +53,7 @@ MOVED_ELSEWHERE = "moved_elsewhere"
 
 class Invoices(Agent):
     name = "invoices"
-    version = "4"
+    version = "5"
     description = (
         "Marks invoices, and moves one into the subfolder of the folder it lies in."
     )
@@ -141,8 +143,8 @@ class Invoices(Agent):
             # It stays, or its move into the inbox folder may not be taken,
             # the folder missing or the stage below full: a move into a
             # folder the agent looks in, by a person or by sorting, reaches
-            # it as an update (observe). One that reaches the inbox folder,
-            # which the agent does not look in, closes the item.
+            # it as an update (observe). One that reaches the inbox folder
+            # closes the item, as filed where the agent looks in it.
             await context.items.open(message.ref, message.thread_id, NO_DEADLINE)
         return requests + self._file(message, folder)
 
@@ -151,8 +153,9 @@ class Invoices(Agent):
     ) -> list[ActionRequest]:
         """An update of an invoice marked in the inbox: once it lies in a
         folder the agent looks in, it moves on into the subfolder, with no
-        model call, and its item closes. One moved anywhere else closes
-        its item and stays.
+        model call, and its item closes. One that reached the inbox folder
+        where the agent looks in it closes its item as filed and stays.
+        One moved anywhere else closes its item and stays.
 
         An item closed as filed whose message still lies in a folder the
         agent looks in is filed again: the item closes before the actions
@@ -199,7 +202,8 @@ class Invoices(Agent):
     def _file(self, message: MailMessage, folder: FolderRef) -> list[ActionRequest]:
         """The folders to make and the move, for an invoice in ``folder``:
         to the inbox folder from the inbox, to the subfolder from a folder
-        it looks in. Nothing when the settings name no place."""
+        it looks in. Nothing when the settings name no place, nor from the
+        inbox folder."""
         target = self.places.target(folder)
         if target is None:
             return []

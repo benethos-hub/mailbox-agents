@@ -1,7 +1,8 @@
 # The agent `invoices`
 
-> **Status: version 4, rebuilt on 2026-11-18 after [sorting](sorting.md),
-> steps I1 to I6 of the plan at the end, evaluated on the invented mail of
+> **Status: version 5 since 2026-11-19, the inbox folder an end station,
+> steps E1 to E6 at the end. Version 4 was rebuilt on 2026-11-18 after
+> [sorting](sorting.md), steps I1 to I6, evaluated on the invented mail of
 > the test account and run there in `shadow` beside `sorting`.
 > Not run on a real mailbox in this version.**
 
@@ -40,22 +41,35 @@ looks in are a setting, and it knows nothing of groups or sender rules.
 |---|---|---|
 | `MAILBOX_AGENTS_INVOICES_FOLDERS` | the folders it looks in, separated by commas. `Parent/*` stands for every folder directly below `Parent`, `*` for every folder at the top without a role | the inbox alone |
 | `MAILBOX_AGENTS_INVOICES_SUBFOLDER` | where an invoice goes, as a pattern that starts with `{folder}/`, the folder the message lies in, such as `{folder}/Rechnungen` | an invoice is marked and stays |
-| `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there, it is not made, and it is never looked in | it is marked and stays in the inbox |
+| `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there and it is not made. It is an end station: looked in when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, and nothing moves on from it | it is marked and stays in the inbox |
 
 The inbox is always looked in. A folder is named by its path, case
 counting. A message in a folder below a named one, such as the subfolder
 itself, is not looked at, so an invoice is not asked about twice. The
-subfolder of a folder it looks in, the folders between the two and the
-inbox folder are never looked in, even where the settings would take them
-in: `Invoices,Invoices/*` takes in `Invoices/Rechnungen`, and `*` an inbox
-folder at the top. An invoice put there is not filed again, and no empty
-subfolder is made below it.
+subfolder of a folder it looks in and the folders between the two are
+never looked in, even where the settings would take them in:
+`Invoices,Invoices/*` takes in `Invoices/Rechnungen`. An invoice put there
+is not filed again, and no empty subfolder is made below it.
 
-So an inbox folder the settings also take in, such as `Invoices/Telco`
-beside `Invoices/*`, is not looked in. An invoice the agent moves there
-from the inbox is marked only: it stays in that folder and does not go on
-into the subfolder below it. A message put there by `sorting` or by hand
-is not looked at at all, so it is neither marked nor filed.
+**The inbox folder is an end station (decided 2026-11-19).** It is a
+folder like any other, but nothing moves on from it:
+
+| Folder | Looked in | An invoice there |
+|---|---|---|
+| the inbox | always | the keyword and an open item, and a move to the inbox folder when one is set |
+| a folder the settings take in | when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in | the keyword and a move to the subfolder |
+| the inbox folder | when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, as `*` takes in one at the top or `Invoices/*` takes in `Invoices/Telco` | the keyword, and it stays. No subfolder is made below it |
+| a subfolder, such as `Invoices/Hosting/Rechnungen` | never | |
+
+Before 2026-11-19 the inbox folder was never looked in. An inbox folder
+that was also a folder of a group of `sorting`, or one the settings took
+in, then left an invoice put there by `sorting` or by hand neither marked
+nor filed, silently. Now such an invoice is asked about and marked. An
+invoice the owner puts into the end station by hand costs a model call.
+One the agent moved there itself is known to its state file and costs
+none. The test of the subfolder comes first: an inbox folder where the
+pattern of the subfolder points, such as `Invoices/Rechnungen` beside
+`Invoices` and `{folder}/Rechnungen`, is a subfolder and not looked in.
 
 **`*` takes in the owner's own folders (decided 2026-11-18).** It covers
 every folder at the top that has no role, the owner's own among them, so
@@ -93,7 +107,8 @@ that still names them starts, as an unknown setting is ignored.
 | is no invoice | nothing |
 | is an invoice in a folder it looks in | the keyword, and a move to the subfolder, made when missing, each folder of the path as an action of its own |
 | is an invoice in a folder it looks in, no subfolder pattern set | the keyword. It stays |
-| is an invoice in the inbox | the keyword and an open item, and it stays. With an inbox folder set, which must be there, the keyword, a move into that folder and an open item too, which closes as `moved_elsewhere` once the message lies there. While the move is not taken, the folder missing or the stage below `full`, the item stays open, so a later move into a folder it looks in still files the invoice |
+| is an invoice in the inbox folder, which it looks in | the keyword. It stays, and nothing is made below it |
+| is an invoice in the inbox | the keyword and an open item, and it stays. With an inbox folder set, which must be there, the keyword, a move into that folder and an open item too, which closes once the message lies there: as `filed` when the agent looks in the inbox folder, as `moved_elsewhere` when it does not. While the move is not taken, the folder missing or the stage below `full`, the item stays open, so a later move into a folder it looks in still files the invoice |
 | was marked in the inbox and now lies in a folder it looks in | a move to the subfolder, no model call. The open item closes as `filed` |
 | was marked in the inbox and now lies in a folder it does not look in | nothing. The open item closes as `moved_elsewhere` |
 | has an item closed as `filed` and still lies in a folder it looks in | a move to the subfolder again, as for an open item |
@@ -138,21 +153,41 @@ Without an inbox folder, whichever agent comes first, the end is the same:
   and moves it on after its decision.
 
 With an inbox folder set, an invoice `invoices` takes up first goes into
-that folder, and `sorting` leaves it there. Its item closes as
-`moved_elsewhere` and the invoice stays there, as the inbox folder is never
-looked in. While that move is not taken, the folder missing or the stage
-below `full`, the item stays open and the invoice goes the way of
-`invoices` first above: once `sorting` moves it into a folder the agent
-looks in, it is filed there. `sorting` first ends as without an inbox
-folder, with one exception: an invoice `sorting` puts into the inbox
-folder itself, before `invoices` takes it up, is neither marked nor filed,
-as the agent does not look in that folder.
+that folder, and `sorting` leaves it there. Its item closes and the
+invoice stays there, as nothing moves on from the end station. While that
+move is not taken, the folder missing or the stage below `full`, the item
+stays open and the invoice goes the way of `invoices` first above: once
+`sorting` moves it into a folder the agent looks in, it is filed there.
+`sorting` first ends as without an inbox folder. An invoice `sorting` puts
+into the inbox folder itself, before `invoices` takes it up, is marked
+there and stays when the settings take that folder in. When they do not,
+it is neither marked nor filed.
 
 The open item and the look at an updated message are what
 [awaiting reply](awaiting_reply.md) uses already. An open item of an
 invoice has no deadline: its due date lies in the year 9999, and the agent
 has no tick. Every update of a message is fetched and looked at, as for
 `awaiting_reply`, and one without an open item ends there.
+
+## What changed from version 4
+
+| Part | Version 4 | Version 5 |
+|---|---|---|
+| The inbox folder | never looked in | an end station: looked in when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, an invoice there is marked and stays |
+| An invoice moved from the inbox into the inbox folder | its item closes as `moved_elsewhere` | its item closes as `filed` where the agent looks in that folder |
+| Prompt | `v4` | `v4`, unchanged |
+
+The agent version is 5, and it starts in `shadow` (decided 2026-11-19).
+Its steps, one commit each:
+
+| Step | Content | Done when |
+|---|---|---|
+| E1 | Measured first: a move by a mail client, its id and its feed events, in [mailbox service](../mailbox-service.md) | done 2026-11-19 |
+| E2 | The inbox folder as an end station | done 2026-11-19 |
+| E3 | `status` lists the folders that matter | |
+| E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | |
+| E5 | `invoices` declares it | |
+| E6 | Live on the test account | |
 
 ## What changed from version 3
 

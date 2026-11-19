@@ -138,12 +138,53 @@ def test_the_subfolder_of_a_folder_it_looks_in_is_not_looked_in() -> None:
     assert found.may_create("Invoices/Rechnungen", known)
 
 
-def test_the_inbox_folder_is_not_looked_in() -> None:
+def test_the_inbox_folder_the_settings_take_in_is_an_end_station() -> None:
     found = places("*", subfolder="{folder}/Rechnungen", inbox="Invoices")
+    end = folder("Invoices")
+
+    assert found.looks_in(end)
+    assert found.is_end(end)
+    assert found.target(end) is None
+    assert found.steps(end) == ()
+    assert found.looks_in(folder("Acme"))
+    assert found.target(folder("Acme")) == "Acme/Rechnungen"
+
+
+def test_nothing_is_made_below_the_end_station() -> None:
+    found = places("*", subfolder="{folder}/Rechnungen/Eingang", inbox="Invoices")
+    known = by_path(folder("Invoices"), folder("Invoices/Rechnungen"))
+
+    assert not found.may_create("Invoices/Rechnungen", known)
+    assert not found.may_create("Invoices/Rechnungen/Eingang", known)
+
+
+def test_an_inbox_folder_the_settings_do_not_take_in_is_not_looked_in() -> None:
+    found = places("Providers/*", subfolder="{folder}/Rechnungen", inbox="Invoices")
 
     assert not found.looks_in(folder("Invoices"))
-    assert found.looks_in(folder("Acme"))
-    assert not found.may_create("Invoices/Rechnungen", by_path(folder("Invoices")))
+    assert found.target(INBOX) == "Invoices"
+
+
+def test_the_inbox_folder_named_in_the_folders_too_is_an_end_station() -> None:
+    found = places("Invoices", subfolder="{folder}/Rechnungen", inbox="Invoices")
+
+    assert found.looks_in(folder("Invoices"))
+    assert found.target(folder("Invoices")) is None
+    assert found.needed() == ("Invoices",)
+
+
+def test_an_inbox_folder_that_is_a_subfolder_is_not_looked_in() -> None:
+    """The test of the subfolder comes first: an inbox folder below a
+    folder it looks in, where the subfolder pattern points, is a subfolder."""
+    found = places(
+        "Invoices",
+        "Invoices/*",
+        subfolder="{folder}/Rechnungen",
+        inbox="Invoices/Rechnungen",
+    )
+
+    assert not found.looks_in(folder("Invoices/Rechnungen"))
+    assert found.looks_in(folder("Invoices/Hosting"))
 
 
 @pytest.mark.parametrize(

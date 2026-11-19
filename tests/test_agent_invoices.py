@@ -186,10 +186,40 @@ async def test_an_invoice_in_the_inbox_folder_is_not_filed_again(
     await run(world, "inv-unlisted", top)
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inv"]
 
-    assert await run(world, "inv-unlisted", top, again=True) == "skipped"
+    assert await run(world, "inv-unlisted", top, again=True) == "done"
 
     assert world.service.made() == []
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inv"]
+    assert len(world.fake_gateway.requests) == 1
+
+
+async def test_an_invoice_put_into_the_end_station_is_marked_and_stays(
+    world: Wired,
+) -> None:
+    """``*`` takes in an inbox folder at the top: an invoice put there by a
+    person or by ``sorting`` is asked about and marked, nothing is made
+    below it and it does not move."""
+    top = agent(invoices_folders=["*"], invoices_inbox_folder="Invoices")
+    world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-78"))
+
+    assert await run(world, "at-top", top) == "done"
+
+    assert mail(world, "at-top")["keywords"] == ["agent-invoice"]
+    assert mail(world, "at-top")["folder_ids"] == ["inv"]
+    assert world.service.made() == []
+    assert actions(world, "at-top") == [("add_keyword", "agent-invoice", True)]
+    assert item(world, "at-top") is None
+
+
+async def test_an_inbox_folder_named_in_the_folders_too_starts(world: Wired) -> None:
+    named = agent(invoices_folders=["Invoices"], invoices_inbox_folder="Invoices")
+    named.prepare()
+    world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-78"))
+
+    assert await run(world, "at-top", named) == "done"
+
+    assert mail(world, "at-top")["folder_ids"] == ["inv"]
+    assert world.service.made() == []
 
 
 async def test_without_a_subfolder_an_invoice_is_marked_and_stays(
@@ -654,7 +684,10 @@ async def test_an_invoice_in_the_inbox_gets_an_open_item(world: Wired) -> None:
     assert found.due.year == 9999
 
 
-async def test_the_item_closes_when_it_reaches_the_inbox_folder(world: Wired) -> None:
+async def test_the_item_closes_as_filed_in_the_end_station(world: Wired) -> None:
+    """``Invoices/*`` takes in the inbox folder ``Invoices/mo``: the invoice
+    moved there from the inbox closes its item as filed, and nothing more
+    is asked for."""
     into_o2 = agent(invoices_inbox_folder="Invoices/mo")
     world.fake_gateway.answer(
         answer("invoice", "please find attached invoice INV-77"),
@@ -670,9 +703,28 @@ async def test_the_item_closes_when_it_reaches_the_inbox_folder(world: Wired) ->
 
     assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-mo"]
     found = item(world, "inv-unlisted")
-    assert found is not None and found.reason == "moved_elsewhere"
+    assert found is not None and (found.is_open, found.reason) == (False, "filed")
     assert item(world, "filed") is None
     assert world.service.made() == [{"name": "Rechnungen", "parent_id": "inv-hosting"}]
+    assert len(world.fake_gateway.requests) == 2
+
+
+async def test_the_item_closes_in_an_inbox_folder_not_looked_in(world: Wired) -> None:
+    into_o2 = agent(
+        invoices_folders=["Invoices/Hosting"], invoices_inbox_folder="Invoices/mo"
+    )
+    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
+    marking = worker(world, into_o2)
+    await marking.run_pass()
+
+    await run(world, "inv-unlisted", into_o2)
+    world.service.change("message.updated", "inv-unlisted")
+    await marking.run_pass()
+
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-mo"]
+    found = item(world, "inv-unlisted")
+    assert found is not None and found.reason == "moved_elsewhere"
+    assert world.service.made() == []
 
 
 async def test_an_invoice_moved_elsewhere_closes_its_item_and_stays(
