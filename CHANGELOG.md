@@ -83,6 +83,9 @@ commit that makes the change. Design decisions live in
   `sorting` or by hand is marked and stays, and nothing is made below it.
   Before, that folder was never looked in, and such an invoice was neither
   marked nor filed.
+- `status` lists for `invoices`, per account, the folders that matter: the
+  inbox and each folder it looks in with where an invoice there goes, the
+  inbox folder, and each subfolder, which it does not look in.
 - `backfill` takes up the messages of the folders an agent looks in besides
   the inbox and sent mail, for `invoices` those it looks in.
 - An agent moves a message at most once. A message its owner moved back,

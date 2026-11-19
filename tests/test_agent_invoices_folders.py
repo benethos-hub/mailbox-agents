@@ -187,6 +187,35 @@ def test_an_inbox_folder_that_is_a_subfolder_is_not_looked_in() -> None:
     assert found.looks_in(folder("Invoices/Hosting"))
 
 
+def test_the_folders_that_matter_are_described() -> None:
+    found = places("Providers/*", subfolder="{folder}/Rechnungen", inbox="Invoices")
+    known = by_path(
+        INBOX,
+        folder("Sent", "sent"),
+        folder("Invoices"),
+        folder("Providers"),
+        folder("Providers/Acme"),
+        folder("Providers/Acme/Rechnungen"),
+        folder("Other"),
+    )
+
+    assert found.describe(known) == [
+        "INBOX: looked in, an invoice moves to Invoices",
+        "Invoices: inbox folder, not looked in",
+        "Providers/Acme: looked in, an invoice moves to Providers/Acme/Rechnungen",
+        "Providers/Acme/Rechnungen: subfolder, not looked in",
+    ]
+
+
+def test_without_a_subfolder_an_invoice_is_described_as_staying() -> None:
+    found = places("*")
+
+    assert found.describe(by_path(INBOX, folder("Acme"))) == [
+        "Acme: looked in, an invoice is marked and stays",
+        "INBOX: looked in, an invoice is marked and stays",
+    ]
+
+
 @pytest.mark.parametrize(
     ("folders", "subfolder", "inbox", "says"),
     [

@@ -199,6 +199,32 @@ class Places:
                     return True
         return False
 
+    def describe(self, folders: Mapping[str, FolderRef]) -> list[str]:
+        """A line for each folder of ``folders``, by path, that matters:
+        the inbox, each folder it looks in with where an invoice there
+        goes, the inbox folder, and each subfolder there is, which it does
+        not look in. Sorted by path."""
+        lines = []
+        for path, found in sorted(folders.items()):
+            if found.role == "inbox":
+                lines.append(f"{path}: looked in, an invoice {self._goes(found)}")
+            elif self.is_end(found):
+                looked = self._by_path(path, found.role)
+                lines.append(
+                    f"{path}: end station, looked in, an invoice is marked and stays"
+                    if looked
+                    else f"{path}: inbox folder, not looked in"
+                )
+            elif self._by_path(path, found.role):
+                lines.append(f"{path}: looked in, an invoice {self._goes(found)}")
+            elif self.may_create(path, folders):
+                lines.append(f"{path}: subfolder, not looked in")
+        return lines
+
+    def _goes(self, folder: FolderRef) -> str:
+        target = self.target(folder)
+        return f"moves to {target}" if target else "is marked and stays"
+
     def needed(self) -> tuple[str, ...]:
         """The folders that should be there: those named, the parents of
         ``Parent/*``, and the inbox folder."""

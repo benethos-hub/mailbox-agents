@@ -226,6 +226,40 @@ def test_status_names_a_folder_that_is_missing(
     assert "folder missing in acc1: Invoices\n" not in out
 
 
+def test_status_lists_the_folders_that_matter(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_SUBFOLDER", "{folder}/Rechnungen")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_INBOX_FOLDER", "Invoices/Telco")
+    service.folders["acc1"].append(
+        {"id": "hz-re", "name": "Rechnungen", "role": None, "parent_id": "inv-hosting"}
+    )
+
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert (
+        "  folders in acc1:\n"
+        "    INBOX: looked in, an invoice moves to Invoices/Telco\n"
+        "    Invoices/CloudHost: looked in, an invoice moves to "
+        "Invoices/CloudHost/Rechnungen\n"
+        "    Invoices/Hosting: looked in, an invoice moves to "
+        "Invoices/Hosting/Rechnungen\n"
+        "    Invoices/Hosting/Rechnungen: subfolder, not looked in\n"
+        "    Invoices/Telco: end station, looked in, an invoice is marked and stays\n"
+        "    Invoices/mo: looked in, an invoice moves to Invoices/mo/Rechnungen\n"
+    ) in out
+    assert "Trash" not in out and "Sent" not in out
+
+
 def test_status_names_a_folder_there_in_another_case(
     service: FakeService,
     monkeypatch: pytest.MonkeyPatch,

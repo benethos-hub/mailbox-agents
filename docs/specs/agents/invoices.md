@@ -92,6 +92,23 @@ not stop the start, as `sorting` may make it later. One whose name is
 there in another case only is named as such: the runtime neither moves
 into it nor makes it.
 
+`status` also lists, per account, the folders that matter (since
+2026-11-19): the inbox, each folder it looks in with where an invoice
+there goes, the inbox folder as an end station or as not looked in, and
+each subfolder there is, which it does not look in. So an inbox folder
+the settings do not take in, where an invoice put by hand stays unmarked,
+shows before it is missed. Folder names are no content of a mail, and
+`status` prints to standard output, not to the log.
+
+```
+invoices 5: ready
+  folders in acc_1:
+    INBOX: looked in, an invoice moves to Invoices/Telco
+    Invoices/Hosting: looked in, an invoice moves to Invoices/Hosting/Rechnungen
+    Invoices/Hosting/Rechnungen: subfolder, not looked in
+    Invoices/Telco: end station, looked in, an invoice is marked and stays
+```
+
 `backfill` takes up the messages of the last days in the inbox and in every
 folder it looks in, account by account, each folder by its id.
 
@@ -184,7 +201,7 @@ Its steps, one commit each:
 |---|---|---|
 | E1 | Measured first: a move by a mail client, its id and its feed events, in [mailbox service](../mailbox-service.md) | done 2026-11-19 |
 | E2 | The inbox folder as an end station | done 2026-11-19 |
-| E3 | `status` lists the folders that matter | |
+| E3 | `status` lists the folders that matter | done 2026-11-19 |
 | E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | |
 | E5 | `invoices` declares it | |
 | E6 | Live on the test account | |

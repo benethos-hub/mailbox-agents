@@ -207,6 +207,14 @@ class Agent(ABC):
         None by default."""
         return ()
 
+    def describe_folders(self, folders: Mapping[str, FolderRef]) -> list[str]:
+        """For ``status``: a line for each folder of an account that matters
+        to the agent, such as one it looks in and what it does with an
+        invoice there. ``folders`` are the account's folders by path. Folder
+        names only, never anything of a mail. Asked only of an agent whose
+        :meth:`folders_needed` names one. None by default."""
+        return []
+
     def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
         """Whether the runtime may make the folder at ``path`` for this
         agent: one its configuration names, such as a folder of its list or

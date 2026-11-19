@@ -118,33 +118,38 @@ async def _backfill(name: str, days: int, settings: Settings) -> int:
 
 
 def _folders(agent: Agent, settings: Settings) -> list[str]:
-    """What ``status`` says of the folders a prepared agent expects: each
-    one missing in an account it works on, or there in another case only,
-    or why they were not looked up."""
-    needed = agent.folders_needed()
-    if not needed:
+    """What ``status`` says of the folders of a prepared agent that expects
+    some: the folders that matter in each account it works on, each one
+    it expects that is missing or there in another case only, or why they
+    were not looked up."""
+    if not agent.folders_needed():
         return []
     try:
-        return asyncio.run(_missing(needed, settings))
+        return asyncio.run(_folder_lines(agent, settings))
     except MailboxAgentError as exc:
         return [f"folders not checked: {exc.message}"]
 
 
-async def _missing(needed: tuple[str, ...], settings: Settings) -> list[str]:
-    """A line for each folder of ``needed`` that is not there, in each
-    account the settings name, or else in every account the user is
-    granted, as the worker takes them. One whose name is there in another
-    case is said so: the executor neither moves into it nor makes it, as
-    the service would make a second folder."""
+async def _folder_lines(agent: Agent, settings: Settings) -> list[str]:
+    """For each account the settings name, or else every account the user
+    is granted, as the worker takes them: the folders the agent says
+    matter, and a line for each folder it expects that is not there. One
+    whose name is there in another case is said so: the executor neither
+    moves into it nor makes it, as the service would make a second
+    folder."""
     lines = []
     async with mailbox_for(settings) as mailbox:
         accounts = settings.accounts or list(await mailbox.accounts())
         if not accounts:
             return ["folders not checked: no account is granted"]
         for account in accounts:
-            there = {f.path for f in (await mailbox.folders(account)).values()}
+            there = {f.path: f for f in (await mailbox.folders(account)).values()}
+            described = agent.describe_folders(there)
+            if described:
+                lines.append(f"folders in {account}:")
+                lines.extend(f"  {line}" for line in described)
             folded = {path.casefold() for path in there}
-            for path in needed:
+            for path in agent.folders_needed():
                 if path in there:
                     continue
                 if path.casefold() in folded:

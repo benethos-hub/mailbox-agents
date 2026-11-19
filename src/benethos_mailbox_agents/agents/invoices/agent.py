@@ -89,6 +89,9 @@ class Invoices(Agent):
     def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
         return self.places.may_create(path, folders)
 
+    def describe_folders(self, folders: Mapping[str, FolderRef]) -> list[str]:
+        return self.places.describe(folders)
+
     @cached_property
     def system(self) -> str:
         return load_prompt(__package__ or "", "system", self.prompt_version)

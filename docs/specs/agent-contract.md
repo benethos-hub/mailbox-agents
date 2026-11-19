@@ -43,6 +43,7 @@ answer keywords in lower case. The defaults:
 | `prepare()` | reads what the agent needs beyond its settings, such as a list in a file |
 | `backfill_folder(folder)` | whether `backfill` takes up the messages of this folder besides the inbox and sent mail. No folder by default |
 | `folders_needed()` | the folders its configuration names and expects to be there, which `status` looks up. None by default |
+| `describe_folders(folders)` | for `status`: a line for each folder of an account that matters to it, such as one it looks in and what it does there. `folders` are the account's folders by path. Folder names only. Asked of an agent whose `folders_needed()` names one, nothing by default |
 | `may_create(path, folders)` | whether the runtime may make the folder at `path` for it: one its configuration names. `folders` are the account's folders by path, so an answer may rest on the folder above and its role. Code only, no folder by default |
 | `summarize(shown)` | for `report`: lines about the messages shown, each given as sender, decision and its actions with whether each was carried out |
 
