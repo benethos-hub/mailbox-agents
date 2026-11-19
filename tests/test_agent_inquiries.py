@@ -11,7 +11,14 @@ import pytest
 
 from benethos_mailbox_agents.agents.inquiries.agent import Inquiries
 from benethos_mailbox_agents.agents.inquiries.patterns import DATE, RATE, load_patterns
-from benethos_mailbox_agents.agents.inquiries.schema import FIELDS
+from benethos_mailbox_agents.agents.inquiries.schema import (
+    FIELDS,
+    MAX_NAME,
+    MAX_SUBJECT,
+    MAX_TEXT,
+    parts,
+    render,
+)
 from benethos_mailbox_agents.errors import ConfigError
 from benethos_mailbox_agents.evaluation.gold import load_gold
 from benethos_mailbox_agents.evaluation.report import build
@@ -299,3 +306,24 @@ async def test_the_fields_have_an_evaluation_of_their_own(world: Wired) -> None:
         "empty": 2,
     }
     assert fields["rate"]["right"] == 1
+
+
+def test_a_stranger_cannot_blow_up_the_call() -> None:
+    """Subject and name are the sender's choice: each is cut, the same for
+    the model and for the evidence check."""
+    message = MailMessage(
+        ref=MessageRef(account_id=ACCOUNT, message_id="m1"),
+        sender=Address(email="jobs@agency.example", name="N" * 20_000),
+        subject="S" * 20_000,
+        text="T" * 20_000,
+    )
+
+    rendered = render(message)
+
+    assert len(rendered) < MAX_TEXT + MAX_SUBJECT + MAX_NAME + 200
+    assert parts(message) == [
+        "N" * MAX_NAME + " <jobs@agency.example>",
+        "S" * MAX_SUBJECT,
+        "T" * MAX_TEXT,
+    ]
+    assert all(part in rendered for part in parts(message))

@@ -12,12 +12,31 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict
 
-from ...records import MailMessage
+from ...records import Attachment, MailMessage
 
-__all__ = ["MAX_ANSWER_TEXT", "MAX_TEXT", "Answer", "parts", "render"]
+__all__ = [
+    "MAX_ANSWER_TEXT",
+    "MAX_FILES",
+    "MAX_FILES_TEXT",
+    "MAX_NAME",
+    "MAX_SUBJECT",
+    "MAX_TEXT",
+    "Answer",
+    "parts",
+    "render",
+]
 
 # The text of a mail is cut here. An invoice says what it is near the top.
 MAX_TEXT = 6000
+
+# The sender's name and the subject are cut here, the attachments listed
+# are the first ones that fit both limits. A stranger chooses all of them,
+# so no mail can blow up a call. The same cut goes to the model and to the
+# evidence check.
+MAX_SUBJECT = 300
+MAX_NAME = 300
+MAX_FILES = 20
+MAX_FILES_TEXT = 1000
 
 # The longest quote or value an answer may hold. A longer one is refused as
 # not fitting the schema, so an answer cannot copy the mail into the state
@@ -51,25 +70,44 @@ def render(message: MailMessage) -> str:
     lines = []
     if message.sender is not None:
         lines.append(f"From: {_named(message)}")
-    lines.append(f"Subject: {message.subject or ''}")
-    if message.attachments:
-        files = ", ".join(
-            f"{a.filename or '(no name)'} ({a.content_type})"
-            for a in message.attachments
-        )
-        lines.append(f"Attachments: {files}")
+    lines.append(f"Subject: {_subject(message)}")
+    files = _files(message)
+    if files:
+        lines.append(f"Attachments: {', '.join(_file(a) for a in files)}")
     return "\n".join(lines) + "\n\n" + message.text[:MAX_TEXT]
 
 
 def parts(message: MailMessage) -> list[str]:
     """The parts of the mail :func:`render` gives the model, without its
     frame: what a quote is looked up in."""
-    files = [a.filename for a in message.attachments if a.filename]
-    return [_named(message), message.subject or "", *files, message.text[:MAX_TEXT]]
+    files = [a.filename for a in _files(message) if a.filename]
+    return [_named(message), _subject(message), *files, message.text[:MAX_TEXT]]
 
 
 def _named(message: MailMessage) -> str:
     sender = message.sender
     if sender is None:
         return ""
-    return f"{sender.name} <{sender.email}>" if sender.name else sender.email
+    name = (sender.name or "")[:MAX_NAME]
+    return f"{name} <{sender.email}>" if name else sender.email
+
+
+def _subject(message: MailMessage) -> str:
+    return (message.subject or "")[:MAX_SUBJECT]
+
+
+def _file(attachment: Attachment) -> str:
+    return f"{attachment.filename or '(no name)'} ({attachment.content_type})"
+
+
+def _files(message: MailMessage) -> list[Attachment]:
+    """The attachments named: the first :data:`MAX_FILES`, as long as
+    their line stays within :data:`MAX_FILES_TEXT` characters."""
+    kept: list[Attachment] = []
+    size = 0
+    for attachment in message.attachments[:MAX_FILES]:
+        size += len(_file(attachment)) + (2 if kept else 0)
+        if size > MAX_FILES_TEXT:
+            break
+        kept.append(attachment)
+    return kept

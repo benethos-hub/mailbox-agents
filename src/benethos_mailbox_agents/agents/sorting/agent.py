@@ -80,6 +80,9 @@ class Sorting(Agent):
     requires = Requires(settings=("sorting_file",))
     # No $ in front: IMAP registers such keywords with meanings, as $Junk.
     default_keyword = "agent-sorted"
+    # A group's name is the owner's own text: an evaluation report shows
+    # it as label-<n>.
+    report_labels = frozenset({NONE})
 
     # -- what it reads besides its settings -----------------------------------
 

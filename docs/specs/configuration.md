@@ -15,7 +15,7 @@ may be given as a file with the suffix `_FILE`.
 | `MODEL` | the alias the gateway resolves |
 | `ACCOUNTS` | the accounts to work on, comma separated, all the user may read when unset |
 | `STAGE` | `shadow`, `keyword` or `full`, `shadow` when unset |
-| `KEYWORD` | the keyword the agent sets, the agent's own default when unset |
+| `KEYWORD` | the keyword the agent sets, the agent's own default when unset. Lower case letters, digits and dashes, such as `agent-invoice` (2026-11-19). It belongs in the env file of one agent: an agent whose keyword is another agent's default does not start, and `status` warns when it is set |
 | `POLL_SECONDS`, `TICK_SECONDS` | how often the feed is read and the clock asked, `60` and `900` when unset |
 | `MAX_ATTEMPTS` | refused answers before a message is `failed`, `5` when unset |
 | `BACKOFF_CEILING_SECONDS` | the longest wait between two attempts, `3600` when unset |

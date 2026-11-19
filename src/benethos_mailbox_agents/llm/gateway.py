@@ -145,16 +145,28 @@ class Gateway:
                 "the gateway answered no JSON", reason="schema"
             ) from None
         value = _value(answer, schema)
-        usage = answer.get("usage") or {}
+        usage = answer.get("usage")
         return Reply(
             value=value,
             model=str(answer.get("model") or self.model),
-            tokens_in=int(usage.get("prompt_tokens") or 0),
-            tokens_out=int(usage.get("completion_tokens") or 0),
+            tokens_in=_tokens(usage, "prompt_tokens"),
+            tokens_out=_tokens(usage, "completion_tokens"),
             duration_ms=duration_ms,
             request=body,
             answer=answer,
         )
+
+
+def _tokens(usage: object, name: str) -> int:
+    """A token count of the answer's usage, 0 where it is missing, no whole
+    number or below 0: the call is made and paid, and a count the gateway
+    garbled must not end the process before the step is stored."""
+    if not isinstance(usage, dict):
+        return 0
+    try:
+        return max(0, int(usage.get(name) or 0))
+    except (TypeError, ValueError, OverflowError):
+        return 0
 
 
 def _check(response: httpx.Response) -> None:

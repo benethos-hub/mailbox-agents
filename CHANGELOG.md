@@ -58,6 +58,18 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- An agent does not start when `MAILBOX_AGENTS_KEYWORD` is the keyword of
+  another agent, and `status` warns when the setting is set at all: in
+  settings several agents share, it gave them one keyword, and
+  `invoices` skipped what `sorting` had marked.
+- `MAILBOX_AGENTS_KEYWORD` takes lower case letters, digits and dashes
+  only, as the agents' own keywords. A keyword such as `$Junk`, which
+  would make every marked mail spam, or one with capitals or control
+  characters stops the start.
+- The sender's name and the subject a model is given are cut at 300
+  characters, and `invoices` lists at most 20 attachments within 1000
+  characters, so a mail cannot blow up a model call. Mail below these
+  limits reaches the model as before, under the same prompt versions.
 - The project is named `benethos-mailbox-agents`, in the plural, as it
   holds several agents: the distribution, the console script, the import
   package `benethos_mailbox_agents`, the container image, the settings
@@ -180,6 +192,16 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- An evaluation report names only the labels and fields an agent declares
+  as its own. Any other, such as the name of a group of `sorting`, becomes
+  `label-<n>` or `field-<n>`, since a report is versioned.
+- A gateway answer whose token counts are garbled, not numbers or below
+  zero, counts no tokens. It ended the worker before, after the paid call
+  and before the step was stored, so the same message was asked again
+  after each restart, outside the daily limit.
+- The evidence check matches whole words only, as specified: a quote
+  whose first or last word is cut short, such as `voice number 1234` for
+  `invoice number 12345`, is not found.
 - `health` says what it measures: `last progress 42s ago` and
   `no progress yet`, not the last pass, since the loop's progress is
   written after each message and while it waits as well.

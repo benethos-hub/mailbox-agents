@@ -14,6 +14,7 @@ The class attributes are validated on instantiation.
 | `default_keyword` | the keyword it sets when `MAILBOX_AGENTS_KEYWORD` is unset |
 | `prompt_version` | the version of the prompt its model step runs under. Read from the instance: `sorting` sets it from its list |
 | `skip_marked` | whether a message that carries its keyword and that its state file does not know is `skipped` before baseline and model. Off by default |
+| `report_labels`, `report_fields` | the labels and field names an evaluation report names in plain text, its own fixed ones. Any other, such as the name of a group of `sorting`, becomes `label-<n>` or `field-<n>` there (decided 2026-11-19). None by default |
 
 **Marked mail a state file does not know (decided 2026-11-19).** An agent
 that declares `skip_marked` leaves a message alone that carries its keyword

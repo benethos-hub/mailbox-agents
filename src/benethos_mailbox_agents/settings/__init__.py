@@ -9,6 +9,7 @@ in the same setting with the suffix ``_FILE``. See docs/specs/configuration.md.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -20,6 +21,7 @@ from ..errors import ConfigError, describe_invalid, register_secret
 __all__ = [
     "DEFAULT_ENV_FILE",
     "KEYWORD_FORBIDDEN",
+    "KEYWORD_FORM",
     "PREFIX",
     "Settings",
     "Stage",
@@ -28,6 +30,11 @@ __all__ = [
 
 # Characters an IMAP keyword may not carry: it is one atom.
 KEYWORD_FORBIDDEN = frozenset(' \t()[]{}"\\%*')
+
+# The form MAILBOX_AGENTS_KEYWORD must have: lower case letters, digits
+# and dashes, as agent-invoice. No $, which IMAP registers with meanings
+# such as $Junk, no capitals, no control character.
+KEYWORD_FORM = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 PREFIX = "MAILBOX_AGENTS_"
 
@@ -111,9 +118,13 @@ class Settings(BaseSettings):
     @field_validator("keyword")
     @classmethod
     def _one_word(cls, value: str | None) -> str | None:
-        """A keyword is one IMAP atom: no space, no bracket, no quote."""
-        if value is not None and (not value or KEYWORD_FORBIDDEN & set(value)):
-            raise ValueError("a keyword is one word without brackets or quotes")
+        """A keyword is lower case letters, digits and dashes, as the
+        agents' own: one IMAP atom without a meaning of its own."""
+        if value is not None and not KEYWORD_FORM.fullmatch(value):
+            raise ValueError(
+                "a keyword is lower case letters, digits and dashes, "
+                "such as agent-invoice"
+            )
         return value
 
     @model_validator(mode="after")

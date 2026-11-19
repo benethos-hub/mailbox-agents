@@ -35,6 +35,13 @@ agent runs over it and the scoring counts where it agrees.
   gateway reported and the date, with numbers only: no id, no label of a
   single message and no content of any mail. A change to a prompt or a
   model is merged with its report.
+- **A report names only the agent's own labels and fields** (decided
+  2026-11-19). An agent declares its fixed labels and field names
+  (`report_labels`, `report_fields`). Any other name in the gold set or a
+  decision, such as the name of a group of `sorting`, which is the owner's
+  own text and often a person's name, becomes `label-<n>` or `field-<n>`,
+  numbered in the sorted order of the names within the report. The
+  numbers stay.
 - **A run never touches the agent's state file.** It counts its model
   calls on a state file of its own and applies the evidence check as in
   operation. A gateway that is away ends the run.

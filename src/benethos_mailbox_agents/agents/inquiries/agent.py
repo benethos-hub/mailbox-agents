@@ -38,6 +38,8 @@ class Inquiries(Agent):
     actions = frozenset({Action.ADD_KEYWORD})
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
     default_keyword = "agent-inquiry"
+    report_labels = frozenset({"inquiry", "other"})
+    report_fields = frozenset(FIELDS)
     prompt_version = "v3"
 
     def prepare(self) -> None:

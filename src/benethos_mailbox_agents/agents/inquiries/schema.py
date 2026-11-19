@@ -8,7 +8,17 @@ from pydantic import AfterValidator, BaseModel, ConfigDict
 
 from ...records import MailMessage
 
-__all__ = ["FIELDS", "MAX_TEXT", "Inquiry", "Label", "Quoted", "render"]
+__all__ = [
+    "FIELDS",
+    "MAX_NAME",
+    "MAX_SUBJECT",
+    "MAX_TEXT",
+    "Inquiry",
+    "Label",
+    "Quoted",
+    "parts",
+    "render",
+]
 
 # The fields of an inquiry, each optional, with what it means. The prompt
 # names them, the schema holds one entry per name.
@@ -30,6 +40,12 @@ FIELDS: dict[str, str] = {
 }
 
 MAX_TEXT = 8000
+
+# The sender's name and the subject are cut here. A stranger chooses
+# both, so no mail can blow up a call. The same cut goes to the model and
+# to the evidence check.
+MAX_SUBJECT = 300
+MAX_NAME = 300
 
 # The longest quote or value an answer may hold. A longer one is refused as
 # not fitting the schema, so an answer cannot copy the mail into the state
@@ -90,18 +106,23 @@ def render(message: MailMessage) -> str:
     lines = []
     if message.sender is not None:
         lines.append(f"From: {_named(message)}")
-    lines.append(f"Subject: {message.subject or ''}")
+    lines.append(f"Subject: {_subject(message)}")
     return "\n".join(lines) + "\n\n" + message.text[:MAX_TEXT]
 
 
 def parts(message: MailMessage) -> list[str]:
     """The parts of the mail :func:`render` gives the model, without its
     frame: what a quote is looked up in."""
-    return [_named(message), message.subject or "", message.text[:MAX_TEXT]]
+    return [_named(message), _subject(message), message.text[:MAX_TEXT]]
 
 
 def _named(message: MailMessage) -> str:
     sender = message.sender
     if sender is None:
         return ""
-    return f"{sender.name} <{sender.email}>" if sender.name else sender.email
+    name = (sender.name or "")[:MAX_NAME]
+    return f"{name} <{sender.email}>" if name else sender.email
+
+
+def _subject(message: MailMessage) -> str:
+    return (message.subject or "")[:MAX_SUBJECT]

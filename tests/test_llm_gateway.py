@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from typing import Literal
 
@@ -202,3 +203,31 @@ async def test_the_alias_stands_in_when_no_model_is_reported(gateway: Gateway) -
         reply = await other.ask(system="s", content="c", schema=Answer)
 
     assert (reply.model, reply.tokens_in) == ("alias", 0)
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        "n/a",
+        {"prompt_tokens": "n/a", "completion_tokens": "n/a"},
+        {"prompt_tokens": -5, "completion_tokens": -1},
+        {"prompt_tokens": float("inf"), "completion_tokens": [1]},
+    ],
+)
+async def test_a_garbled_usage_counts_no_tokens(usage: object) -> None:
+    """The call is made and paid: a count the gateway garbled must not end
+    the process before the step is stored."""
+    transport = httpx.MockTransport(
+        lambda request: httpx.Response(
+            200,
+            content=json.dumps(
+                {"choices": [{"message": {"content": OTHER}}], "usage": usage}
+            ).replace("Infinity", "1e999"),
+        )
+    )
+    async with Gateway(
+        "https://g.example.test", "k", "alias", timeout=120.0, transport=transport
+    ) as other:
+        reply = await other.ask(system="s", content="c", schema=Answer)
+
+    assert (reply.tokens_in, reply.tokens_out) == (0, 0)

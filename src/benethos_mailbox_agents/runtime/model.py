@@ -125,7 +125,7 @@ class Calls:
         self.tokens_in += reply.tokens_in
         self.tokens_out += reply.tokens_out
         self.duration_ms += reply.duration_ms
-        self._metrics.model_call(reply.tokens_in, reply.tokens_out, reply.duration_ms)
+        # The step first: the daily limit counts stored steps.
         self._record(
             {"answer": reply.value.model_dump(mode="json")},
             reply.model,
@@ -133,6 +133,7 @@ class Calls:
             reply.tokens_out,
             reply.duration_ms,
         )
+        self._metrics.model_call(reply.tokens_in, reply.tokens_out, reply.duration_ms)
         if self._retention_days > 0:
             self._store.add_call(self._ref, reply.request, reply.answer, self._now())
         return reply.value

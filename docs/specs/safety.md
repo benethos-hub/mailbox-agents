@@ -37,7 +37,9 @@ Further rules:
   brought to Unicode NFC and compared word for word: case, punctuation,
   typographic quotes and dashes, and the whitespace between words do not
   count, the words and their order do. A changed or missing word is not
-  forgiven. A quote of fewer than eight letters and digits counts as not
+  forgiven, nor a first or last word cut short: a quote matches whole
+  words only (confirmed 2026-11-19). A quote of fewer than eight letters
+  and digits counts as not
   found (decided 2026-11-17, case and punctuation forgiven 2026-11-18: of
   13 quotes the shadow run on the owner's account refused, none was
   invented, and every one differed in such marks or in a few characters).

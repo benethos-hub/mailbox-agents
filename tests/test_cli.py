@@ -50,6 +50,30 @@ def test_status_names_what_is_missing(
     assert "counting 1: misses MAILBOX_AGENTS_SERVICE_URL" in out
 
 
+def test_status_warns_of_a_keyword_set_for_every_agent(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv(f"{PREFIX}KEYWORD", "agent-bills")
+
+    assert main(["status"]) == 0
+
+    first = capsys.readouterr().out.splitlines()[0]
+    assert first == (
+        "MAILBOX_AGENTS_KEYWORD is set for every agent of these settings: "
+        "give each agent its own env file"
+    )
+
+
+def test_status_without_a_keyword_set_warns_of_none(
+    service: FakeService, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["status"]) == 0
+
+    assert "MAILBOX_AGENTS_KEYWORD" not in capsys.readouterr().out
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="Windows keeps no Unix rights")
 def test_the_state_file_is_for_its_owner_only(
     service: FakeService, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -258,6 +282,29 @@ def test_status_lists_the_folders_that_matter(
         "    Invoices/mo: looked in, an invoice moves to Invoices/mo/Rechnungen\n"
     ) in out
     assert "Trash" not in out and "Sent" not in out
+
+
+def test_status_writes_a_control_character_of_a_folder_escaped(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
+    clear = chr(27) + "[2J"
+    service.folders["acc1"].append(
+        {"id": "x", "name": f"Odd{clear}", "role": None, "parent_id": "inv"}
+    )
+
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert chr(27) not in out
+    assert "    Invoices/Odd" + "\\x1b[2J: looked in" in out
 
 
 def test_status_names_a_folder_there_in_another_case(

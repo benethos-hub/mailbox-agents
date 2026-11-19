@@ -7,7 +7,8 @@ them, such as ``Subject:``, is no part, and a quote that starts with one is
 looked up without it. Both sides are brought to Unicode NFC and compared
 word for word: case, punctuation, typographic quotes and dashes, and the
 whitespace between words do not count, the words and their order do. A
-changed or missing word is not forgiven. A quote of fewer than eight
+changed or missing word is not forgiven, nor a first or last word cut
+short. A quote of fewer than eight
 letters and digits counts as not found, so ``e`` or a colon backs nothing.
 A field whose quote is not found is dropped. A label whose quote is not
 found makes the decision ``refused``: it is recorded and not acted on. See
@@ -53,7 +54,9 @@ def contains(content: str, quote: str) -> bool:
     needle = words(_FRAME.sub("", quote, count=1))
     if len(needle.replace(" ", "")) < MIN_QUOTE:
         return False
-    return needle in words(content)
+    # Whole words at both ends: a first or last word cut short is a
+    # changed word.
+    return f" {needle} " in f" {words(content)} "
 
 
 def check(decision: Decision, parts: Sequence[str]) -> Decision:

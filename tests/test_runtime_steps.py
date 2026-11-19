@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from datetime import timedelta
 from pathlib import Path
@@ -61,6 +62,25 @@ async def test_a_message_through_every_step(world: Wired) -> None:
     assert (decision.tokens_in, decision.tokens_out) == (120, 15)
     assert decision.result["evidence"][0]["found"] is True
     assert _state(world) == ("done", 0)
+
+
+async def test_a_garbled_usage_still_stores_the_model_step(world: Wired) -> None:
+    content = json.dumps(MATCH)
+    world.fake_gateway.answer(
+        httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": content}}],
+                "usage": {"prompt_tokens": -5, "completion_tokens": "n/a"},
+            },
+        )
+    )
+
+    assert await runner(world).process(REF) == "done"
+
+    model = world.store.step(REF, "model", "p1", "alias")
+    assert model is not None
+    assert (model.tokens_in, model.tokens_out) == (0, 0)
 
 
 async def test_a_message_run_again_asks_the_model_nothing(world: Wired) -> None:
