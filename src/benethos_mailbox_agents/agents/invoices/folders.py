@@ -143,17 +143,30 @@ class Places:
             return parent in self.parents
         return self.top
 
+    def _prefixes(self) -> list[str]:
+        """The parts of the subfolder pattern below ``{folder}``, from the
+        first alone down to all of them: ``Rechnungen``, then
+        ``Rechnungen/Eingang``."""
+        return [
+            "/".join(self.subfolder[:count])
+            for count in range(1, len(self.subfolder) + 1)
+        ]
+
+    def _bases(self, path: str) -> list[str]:
+        """The folders ``path`` would lie below as their subfolder, or as a
+        folder between the two: for each prefix ``path`` ends in, the path
+        before it."""
+        return [
+            path[: -len(prefix) - 1]
+            for prefix in self._prefixes()
+            if path.endswith("/" + prefix)
+        ]
+
     def _below_one(self, path: str) -> bool:
         """Whether ``path`` is the subfolder of a folder the settings take
         in, or a folder between the two. The folder above is judged by
         its path alone, its role unknown here."""
-        for count in range(1, len(self.subfolder) + 1):
-            suffix = "/".join(self.subfolder[:count])
-            if path.endswith("/" + suffix) and self._matches(
-                path[: -len(suffix) - 1], None
-            ):
-                return True
-        return False
+        return any(self._matches(base, None) for base in self._bases(path))
 
     def looks_in(self, folder: FolderRef) -> bool:
         """Whether a message in ``folder`` is one to ask about."""
@@ -178,10 +191,7 @@ class Places:
         folder."""
         if self.is_end(folder):
             return ()
-        return tuple(
-            "/".join((folder.path, *self.subfolder[:count]))
-            for count in range(1, len(self.subfolder) + 1)
-        )
+        return tuple(f"{folder.path}/{prefix}" for prefix in self._prefixes())
 
     def may_create(self, path: str, folders: Mapping[str, FolderRef]) -> bool:
         """Whether ``path`` is the subfolder of a folder it looks in, or a
@@ -193,16 +203,14 @@ class Places:
         of a folder it looks in."""
         if path == self.inbox_folder:
             return False
-        for count in range(1, len(self.subfolder) + 1):
-            suffix = "/".join(self.subfolder[:count])
-            if path.endswith("/" + suffix):
-                base = folders.get(path[: -len(suffix) - 1])
-                if (
-                    base is not None
-                    and not self.is_end(base)
-                    and self._by_path(base.path, base.role)
-                ):
-                    return True
+        for name in self._bases(path):
+            base = folders.get(name)
+            if (
+                base is not None
+                and not self.is_end(base)
+                and self._by_path(base.path, base.role)
+            ):
+                return True
         return False
 
     def describe(self, folders: Mapping[str, FolderRef]) -> list[str]:
