@@ -49,6 +49,11 @@ def _sent(message: MailMessage) -> bool:
     return message.in_role("sent")
 
 
+def _address(message: MailMessage) -> str:
+    """The sender's address in lower case, empty for a message without one."""
+    return message.sender.email.lower() if message.sender else ""
+
+
 def _when(message: MailMessage, fallback: datetime) -> datetime:
     return message.date or message.received or fallback
 
@@ -152,9 +157,9 @@ class AwaitingReply(Agent):
         if automatic(message):
             return []
         requests: list[ActionRequest] = []
-        sender = message.sender.email.lower() if message.sender else ""
+        sender = _address(message)
         for item, sent in await self._earlier(message, context):
-            owner = sent.sender.email.lower() if sent.sender else ""
+            owner = _address(sent)
             if sender and sender == owner:
                 continue
             await context.items.close(item.ref, "replied")
@@ -189,10 +194,10 @@ class AwaitingReply(Agent):
             return False
         now = context.now()
         thread = await context.reader.thread(message.ref.account_id, message.thread_id)
-        me = message.sender.email.lower() if message.sender else ""
+        me = _address(message)
         sent = _when(message, now)
         for other in thread.messages:
-            sender = other.sender.email.lower() if other.sender else ""
+            sender = _address(other)
             if (
                 other.ref != message.ref
                 and sender not in ("", me)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 import httpx
 import pytest
@@ -18,6 +18,7 @@ from benethos_mailbox_agents.agents.inquiries.schema import (
     Inquiry as InquiryAnswer,
 )
 from benethos_mailbox_agents.agents.invoices.agent import Invoices
+from benethos_mailbox_agents.agents.invoices.baseline import NEAR_MISS_WORDS
 from benethos_mailbox_agents.agents.invoices.schema import (
     MAX_ANSWER_TEXT,
     MAX_FILES,
@@ -623,6 +624,15 @@ def test_summarize_counts_invoices_left_where_they_lay() -> None:
 
 
 # -- the schema ----------------------------------------------------------------------
+
+
+def test_the_near_misses_of_the_rules_are_those_of_the_schema() -> None:
+    """The near misses stand in the rules and in the schema: a new one in
+    either must come to the other."""
+    named = get_args(Answer.model_fields["near_miss"].annotation)
+
+    assert set(NEAR_MISS_WORDS) | {"none"} == set(named)
+
 
 LONG = "x" * (MAX_ANSWER_TEXT + 1)
 EMPTY = None
