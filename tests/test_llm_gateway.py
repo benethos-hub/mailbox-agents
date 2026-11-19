@@ -249,6 +249,7 @@ def test_a_ca_of_the_settings_is_what_the_gateway_trusts(
 
     Gateway("https://g.example.test", "k", "m", timeout=1.0, verify=context)
     assert given["verify"] is context
+    given.clear()
     Gateway("https://g.example.test", "k", "m", timeout=1.0)
-    assert given["verify"] is True
+    assert "verify" not in given
     assert given["trust_env"] is False
