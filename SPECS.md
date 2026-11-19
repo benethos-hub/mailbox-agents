@@ -1,11 +1,12 @@
 # Specification — Mailbox Agents
 
-> **Status: 2026-11-18. The runtime and the agents `counting`, `invoices`,
+> **Status: 2026-11-19. The runtime and the agents `counting`, `invoices`,
 > `awaiting_reply`, `inquiries` and `sorting` are built and run against a
 > test account of invented mail. `invoices` version 3 ran in `shadow` on its
-> owner's real account, read-only, and changed nothing. Version 4, which
-> works beside `sorting`, and `sorting` itself have not run on a real
-> mailbox. None acts on a real mailbox yet.** This
+> owner's real account, read-only, and changed nothing. Version 5, which
+> works beside `sorting` with the inbox folder as an end station, and
+> `sorting` itself have not run on a real mailbox. None acts on a real
+> mailbox yet.** This
 > file is the table of contents of the specification: what the project is,
 > the decisions that matter most, and where the details are. The details
 > live in [docs/specs/](docs/specs/) and move with the code. A statement
