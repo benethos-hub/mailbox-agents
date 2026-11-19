@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ..contract import Agent, discover, load
-from ..errors import ConfigError, MailboxAgentError
+from ..errors import ConfigError, MailboxAgentError, StateFileError
 from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
@@ -186,10 +186,15 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
                 _say(f"  {line}")
         path = path_for(settings.data_dir, cls.name)
         if path.is_file():
-            with Store.open(path, read_only=True) as store:
-                last = store.progress()
-                _say(f"  {_counts(store)}")
-                _say(f"  last progress: {last.isoformat() if last else 'none'}")
+            try:
+                with Store.open(path, read_only=True) as store:
+                    last = store.progress()
+                    counts = _counts(store)
+            except StateFileError as exc:
+                _say(f"  state file unreadable: {exc.message}")
+                continue
+            _say(f"  {counts}")
+            _say(f"  last progress: {last.isoformat() if last else 'none'}")
     return 0
 
 

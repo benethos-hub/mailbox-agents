@@ -21,7 +21,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import IO, Any
 
-from ..errors import ConfigError
+from ..errors import ConfigError, StateFileError
 from ..records import KEYWORD_REMOVED, MessageRef, OpenItem, Step, StepResult
 from .migrations import MIGRATIONS, SCHEMA_VERSION
 
@@ -115,6 +115,17 @@ class ActionRow:
     at: datetime
 
 
+@contextmanager
+def _sqlite(name: str) -> Iterator[None]:
+    """A :class:`StateFileError` for any error of sqlite, naming the file
+    and what sqlite said: the store is the one home of sqlite3, and no
+    caller knows its errors."""
+    try:
+        yield
+    except sqlite3.Error as exc:
+        raise StateFileError(f"the state file {name or ''}: {exc}") from None
+
+
 class Store:
     """The state file of one agent."""
 
@@ -123,8 +134,10 @@ class Store:
         connection: sqlite3.Connection,
         read_only: bool,
         lock: IO[bytes] | None = None,
+        name: str = "",
     ) -> None:
         self._db = connection
+        self._name = name
         self.read_only = read_only
         self._lock = lock
         # What the last migrate did to the file, None when it was current.
@@ -142,27 +155,32 @@ class Store:
         if read_only:
             if not path.is_file():
                 raise ConfigError(f"no state file {path.name}")
-            connection = sqlite3.connect(
-                f"{path.resolve().as_uri()}?mode=ro", uri=True, isolation_level=None
-            )
+            with _sqlite(path.name):
+                connection = sqlite3.connect(
+                    f"{path.resolve().as_uri()}?mode=ro",
+                    uri=True,
+                    isolation_level=None,
+                )
             lock = None
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             lock = _lock(path)
             try:
-                connection = sqlite3.connect(path, isolation_level=None)
+                with _sqlite(path.name):
+                    connection = sqlite3.connect(path, isolation_level=None)
             except BaseException:
                 _unlock(lock)
                 raise
-        store = cls(connection, read_only, lock)
+        store = cls(connection, read_only, lock, path.name)
         try:
-            connection.execute("PRAGMA busy_timeout = 5000")
-            if read_only:
-                store._check_version()
-            else:
-                connection.execute("PRAGMA journal_mode = WAL")
-                connection.execute("PRAGMA synchronous = NORMAL")
-                store.migrate()
+            with _sqlite(path.name):
+                connection.execute("PRAGMA busy_timeout = 5000")
+                if read_only:
+                    store._check_version()
+                else:
+                    connection.execute("PRAGMA journal_mode = WAL")
+                    connection.execute("PRAGMA synchronous = NORMAL")
+                    store.migrate()
         except BaseException:
             store.close()
             raise
@@ -187,7 +205,8 @@ class Store:
 
     @property
     def version(self) -> int:
-        found: int = self._db.execute("PRAGMA user_version").fetchone()[0]
+        with _sqlite(self._name):
+            found: int = self._db.execute("PRAGMA user_version").fetchone()[0]
         return found
 
     def _check_version(self) -> None:
@@ -205,7 +224,7 @@ class Store:
         before = self.version
         notes: list[str] = []
         for step in MIGRATIONS.pending(before):
-            with self._transaction():
+            with _sqlite(self._name), self._transaction():
                 self._db.execute("BEGIN IMMEDIATE")
                 said = step.apply(self._db)
                 self._db.execute(f"PRAGMA user_version = {step.version}")
@@ -225,20 +244,20 @@ class Store:
             raise
 
     def _one(self, sql: str, *args: Any) -> Any:
-        with closing(self._db.execute(sql, args)) as rows:
+        with _sqlite(self._name), closing(self._db.execute(sql, args)) as rows:
             return rows.fetchone()
 
     def _all(self, sql: str, *args: Any) -> list[Any]:
-        with closing(self._db.execute(sql, args)) as rows:
+        with _sqlite(self._name), closing(self._db.execute(sql, args)) as rows:
             return rows.fetchall()
 
     def _write(self, sql: str, *args: Any) -> int:
-        with closing(self._db.execute(sql, args)) as done:
+        with _sqlite(self._name), closing(self._db.execute(sql, args)) as done:
             return done.rowcount
 
     def _insert(self, sql: str, *args: Any) -> int:
         """Insert one row. Answers its id."""
-        with closing(self._db.execute(sql, args)) as done:
+        with _sqlite(self._name), closing(self._db.execute(sql, args)) as done:
             if done.lastrowid is None:
                 raise RuntimeError("an insert answered no row id")
             return done.lastrowid

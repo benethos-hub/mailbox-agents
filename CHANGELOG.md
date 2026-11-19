@@ -195,6 +195,10 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- A state file that is no SQLite file, is damaged or meets a full disk
+  is named in one line with exit code 1 by every command, not a
+  traceback. `status` says so for that agent and lists the others, and
+  the worker ends instead of failing the same pass forever.
 - An evaluation report names only the labels and fields an agent declares
   as its own. Any other, such as the name of a group of `sorting`, becomes
   `label-<n>` or `field-<n>`, since a report is versioned.

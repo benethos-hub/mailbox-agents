@@ -16,7 +16,7 @@ from benethos_mailbox_agents.contract import (
     Route,
     Trigger,
 )
-from benethos_mailbox_agents.errors import MailboxUnavailableError
+from benethos_mailbox_agents.errors import MailboxUnavailableError, StateFileError
 from benethos_mailbox_agents.records import Event, MailMessage, MessageRef
 from benethos_mailbox_agents.runtime.health import check
 from benethos_mailbox_agents.runtime.loop import Worker
@@ -325,6 +325,22 @@ async def test_a_long_wait_for_the_gateway_stays_healthy(world: Wired) -> None:
 
     assert len(world.fake_gateway.requests) >= 3
     assert all(seen)
+
+
+async def test_a_state_file_error_ends_the_loop(
+    world: Wired, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nothing goes on without the state file: the loop does not try the
+    same pass forever."""
+    run = worker(world, poll_seconds=0.01)
+
+    async def broken() -> float:
+        raise StateFileError("the state file x.db: disk I/O error")
+
+    monkeypatch.setattr(run, "run_pass", broken)
+
+    with pytest.raises(StateFileError):
+        await asyncio.wait_for(run.run(asyncio.Event()), timeout=5)
 
 
 async def test_a_config_error_does_not_end_the_loop(world: Wired) -> None:

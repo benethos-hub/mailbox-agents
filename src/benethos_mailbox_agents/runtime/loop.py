@@ -24,6 +24,7 @@ from ..errors import (
     MailboxAgentError,
     MailboxRefusedError,
     MessageGoneError,
+    StateFileError,
     UnavailableError,
 )
 from ..logbook import feed, messages, record, worker
@@ -353,6 +354,10 @@ class Worker:
                 wait = await self.run_pass()
             except UnavailableError as exc:
                 wait = self._wait_after(exc)
+            except StateFileError:
+                # Nothing goes on without the state file: a pass after it
+                # would fail the same way, forever.
+                raise
             except MailboxAgentError as exc:
                 record(worker.PassFailed(agent=self.agent.name, error=exc))
                 wait = self._wait_after(exc)
