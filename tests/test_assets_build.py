@@ -69,6 +69,16 @@ def test_another_svg_gives_another_png_and_one_stamp_only() -> None:
     assert build.stamped(second, "<svg><title>b</title></svg>") == second
 
 
+@pytest.mark.parametrize(
+    "png",
+    [PNG[:35], PNG[:60], PNG + b"\0\1", PNG[:-12]],
+    ids=["length-cut", "chunk-cut", "after-iend", "no-iend"],
+)
+def test_a_png_cut_short_or_with_bytes_after_its_end_is_refused(png: bytes) -> None:
+    with pytest.raises(ValueError, match="PNG"):
+        build.stamped(png, "<svg/>")
+
+
 def test_a_file_that_is_no_png_is_refused() -> None:
     with pytest.raises(ValueError):
         build.stamped(b"GIF89a", "<svg/>")

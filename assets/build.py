@@ -266,14 +266,22 @@ def stamped(png: bytes, svg: str) -> bytes:
         + struct.pack(">I", zlib.crc32(b"tEXt" + data))
     )
     rest, position = png[header_end:], 0
-    kept = []
+    kept: list[bytes] = []
     while position < len(rest):
-        (length,) = struct.unpack(">I", rest[position : position + 4])
-        end = position + 12 + length
+        end = position + 12
+        if end <= len(rest):
+            (length,) = struct.unpack(">I", rest[position : position + 4])
+            end += length
+        if end > len(rest):
+            raise ValueError("a chunk of the PNG is cut short")
         piece = rest[position:end]
         if not (piece[4:8] == b"tEXt" and piece[8:].startswith(b"Source\0")):
             kept.append(piece)
         position = end
+        if piece[4:8] == b"IEND":
+            break
+    if position != len(rest) or not kept or kept[-1][4:8] != b"IEND":
+        raise ValueError("the PNG does not end with its IEND chunk")
     return png[:header_end] + chunk + b"".join(kept)
 
 
