@@ -186,7 +186,10 @@ class Places:
         ``folders`` are the account's folders by path: the folder it looks
         in must be one of them, and is judged with its role, so ``*``
         makes nothing below sent mail or drafts. The inbox folder is not
-        made, nor anything below it."""
+        made, nor anything below it, also where its path is the subfolder
+        of a folder it looks in."""
+        if path == self.inbox_folder:
+            return False
         for count in range(1, len(self.subfolder) + 1):
             suffix = "/".join(self.subfolder[:count])
             if path.endswith("/" + suffix):

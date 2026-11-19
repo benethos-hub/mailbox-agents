@@ -150,6 +150,15 @@ def test_the_inbox_folder_the_settings_take_in_is_an_end_station() -> None:
     assert found.target(folder("Acme")) == "Acme/Rechnungen"
 
 
+def test_the_inbox_folder_is_not_made_where_it_is_a_subfolder_too() -> None:
+    found = places(
+        "Invoices", subfolder="{folder}/Rechnungen", inbox="Invoices/Rechnungen"
+    )
+    known = by_path(INBOX, folder("Invoices"))
+
+    assert not found.may_create("Invoices/Rechnungen", known)
+
+
 def test_nothing_is_made_below_the_end_station() -> None:
     found = places("*", subfolder="{folder}/Rechnungen/Eingang", inbox="Invoices")
     known = by_path(folder("Invoices"), folder("Invoices/Rechnungen"))
