@@ -85,7 +85,7 @@ containers/       # images/, production/, development/, and live/: a mail
 config/           # .env.example and *.example.json versioned, .env local
 docs/             # CONCEPT.md, the overview, and concept/, a file per
                   # topic and per agent, ARCHITECTURE.md, LOGGING.md,
-                  # ROADMAP.md
+                  # RELEASING.md, ROADMAP.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
 assets/           # brand/: icon.svg and the PNGs build.py renders from it
@@ -179,3 +179,14 @@ uv lock --check
 - The pre-commit hook in `.githooks/` refuses staged secrets and state
   files. It is enabled once per clone with
   `git config core.hooksPath .githooks`.
+
+## Releasing
+
+A release is its own `release/X.Y.Z` branch and pull request, with one
+version for the package on PyPI and the image on ghcr.io. It is the
+owner's step: never tag or publish one without being asked.
+
+The steps in order, from the line of the mailbox service and the pins to
+what is checked after the publish:
+[docs/RELEASING.md](docs/RELEASING.md). Read it before any work on a
+release.

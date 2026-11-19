@@ -97,7 +97,7 @@ config/           # .env.example and the example lists *.example.json
                   # versioned, .env local
 docs/             # CONCEPT.md, the overview, and concept/, a file per
                   # topic and per agent, ARCHITECTURE.md, LOGGING.md,
-                  # ROADMAP.md
+                  # RELEASING.md, ROADMAP.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
 assets/           # brand/: icon.svg and the PNGs build.py renders from it
