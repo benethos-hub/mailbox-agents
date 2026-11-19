@@ -43,7 +43,9 @@ tick. The deadline counts from the date of the sent message, and a
 date on a weekend counts from the Monday after.
 
 The model is given the recipients, the subject and the text the sender
-wrote, without what it quotes, the last 4000 characters of it. The prompt is
+wrote, without what it quotes, the last 4000 characters of it. The
+subject is cut at 300 characters, as a reply keeps the one a stranger
+chose (2026-11-19). The prompt is
 `prompts/system.v1.md`, version `v1`. A received message asks no model:
 what it closes is a rule. The agent works on messages in sent mail, and on
 messages in the inbox that belong to a thread.

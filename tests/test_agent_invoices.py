@@ -20,14 +20,25 @@ from benethos_mailbox_agents.agents.inquiries.schema import (
 from benethos_mailbox_agents.agents.invoices.agent import Invoices
 from benethos_mailbox_agents.agents.invoices.schema import (
     MAX_ANSWER_TEXT,
+    MAX_FILES,
+    MAX_FILES_TEXT,
+    MAX_NAME,
+    MAX_SUBJECT,
+    MAX_TEXT,
     Answer,
+    parts,
     render,
 )
 from benethos_mailbox_agents.contract import Action
 from benethos_mailbox_agents.errors import ConfigError
 from benethos_mailbox_agents.evaluation.gold import load_gold
 from benethos_mailbox_agents.llm.gateway import strict_schema
-from benethos_mailbox_agents.records import MailMessage, MessageRef
+from benethos_mailbox_agents.records import (
+    Address,
+    Attachment,
+    MailMessage,
+    MessageRef,
+)
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.readiness import readiness, start
 from fakes import ACCOUNT, invented, wire_message
@@ -916,3 +927,31 @@ def test_only_invoices_skips_marked_mail() -> None:
     from benethos_mailbox_agents.contract import discover
 
     assert {name for name, cls in discover().items() if cls.skip_marked} == {"invoices"}
+
+
+def test_a_stranger_cannot_blow_up_the_call() -> None:
+    """Subject, name and attachments are the sender's choice: each is cut,
+    the same for the model and for the evidence check."""
+    message = MailMessage(
+        ref=MessageRef(account_id=ACCOUNT, message_id="m1"),
+        sender=Address(email="billing@hosting.example", name="N" * 20_000),
+        subject="S" * 20_000,
+        text="T" * 20_000,
+        attachments=tuple(
+            Attachment(filename=f"invoice-{n}.pdf", content_type="x/y", size=1)
+            for n in range(5000)
+        ),
+    )
+
+    rendered = render(message)
+
+    assert len(rendered) < MAX_TEXT + MAX_SUBJECT + MAX_NAME + MAX_FILES_TEXT + 200
+    assert "N" * MAX_NAME + " <" in rendered
+    assert "S" * (MAX_SUBJECT + 1) not in rendered
+    name, subject, *files, text = parts(message)
+    assert name == "N" * MAX_NAME + " <billing@hosting.example>"
+    assert subject == "S" * MAX_SUBJECT
+    assert 0 < len(files) <= MAX_FILES
+    assert all(f in rendered for f in files)
+    assert f"invoice-{len(files)}.pdf" not in rendered
+    assert text == "T" * MAX_TEXT

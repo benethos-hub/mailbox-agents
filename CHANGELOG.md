@@ -58,6 +58,10 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- The sender's name and the subject a model is given are cut at 300
+  characters, and `invoices` lists at most 20 attachments within 1000
+  characters, so a mail cannot blow up a model call. Mail below these
+  limits reaches the model as before, under the same prompt versions.
 - The project is named `benethos-mailbox-agents`, in the plural, as it
   holds several agents: the distribution, the console script, the import
   package `benethos_mailbox_agents`, the container image, the settings

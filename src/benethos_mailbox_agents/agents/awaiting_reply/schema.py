@@ -9,11 +9,16 @@ from pydantic import AfterValidator, BaseModel, ConfigDict
 from ...records import MailMessage
 from .text import own_text
 
-__all__ = ["MAX_TEXT", "Answer", "render"]
+__all__ = ["MAX_SUBJECT", "MAX_TEXT", "Answer", "parts", "render"]
 
 # The text written is cut here. A request stands near its end, which a long
 # message keeps by being cut from the front.
 MAX_TEXT = 4000
+
+# The subject is cut here. A reply keeps the subject a stranger chose, so
+# no mail can blow up a call. The same cut goes to the model and to the
+# evidence check.
+MAX_SUBJECT = 300
 
 # The longest quote or value an answer may hold. A longer one is refused as
 # not fitting the schema, so an answer cannot copy the mail into the state
@@ -42,11 +47,13 @@ def render(message: MailMessage) -> str:
     quotes."""
     to = ", ".join(a.email for a in (*message.to, *message.cc)) or "(none)"
     text = own_text(message.text)
-    return f"To: {to}\nSubject: {message.subject or ''}\n\n{text[-MAX_TEXT:]}"
+    subject = (message.subject or "")[:MAX_SUBJECT]
+    return f"To: {to}\nSubject: {subject}\n\n{text[-MAX_TEXT:]}"
 
 
 def parts(message: MailMessage) -> list[str]:
     """The parts of the mail :func:`render` gives the model, without its
     frame: what a quote is looked up in."""
     to = ", ".join(a.email for a in (*message.to, *message.cc))
-    return [to, message.subject or "", own_text(message.text)[-MAX_TEXT:]]
+    subject = (message.subject or "")[:MAX_SUBJECT]
+    return [to, subject, own_text(message.text)[-MAX_TEXT:]]
