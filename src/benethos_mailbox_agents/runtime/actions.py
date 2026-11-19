@@ -398,8 +398,10 @@ class Executor:
             raise ActionRefusedError(f"{self.agent.name} may not make that folder")
         if await self._mailbox.folder_at(account_id, path) is not None:
             return None
-        known = await self._mailbox.folders(account_id)
-        if any(f.path.casefold() == path.casefold() for f in known.values()):
+        # Read again, not doubled: folder_at replaces the cached list when
+        # it misses, and only the fresh list answers for another case.
+        fresh = await self._mailbox.folders(account_id)
+        if any(f.path.casefold() == path.casefold() for f in fresh.values()):
             raise ActionRefusedError("a folder of that name exists in another case")
         above = path.rpartition("/")[0]
         if above and (account_id, above) in self._recorded_folders:
