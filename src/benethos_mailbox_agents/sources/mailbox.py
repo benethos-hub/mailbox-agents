@@ -7,7 +7,7 @@ folder made. There is no way here to send, delete or trash, so the runtime
 cannot do any of it whatever an agent asks. Which folder may be made is
 the runtime's to decide. Every answer is turned into a record of
 :mod:`records`, and every failure into an error of :mod:`errors`. See
-docs/specs/mailbox-service.md.
+docs/concept/mailbox-service.md.
 """
 
 from __future__ import annotations

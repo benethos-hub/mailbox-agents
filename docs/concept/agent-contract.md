@@ -1,4 +1,6 @@
-# The agent contract
+# Concept: the agent contract
+
+Part of the [concept](../CONCEPT.md).
 
 Every agent package defines exactly one concrete `Agent` subclass in its
 `agent.py`. A package under `agents/` without `agent.py` is not an agent.
@@ -122,7 +124,7 @@ as the agent's one move, and one whose result is not there is dropped. When
 the service cannot tell either, it stays recorded and not taken. What the
 stage does not allow is recorded as what would have been done, and so is an
 action the agent asks to be `held`, whatever the stage: for a group of
-[sorting](agents/sorting.md) whose folder would lend a forged mail trust.
+[sorting](agent-sorting.md) whose folder would lend a forged mail trust.
 An action recorded and not taken is recorded once per message and stage:
 asked for again with the same argument, as by a second `backfill`, it adds
 no row and no log line, and counts as recorded (decided 2026-11-18). A

@@ -4,7 +4,7 @@ The state file holds ids only, so subject and sender are fetched from the
 mailbox service at the moment of the report and are never stored. The
 state file is opened read-only, so a report can be made while the agent
 runs. It prints to stdout, for the person who asked, and nothing of it
-reaches the log. See docs/specs/runtime.md.
+reaches the log. See docs/concept/runtime.md.
 """
 
 from __future__ import annotations

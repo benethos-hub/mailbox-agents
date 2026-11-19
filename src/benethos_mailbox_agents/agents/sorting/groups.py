@@ -19,7 +19,7 @@ and its place in the group's list, never the rule, which often names a
 person (decided 2026-11-18). Matching ignores case. The most specific rule
 wins: an address before a pattern before a pattern for the subdomains. Two
 groups whose rules of the same kind both match leave the sender to no
-group, so neither is guessed. See docs/specs/agents/sorting.md.
+group, so neither is guessed. See docs/concept/agent-sorting.md.
 
 The file is JSON. A reader is chosen by the file's suffix, so another
 format is one entry in :data:`READERS`.

@@ -1,8 +1,8 @@
 # Working guidelines for Claude
 
 How to work in this repository. Read this before making changes. See
-[SPECS.md](SPECS.md) for what the project is and does, and
-[docs/specs/](docs/specs/) for the details.
+[docs/CONCEPT.md](docs/CONCEPT.md) for what the project is and does, and
+[docs/concept/](docs/concept/) for each topic and each agent.
 
 ## Golden rules
 
@@ -29,7 +29,7 @@ How to work in this repository. Read this before making changes. See
    talks to the model gateway. `tests/test_layers.py` holds the import order.
 7. **A model that reads mail has no tools.** It returns a value in a fixed
    schema. Acting on the value is code, and the code checks the evidence
-   first. See docs/specs/safety.md.
+   first. See docs/concept/safety.md.
 8. **The repo stands on its own.** State a convention as this project's
    decision. Do not reference the author's other repositories, local
    filesystem paths or email addresses in versioned files.
@@ -51,7 +51,7 @@ How to work in this repository. Read this before making changes. See
 
 ## Project layout
 
-See docs/specs/architecture.md for the full table.
+See docs/ARCHITECTURE.md for the full table.
 
 ```
 src/benethos_mailbox_agents/
@@ -83,7 +83,9 @@ live/             # run by hand, outside testpaths: checks against the
 containers/       # images/, production/, development/, and live/: a mail
                   # server and a mailbox service of their own for live/
 config/           # .env.example and *.example.json versioned, .env local
-docs/             # specs/ (the details of SPECS.md), LOGGING.md
+docs/             # CONCEPT.md, the overview, and concept/, a file per
+                  # topic and per agent, ARCHITECTURE.md, LOGGING.md,
+                  # ROADMAP.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
 assets/           # brand/: icon.svg and the PNGs build.py renders from it
@@ -122,8 +124,8 @@ uv lock --check
 - Async tests run with pytest-asyncio in `auto` mode.
 - **The gates do not cover the upstreams changing.** Verify a new
   assumption about the mailbox service or the gateway with a live check
-  before building on it, and mark it **(to verify)** in its spec under
-  `docs/specs/` until then.
+  before building on it, and mark it **(to verify)** in its file under
+  `docs/concept/` until then.
 - A live check is a manual run, never a gate: `containers/live/README.md`
   says how to start the mail server of its own, and `live/smoke.py` checks
   the package against it, read-only.
@@ -149,11 +151,19 @@ uv lock --check
   docstring says what it does and why. Each statement stands alone, a step
   in Python is the method `before`. A release freezes its new migrations:
   the fingerprint of each goes into `RELEASED` in `tests/test_store.py`.
-- **The spec moves with the code.** `SPECS.md` is the table of contents,
-  the details are in `docs/specs/`, one file per topic and one per agent
-  in `docs/specs/agents/`. A change that departs from them changes them in
-  the same commit. Every user-facing change gets an entry under
-  `[Unreleased]` in `CHANGELOG.md` in the same commit.
+- **The concept moves with the code.** `docs/CONCEPT.md` is the overview,
+  and `docs/concept/` holds one file per topic and one per agent. A change
+  that departs from them changes them in the same commit. Every
+  user-facing change gets an entry under `[Unreleased]` in `CHANGELOG.md`
+  in the same commit.
+- **A document is named for its subject.** One that stands directly in
+  `docs/` is written in capitals: `CONCEPT.md`, `ARCHITECTURE.md`. One
+  that grows too long becomes an overview, and its parts go into a folder
+  of the same name in lowercase beside it: `CONCEPT.md` and `concept/`. A
+  part is named in lowercase with hyphens, an agent's as `agent-<name>.md`
+  with the `_` of its name as a hyphen. It starts with the name of its
+  document, as in `# Concept: runtime`, and a line that leads back to the
+  overview. The overview lists every part in a table.
 - No semicolons in prose: README, docstrings, docs and commit messages.
 
 ## Git

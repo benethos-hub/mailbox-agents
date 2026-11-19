@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 Every user-facing change gets an entry under `[Unreleased]` in the same
 commit that makes the change. Design decisions live in
-[SPECS.md](SPECS.md).
+[docs/CONCEPT.md](docs/CONCEPT.md).
 
 ## [Unreleased]
 
@@ -156,5 +156,5 @@ Each sets a keyword of its own, of the form `agent-<word>`.
 - A pre-commit hook in `.githooks/` and a test over every tracked file,
   which refuse a credential, an address on a real domain, a path of a
   machine or an id of the mailbox service.
-- The specification: `SPECS.md` as its table of contents, the details in
-  `docs/specs/`, one file per topic and one per agent.
+- The concept: `docs/CONCEPT.md` as its overview, and in `docs/concept/`
+  one file per topic and one per agent.

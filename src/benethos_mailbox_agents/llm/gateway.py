@@ -7,7 +7,7 @@ no conversation is kept, no model SDK is used. No sampling setting is
 sent either: some models refuse one, so the gateway sets it per model.
 What the gateway reports as its model is returned with the answer, with
 the tokens and the duration.
-See docs/specs/model-gateway.md.
+See docs/concept/model-gateway.md.
 """
 
 from __future__ import annotations

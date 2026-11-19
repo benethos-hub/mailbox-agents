@@ -1,1 +1,1 @@
-"""The agent ``sorting``. See docs/specs/agents/sorting.md."""
+"""The agent ``sorting``. See docs/concept/agent-sorting.md."""

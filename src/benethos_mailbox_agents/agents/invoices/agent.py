@@ -16,7 +16,7 @@ its state file does not know is skipped. Who put a message into a folder
 does not matter: ``sorting``, a rule of the mail server or the owner by
 hand. The agent knows nothing of groups and names no supplier (agent
 version 5).
-See docs/specs/agents/invoices.md.
+See docs/concept/agent-invoices.md.
 """
 
 from __future__ import annotations

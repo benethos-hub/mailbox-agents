@@ -5,7 +5,7 @@ Each step writes its result before the next begins. The baseline is stored
 once per agent version and prompt version, the decision once per prompt
 version and model alias, so a message run again, after a crash or a
 repeated feed entry, reuses what was decided and asks the model nothing.
-See docs/specs/runtime.md.
+See docs/concept/runtime.md.
 """
 
 from __future__ import annotations

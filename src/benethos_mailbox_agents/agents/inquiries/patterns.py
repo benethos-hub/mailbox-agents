@@ -7,7 +7,7 @@ that write. It is JSON, like the list of sorting:
 
     {"domains": ["staffing.example"], "phrases": ["für einen kunden"]}
 
-See docs/specs/agents/inquiries.md.
+See docs/concept/agent-inquiries.md.
 """
 
 from __future__ import annotations

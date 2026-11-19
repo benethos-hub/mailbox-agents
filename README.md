@@ -20,7 +20,7 @@ inquiries and file the mail of listed senders into folders.
 > **Status: alpha.** Built, and run on a test account of invented mail
 > only. Names, settings and the state file may still change from one
 > version to the next. The design is written down in
-> [SPECS.md](https://github.com/benethos-hub/mailbox-agents/blob/main/SPECS.md),
+> [docs/CONCEPT.md](https://github.com/benethos-hub/mailbox-agents/blob/main/docs/CONCEPT.md),
 > and no agent acts on a real mailbox yet. Do not point it at a mailbox you
 > care about.
 

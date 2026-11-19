@@ -37,7 +37,7 @@ earlier run, then, not in this order:
    the agents are to use one (below),
 - makes a key of the gateway for the agents that reaches the three
    `mail-classifier` aliases only, with a budget of 5 USD, so the lock of
-   the gateway that the safety spec counts on is used here too. The
+   the gateway that the safety concept counts on is used here too. The
    master key stays in `secrets/gateway.env`.
 
 ### Which model the agents use
@@ -143,7 +143,7 @@ all it should have filled or did fill. The `invoices` column and the
 fields are of its prompt `v1`, which still asked for the supplier. Prompt
 `v4` was measured on 2026-11-18 with `mail-classifier` and
 `mail-classifier-gpu` alone, 11 of 11 each, see
-[docs/specs/agents/invoices.md](../../docs/specs/agents/invoices.md). The
+[docs/concept/agent-invoices.md](../../docs/concept/agent-invoices.md). The
 test account has had a twelfth message for `invoices` and `inquiries`
 since, a receipt that carries its invoice. The seconds are per message,
 the first message of a run waiting for a local model to load:
@@ -218,7 +218,7 @@ about 570.
 
 A dozen invented messages show a model that fails outright, not which of
 the good ones is best. That takes the evaluation on real mail of
-[docs/specs/evaluation.md](../../docs/specs/evaluation.md).
+[docs/concept/evaluation.md](../../docs/concept/evaluation.md).
 
 ## Ports
 

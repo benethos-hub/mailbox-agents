@@ -5,7 +5,7 @@ Each process keeps a registry of its own, for its one agent: messages per
 state, the age of the oldest pending message, step failures by kind,
 answers refused by the schema, the gateway or the evidence check, model
 calls with their tokens and duration, actions by kind and whether they
-were carried out, and the time of the last pass. See docs/specs/operation.md.
+were carried out, and the time of the last pass. See docs/concept/operation.md.
 """
 
 from __future__ import annotations

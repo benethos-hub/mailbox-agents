@@ -1,4 +1,6 @@
-# The agent `sorting`
+# Concept: the agent `sorting`
+
+Part of the [concept](../CONCEPT.md).
 
 > **Status: built on 2026-11-18, steps S1 to S7, and run in `shadow` and in
 > `full` on the test account. Not run on a real mailbox.** Planned the same
@@ -22,12 +24,12 @@ group, and which folder is the group's?
 
 `sorting` moves by the sender alone, from the inbox into the group's
 folder. Whether a message is an invoice is asked afterwards, by
-[invoices](invoices.md), which moves it on within the folder it lies in. No
+[invoices](agent-invoices.md), which moves it on within the folder it lies in. No
 agent does both.
 
 Each agent works without the other. `sorting` knows nothing of invoices.
 `invoices` knows nothing of groups: it is told at its start which folders
-it looks in ([invoices](invoices.md#settings)).
+it looks in ([invoices](agent-invoices.md#settings)).
 
 The two never compete for a message:
 
@@ -150,7 +152,7 @@ keyword, `agent-sorted` by default, so a message it sorted is known as such
 to a person in a mail client and to a state file made anew. A message in
 the inbox that carries it was put back by a person and is left alone.
 Besides, the runtime moves a message at most once for an agent ([agent
-contract](../agent-contract.md)). The keyword is its own and no other agent
+contract](agent-contract.md)). The keyword is its own and no other agent
 sets it, so a move by `sorting` and a move by `invoices` stay told apart.
 The keyword is asked for after the move in every stage. The runtime takes
 nothing after a refused move and records only what follows a move recorded
@@ -158,7 +160,7 @@ only, by the stage or for a held group, so it never stands without the move
 (decided 2026-11-18). Below `full` and for a held group the state file
 holds it as recorded and not set. The name has no `$` in front, as IMAP
 registers such keywords with meanings (`$Junk`, `$label1`), and it carries
-the prefix `agent-` of the [agent contract](../agent-contract.md), which no
+the prefix `agent-` of the [agent contract](agent-contract.md), which no
 mail client or other tool is known to use. `MAILBOX_AGENTS_KEYWORD` names
 another.
 
@@ -215,8 +217,8 @@ the executor refuses any other. A method rather than a set of paths,
 because `invoices` knows its subfolders only from the folder a message
 lies in.
 
-The [agent contract](../agent-contract.md), [safety](../safety.md) and
-[mailbox service](../mailbox-service.md) describe the action, the folders
+The [agent contract](agent-contract.md), [safety](safety.md) and
+[mailbox service](mailbox-service.md) describe the action, the folders
 an agent declares, and folder creation in `sources/mailbox.py`.
 
 ## 5. The sender is not proof
@@ -246,7 +248,7 @@ verified, a group gets a switch that moves verified mail only.
 | `MAILBOX_AGENTS_SORTING_FILE` | the list of section 2. Required |
 
 The stage, the accounts and the rest are the settings of every agent
-([configuration](../configuration.md)).
+([configuration](configuration.md)).
 
 ## 7. Which mail (decided 2026-11-18)
 
@@ -287,7 +289,7 @@ and a report is versioned (decided 2026-11-19).
 ## 11. Measured first, on the live setup
 
 Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
-[mailbox service](../mailbox-service.md).
+[mailbox service](mailbox-service.md).
 
 1. A move made through the service reaches the change feed as
    `message.updated` of the same message, which keeps its id.
@@ -298,18 +300,18 @@ Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
 
 ## 12. Order of the build
 
-Each step is one commit with the gates green and the specs it touches.
+Each step is one commit with the gates green and the documents it touches.
 
 | Step | Content | Done when |
 |---|---|---|
-| S1 | The three measurements of section 11 | their results stand in [mailbox service](../mailbox-service.md) |
+| S1 | The three measurements of section 11 | their results stand in [mailbox service](mailbox-service.md) |
 | S2 | `sources/mailbox.py`: creating a folder | offline tests against the fake service |
-| S3 | Contract and executor: `create_folder`, the folders an agent declares | tests 5 of section 10, the tables of the contract spec |
+| S3 | Contract and executor: `create_folder`, the folders an agent declares | tests 5 of section 10, the tables of the agent contract |
 | S4 | The list: reading, validating, matching, in `agents/sorting/` | tests 3 and 4. `invoices` keeps its own list until I5 |
 | S5 | `agents/sorting/`: select, admit, baseline, decide without a model, effect | tests 1, 2, 6, 7, 8 |
 | S6 | `report` for `sorting`, the setting, the example list | section 8 shown on invented mail |
 | S7 | Live: `sorting` in `shadow` and in `full` on the test account | `live/sorting.py`, folders made, mail moved and put back. Not `live/smoke.py`, which writes nothing |
-| S8 | [invoices](invoices.md) rebuilt, its own steps I1 to I6 | see there |
+| S8 | [invoices](agent-invoices.md) rebuilt, its own steps I1 to I6 | see there |
 
 A run on the owner's account is the owner's decision, in `shadow` first.
 

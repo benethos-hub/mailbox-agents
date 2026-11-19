@@ -1,4 +1,6 @@
-# Operation
+# Concept: operation
+
+Part of the [concept](../CONCEPT.md).
 
 - **Release (alpha, planned):** `publish.yml` publishes a GitHub release
   to PyPI as `benethos-mailbox-agents` and to ghcr.io as the image of the

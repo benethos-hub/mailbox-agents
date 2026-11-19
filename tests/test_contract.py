@@ -137,7 +137,7 @@ def test_every_action_has_a_way_back() -> None:
 
 
 def test_the_actions_of_the_contract_spec_are_the_code() -> None:
-    section = (ROOT / "docs" / "specs" / "agent-contract.md").read_text("utf-8")
+    section = (ROOT / "docs" / "concept" / "agent-contract.md").read_text("utf-8")
     table = section[section.index("| Action |") :]
     named = re.findall(r"^\| `([a-z_]+)` \|", table, flags=re.MULTILINE)
 
@@ -235,9 +235,9 @@ def test_sample_has_no_tick_by_default() -> None:
     assert isinstance(Sample.actions, frozenset)
 
 
-# -- the tables of docs/specs/agent-contract.md against the code -------------------
+# -- the tables of docs/concept/agent-contract.md against the code -------------------
 
-CONTRACT = ROOT / "docs" / "specs" / "agent-contract.md"
+CONTRACT = ROOT / "docs" / "concept" / "agent-contract.md"
 
 
 def _table(header: str) -> list[list[str]]:
@@ -298,7 +298,7 @@ def test_the_skip_marked_table_is_what_each_agent_declares() -> None:
 
 @pytest.mark.parametrize("name", sorted(discover()))
 def test_each_agent_has_its_spec_and_its_settings_for_operation(name: str) -> None:
-    assert (ROOT / "docs" / "specs" / "agents" / f"{name}.md").is_file()
+    assert (ROOT / "docs" / "concept" / f"agent-{name.replace('_', '-')}.md").is_file()
     assert (
         ROOT / "containers" / "production" / "agents" / name / ".env.example"
     ).is_file()

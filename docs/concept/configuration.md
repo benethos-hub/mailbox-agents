@@ -1,4 +1,6 @@
-# Configuration
+# Concept: configuration
+
+Part of the [concept](../CONCEPT.md).
 
 All settings carry the prefix `MAILBOX_AGENTS_` and come from the environment
 or from one `.env` file, read with pydantic-settings (decided 2026-11-17).
@@ -31,5 +33,6 @@ from. A secret given directly wins over its file.
 
 Settings of one agent, such as `INVOICES_FOLDERS`, `INVOICES_SUBFOLDER`,
 `REPLY_DAYS`, `INQUIRIES_PATTERNS_FILE` and `SORTING_FILE`, are named in
-the agent's spec under [agents/](agents/). The `.env` file is `config/benethos-mailbox-agents/.env` below the working
-directory unless the command line names another.
+the agent's file, `agent-<name>.md` beside this one. The `.env` file is
+`config/benethos-mailbox-agents/.env` below the working directory unless
+the command line names another.

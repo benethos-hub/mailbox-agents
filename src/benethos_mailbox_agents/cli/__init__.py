@@ -3,7 +3,7 @@
 Each command is a function in :mod:`.commands`. The command line reads the
 settings once, sets up the log and turns an error of this package into a
 sentence on stderr and an exit code: 2 for a configuration to correct, 1
-for an upstream that is away. See docs/specs/architecture.md.
+for an upstream that is away. See docs/ARCHITECTURE.md.
 """
 
 from __future__ import annotations

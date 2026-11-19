@@ -1,4 +1,4 @@
-"""The agent invoices, on invented mail: each row of docs/specs/agents/invoices.md."""
+"""The agent invoices, on invented mail: each row of docs/concept/agent-invoices.md."""
 
 from __future__ import annotations
 
@@ -92,7 +92,7 @@ async def world(tmp_path: Path) -> AsyncIterator[Wired]:
         yield found
 
 
-# -- the table of docs/specs/agents/invoices.md -----------------------------------
+# -- the table of docs/concept/agent-invoices.md -----------------------------------
 
 
 @pytest.mark.parametrize(

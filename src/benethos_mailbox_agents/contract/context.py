@@ -3,8 +3,8 @@
 The runtime hands an agent a :class:`Context`. Through it the agent asks
 the model, reads a thread and keeps its open items, and nothing else: it
 never holds the mailbox client, the gateway client or the state file, so
-it cannot take an action past the runtime. See docs/specs/agent-contract.md
-and docs/specs/safety.md.
+it cannot take an action past the runtime. See docs/concept/agent-contract.md
+and docs/concept/safety.md.
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ class Reader(Protocol):
 
 class Items(Protocol):
     """The open items of an agent, with or without a deadline,
-    docs/specs/state.md."""
+    docs/concept/state.md."""
 
     async def open(self, ref: MessageRef, thread_id: str | None, due: datetime) -> None:
         """Open an item for a message that has none, an item there already

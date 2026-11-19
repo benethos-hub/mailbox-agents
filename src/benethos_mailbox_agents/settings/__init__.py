@@ -4,7 +4,7 @@ Every setting carries the prefix ``MAILBOX_AGENTS_`` and comes from the
 environment or from one ``.env`` file, read with pydantic-settings. A
 process runs one agent, so one environment describes one agent. The
 service token and the gateway key may be given as a file instead, named
-in the same setting with the suffix ``_FILE``. See docs/specs/configuration.md.
+in the same setting with the suffix ``_FILE``. See docs/concept/configuration.md.
 """
 
 from __future__ import annotations
@@ -93,18 +93,18 @@ class Settings(BaseSettings):
     metrics_port: int = Field(default=0, ge=0, le=65535)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
-    # --- invoices, docs/specs/agents/invoices.md --------------------------------------
+    # --- invoices, docs/concept/agent-invoices.md -------------------------------------
     invoices_folders: Annotated[list[str], NoDecode] = Field(default_factory=list)
     invoices_subfolder: str | None = None
     invoices_inbox_folder: str | None = None
 
-    # --- awaiting_reply, docs/specs/agents/awaiting_reply.md --------------------------
+    # --- awaiting_reply, docs/concept/agent-awaiting-reply.md -------------------------
     reply_days: int = Field(default=3, ge=1)
 
-    # --- inquiries, docs/specs/agents/inquiries.md ------------------------------------
+    # --- inquiries, docs/concept/agent-inquiries.md -----------------------------------
     inquiries_patterns_file: Path | None = None
 
-    # --- sorting, docs/specs/agents/sorting.md ----------------------------------------
+    # --- sorting, docs/concept/agent-sorting.md ---------------------------------------
     sorting_file: Path | None = None
 
     @field_validator("accounts", "invoices_folders", mode="before")

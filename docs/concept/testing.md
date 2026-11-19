@@ -1,11 +1,13 @@
-# Testing
+# Concept: testing
+
+Part of the [concept](../CONCEPT.md).
 
 - The suite is offline. The mailbox service and the gateway are mocked with
   `httpx.MockTransport`. No test reaches a network, and none skips itself
   when a credential is missing.
 - Coverage floor 80 %.
 - `ruff`, `mypy`, `uv lock --check`.
-- A test holds the layer order of [architecture](architecture.md), and
+- A test holds the layer order of [architecture](../ARCHITECTURE.md), and
   others hold the tables of [configuration](configuration.md),
   [state](state.md) and [agent contract](agent-contract.md) to the code
   where they can be compared.

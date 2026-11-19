@@ -12,7 +12,7 @@ short. A quote of fewer than eight
 letters and digits counts as not found, so ``e`` or a colon backs nothing.
 A field whose quote is not found is dropped. A label whose quote is not
 found makes the decision ``refused``: it is recorded and not acted on. See
-docs/specs/safety.md.
+docs/concept/safety.md.
 """
 
 from __future__ import annotations

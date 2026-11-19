@@ -1,4 +1,6 @@
-# State
+# Concept: state
+
+Part of the [concept](../CONCEPT.md).
 
 One SQLite file per agent, with numbered migrations that are never changed
 once released.
