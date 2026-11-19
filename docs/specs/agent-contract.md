@@ -152,4 +152,5 @@ message.
 setting is missing, without starting it. For a ready agent that names
 folders it expects, it looks them up in the mailbox service, in each
 account the settings name or else in each account the user is granted,
-and names each one missing.
+lists the lines `describe_folders` gives per account, and names each one
+missing or there in another case only.

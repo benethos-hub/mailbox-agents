@@ -8,7 +8,7 @@ once released.
 | `cursor` | the feed state token |
 | `passes` | when the loop last showed progress, after a message, a pass or a slice of a wait, for the health check |
 | `messages` | message id, account id, state, attempts, next attempt |
-| `steps` | message, step, prompt version, model alias and the model reported, result, tokens, duration. A baseline's prompt version is the agent version, with `/` and the prompt version after it when the agent has one, such as `4/v4` |
+| `steps` | message, step, prompt version, model alias and the model reported, result, tokens, duration. A baseline's prompt version is the agent version, with `/` and the prompt version after it when the agent has one, such as `5/v4` |
 | `actions` | message, action, what it was before, when, stage, whether it was carried out |
 | `open_items` | for agents that follow a message, `awaiting_reply` with a deadline and `invoices` without one: message, thread, due, whether the keyword is on the message, the stage its keyword was recorded in without being set, closed and why |
 | `calls` | the full request and answer of a model call, only while `PROMPT_RETENTION_DAYS` keeps them |

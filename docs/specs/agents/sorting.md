@@ -34,7 +34,7 @@ The two never compete for a message:
 | Agent | Moves a message that lies in | To |
 |---|---|---|
 | `sorting` | the inbox | the folder of the sender's group |
-| `invoices` | a folder it was told to look in, other than the inbox | the subfolder below that folder |
+| `invoices` | a folder it was told to look in, other than the inbox, and the inbox folder, an end station where nothing moves | the subfolder below that folder |
 | `invoices`, with an inbox folder set | the inbox | the inbox folder |
 
 So no rule about who runs first and no waiting time is needed, and both run

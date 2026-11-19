@@ -73,7 +73,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     found.set_defaults(handler=commands.report)
 
-    found = sub.add_parser("status", help="whether each agent is ready, and its counts")
+    found = sub.add_parser(
+        "status",
+        help="whether each agent is ready, the folders that matter to it, "
+        "and its counts",
+    )
     found.set_defaults(handler=commands.status)
 
     found = sub.add_parser(
