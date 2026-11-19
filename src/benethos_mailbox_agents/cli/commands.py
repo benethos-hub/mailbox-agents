@@ -17,7 +17,7 @@ from ..errors import ConfigError, MailboxAgentError
 from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
-from ..logbook import process, record
+from ..logbook import escaped, process, record
 from ..runtime.health import check
 from ..runtime.readiness import MAILBOX_SETTINGS, readiness, start
 from ..settings import DEFAULT_ENV_FILE, Settings
@@ -159,6 +159,13 @@ async def _folder_lines(agent: Agent, settings: Settings) -> list[str]:
     return lines
 
 
+def _say(line: str) -> None:
+    """Print one line of ``status``. A folder's name is the owner's or the
+    server's: a control or direction character in it is written escaped,
+    as in ``report``."""
+    print(escaped(line))
+
+
 def status(args: argparse.Namespace, settings: Settings) -> int:
     for cls in discover().values():
         found = readiness(cls, settings)
@@ -168,16 +175,16 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
             state = "misses " + ", ".join(found.missing)
         else:
             state = f"not ready: {found.problem}"
-        print(f"{found.name} {found.version}: {state}")
+        _say(f"{found.name} {found.version}: {state}")
         if found.agent is not None:
             for line in _folders(found.agent, settings):
-                print(f"  {line}")
+                _say(f"  {line}")
         path = path_for(settings.data_dir, cls.name)
         if path.is_file():
             with Store.open(path, read_only=True) as store:
                 last = store.progress()
-                print(f"  {_counts(store)}")
-                print(f"  last progress: {last.isoformat() if last else 'none'}")
+                _say(f"  {_counts(store)}")
+                _say(f"  last progress: {last.isoformat() if last else 'none'}")
     return 0
 
 

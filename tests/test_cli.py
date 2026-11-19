@@ -260,6 +260,29 @@ def test_status_lists_the_folders_that_matter(
     assert "Trash" not in out and "Sent" not in out
 
 
+def test_status_writes_a_control_character_of_a_folder_escaped(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
+    clear = chr(27) + "[2J"
+    service.folders["acc1"].append(
+        {"id": "x", "name": f"Odd{clear}", "role": None, "parent_id": "inv"}
+    )
+
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert chr(27) not in out
+    assert "    Invoices/Odd" + "\\x1b[2J: looked in" in out
+
+
 def test_status_names_a_folder_there_in_another_case(
     service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
