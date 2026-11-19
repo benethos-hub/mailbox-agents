@@ -13,6 +13,7 @@ may be given as a file with the suffix `_FILE`.
 | `GATEWAY_ALLOW_HTTP` | allow http to another machine for the gateway, as between two containers, `false` when unset. https or http to this machine otherwise |
 | `GATEWAY_TIMEOUT_SECONDS` | how long one model call may take, `120` when unset |
 | `MODEL` | the alias the gateway resolves |
+| `CA_FILE` | a file of PEM certificates of the authorities https to the service and the gateway trusts, in place of the public roots, for an upstream with a certificate of an own CA (2026-11-19). Read at the start: a missing file or one without a certificate stops it. Unset: the roots of certifi. `SSL_CERT_FILE` and the proxy variables are never read |
 | `ACCOUNTS` | the accounts to work on, comma separated, all the user may read when unset |
 | `STAGE` | `shadow`, `keyword` or `full`, `shadow` when unset |
 | `KEYWORD` | the keyword the agent sets, the agent's own default when unset. Lower case letters, digits and dashes, such as `agent-invoice` (2026-11-19). It belongs in the env file of one agent: an agent whose keyword is another agent's default does not start, and `status` warns when it is set |

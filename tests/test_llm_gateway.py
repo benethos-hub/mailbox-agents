@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 from collections.abc import AsyncIterator
 from typing import Literal
 
@@ -231,3 +232,24 @@ async def test_a_garbled_usage_counts_no_tokens(usage: object) -> None:
         reply = await other.ask(system="s", content="c", schema=Answer)
 
     assert (reply.tokens_in, reply.tokens_out) == (0, 0)
+
+
+def test_a_ca_of_the_settings_is_what_the_gateway_trusts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    given: dict[str, object] = {}
+    real = httpx.AsyncClient
+
+    def client(**kwargs: object) -> httpx.AsyncClient:
+        given.update(kwargs)
+        return real(**kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(httpx, "AsyncClient", client)
+    context = ssl.create_default_context()
+
+    Gateway("https://g.example.test", "k", "m", timeout=1.0, verify=context)
+    assert given["verify"] is context
+    given.clear()
+    Gateway("https://g.example.test", "k", "m", timeout=1.0)
+    assert "verify" not in given
+    assert given["trust_env"] is False

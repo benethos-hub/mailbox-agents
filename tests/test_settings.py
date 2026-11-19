@@ -179,3 +179,27 @@ def test_the_env_example_names_every_setting() -> None:
     named = set(re.findall(r"MAILBOX_AGENTS_([A-Z_]+)=", example.read_text("utf-8")))
 
     assert {name.lower() for name in named} == set(Settings.model_fields)
+
+
+TEST_CA = ROOT / "tests" / "data" / "test-ca.pem"
+
+
+def test_a_ca_file_is_the_one_authority_trusted() -> None:
+    context = load_settings(ca_file=TEST_CA).ssl_context()
+
+    assert context is not None
+    names = [dict(n[0] for n in c["subject"]) for c in context.get_ca_certs()]
+    assert names == [{"commonName": "mailbox-agents test CA"}]
+
+
+def test_without_a_ca_file_the_roots_stay() -> None:
+    assert load_settings().ssl_context() is None
+    assert load_settings(ca_file="").ca_file is None
+
+
+@pytest.mark.parametrize("name", ["missing.pem", "no-certificate.pem"])
+def test_a_ca_file_that_is_no_ca_stops_the_start(tmp_path: Path, name: str) -> None:
+    (tmp_path / "no-certificate.pem").write_text("no certificate\n", encoding="utf-8")
+
+    with pytest.raises(errors.ConfigError, match="MAILBOX_AGENTS_CA_FILE"):
+        load_settings(ca_file=tmp_path / name)

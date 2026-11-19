@@ -13,6 +13,9 @@ commit that makes the change. Design decisions live in
 
 ### Added
 
+- `MAILBOX_AGENTS_CA_FILE`: the certificates of an own CA for https to
+  the mailbox service and the gateway, in place of the public roots.
+  `SSL_CERT_FILE` and the proxy variables stay unread.
 - The console script `benethos-mailbox-agents` with the commands `worker`,
   `run`, `backfill`, `status` and `paths`, and `--env-file`.
 - The command `report`: what an agent decided and did, or in `shadow` would

@@ -57,6 +57,7 @@ def mailbox_for(settings: Settings) -> AbstractAsyncContextManager[Mailbox]:
         settings.service_url or "",
         settings.secret("service_token"),
         allow_http=settings.service_allow_http,
+        verify=settings.ssl_context(),
         transport=TRANSPORTS.get("service"),
     )
 
@@ -77,6 +78,7 @@ async def upstreams(
                     settings.model or "",
                     timeout=settings.gateway_timeout_seconds,
                     allow_http=settings.gateway_allow_http,
+                    verify=settings.ssl_context(),
                     transport=TRANSPORTS.get("gateway"),
                 )
             )

@@ -116,11 +116,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # arm64 is emulated on the amd64 runner. The arm64 build of the docker
-      # job in ci.yml writes its layers to the cache scope buildkit, and the
-      # release reads them from there.
+      # arm64 is emulated on the amd64 runner. A manual run reads the layers
+      # the arm64 build of the docker job in ci.yml writes to the cache scope
+      # buildkit. A release reads none: every job on main can write that
+      # scope, also one that installs the newest dependencies before an
+      # audit saw them, so a release builds in a scope of its own run, which
+      # nothing wrote before (decided 2026-11-19). The action always uses a
+      # cache, an empty scope falls back to the image name.
       - uses: benethos-hub/.github/actions/publish/ghcr@main
         with:
           image: benethos-mailbox-agents
           dockerfile: containers/images/mailbox-agents/Dockerfile
-          cache-scope: buildkit
+          cache-scope: ${{ github.event_name == 'release' && format('release-{0}', github.run_id) || 'buildkit' }}
