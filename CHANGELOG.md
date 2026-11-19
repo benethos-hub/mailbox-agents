@@ -195,6 +195,9 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- `status` checks the folders of each account on its own: an account
+  whose folders are refused gets a line of its own, and the folders of
+  the others are still listed. One refusal replaced all of them before.
 - A move of a message the agent moved once before, which the owner then
   moved elsewhere, is not taken and logged as `actions.kept` at INFO. It
   was refused before, with a warning and a failure counted on every
