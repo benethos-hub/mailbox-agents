@@ -1,4 +1,4 @@
-"""The agent sorting, on invented mail: each row of docs/specs/agents/sorting.md."""
+"""The agent sorting, on invented mail: each row of docs/concept/agent-sorting.md."""
 
 from __future__ import annotations
 

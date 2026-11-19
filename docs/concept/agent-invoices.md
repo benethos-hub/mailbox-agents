@@ -1,8 +1,10 @@
-# The agent `invoices`
+# Concept: the agent `invoices`
+
+Part of the [concept](../CONCEPT.md).
 
 > **Status: version 5 since 2026-11-19, the inbox folder an end station,
 > steps E1 to E6 at the end. Version 4 was rebuilt on 2026-11-18 after
-> [sorting](sorting.md), steps I1 to I6, evaluated on the invented mail of
+> [sorting](agent-sorting.md), steps I1 to I6, evaluated on the invented mail of
 > the test account and run there in `shadow` beside `sorting`.
 > Not run on a real mailbox in this version.**
 
@@ -28,7 +30,7 @@ the opposite sign (decided 2026-11-18 for now, prompt `v3`).
 **The folder says whose invoice it is (decided 2026-11-18).** `invoices`
 asks one question: is this message an invoice? It no longer asks from which
 supplier. It moves an invoice into a subfolder of the folder it lies in.
-Who put the message there does not matter: [sorting](sorting.md), a rule of
+Who put the message there does not matter: [sorting](agent-sorting.md), a rule of
 the mail server or the owner by hand. Filing by provider comes first, the
 subfolder for invoices in a second run.
 
@@ -76,7 +78,7 @@ pattern of the subfolder points, such as `Invoices/Rechnungen` beside
 
 **`*` takes in the owner's own folders (decided 2026-11-18).** It covers
 every folder at the top that has no role, the owner's own among them, so
-the folders of [sorting](sorting.md) may lie at the top. The inbox, sent
+the folders of [sorting](agent-sorting.md) may lie at the top. The inbox, sent
 mail, drafts, the trash, junk, the archive and a folder of all mail have a
 role and are not taken in. A folder named by its path is looked in whatever
 its role, but the trash, junk and spam. The runtime makes a subfolder only
@@ -152,7 +154,7 @@ subfolder stays where the owner put it.
 state file made anew, or a message that comes back under another id,
 would let a filed invoice the owner pulled out of its subfolder be asked
 about and moved again. So `invoices` declares `skip_marked`
-([agent contract](../agent-contract.md)): a message that carries its
+([agent contract](agent-contract.md)): a message that carries its
 keyword and that its state file does not know ends as `skipped`, before
 the rules and the model. It costs this: a marked message unknown to the
 state file that lies in a folder it looks in stays there, marked and not
@@ -164,7 +166,7 @@ it up again, in the same pass or the next (2026-11-19). A message the state file
 `backfill`, which takes up again the messages decided before, still
 reaches the marked messages after a change of stage or prompt, and an invoice marked in the inbox and moved later is filed over
 its open item and the update, as before. A move by a mail client keeps the
-message's id at the service ([mailbox service](../mailbox-service.md),
+message's id at the service ([mailbox service](mailbox-service.md),
 measured 2026-11-19), so the open item follows it.
 
 **An invoice in the inbox is marked only, unless the owner sets a folder
@@ -209,7 +211,7 @@ there and stays when the settings take that folder in. When they do not,
 it is neither marked nor filed.
 
 The open item and the look at an updated message are what
-[awaiting reply](awaiting_reply.md) uses already. An open item of an
+[awaiting reply](agent-awaiting-reply.md) uses already. An open item of an
 invoice has no deadline: its due date lies in the year 9999, and the agent
 has no tick. Every update of a message is fetched and looked at, as for
 `awaiting_reply`, and one without an open item ends there.
@@ -228,7 +230,7 @@ Its steps, one commit each:
 
 | Step | Content | Done when |
 |---|---|---|
-| E1 | Measured first: a move by a mail client, its id and its feed events, in [mailbox service](../mailbox-service.md) | done 2026-11-19 |
+| E1 | Measured first: a move by a mail client, its id and its feed events, in [mailbox service](mailbox-service.md) | done 2026-11-19 |
 | E2 | The inbox folder as an end station | done 2026-11-19 |
 | E3 | `status` lists the folders that matter | done 2026-11-19 |
 | E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | done 2026-11-19 |
@@ -252,7 +254,7 @@ passed. The two orders beside `sorting` ended as with version 4. Then:
 Each check put the mail back, compared by Message-ID: two of the four
 messages `sorting` had moved, both of the group of `Providers/CloudHost`,
 were named under another id after they were moved back, in each of four
-runs ([mailbox service](../mailbox-service.md)).
+runs ([mailbox service](mailbox-service.md)).
 
 ## What changed from version 3
 
@@ -277,7 +279,7 @@ an invoice from one left in the inbox (2026-11-19).
 Version 3 decided the supplier by a sender rule of a list, and the model
 could name one of the list with a quote that names it (decided 2026-11-17).
 Only an address or a pattern rule moved. That list and its rules are now
-the business of [sorting](sorting.md), which moves by the sender before
+the business of [sorting](agent-sorting.md), which moves by the sender before
 `invoices` asks its question.
 
 The existing gold set still serves: its labels stay. The invented gold sets
@@ -288,7 +290,7 @@ field. The agent version is 4, and it starts in `shadow`.
 ## Measured first
 
 Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
-[mailbox service](../mailbox-service.md).
+[mailbox service](mailbox-service.md).
 
 1. A message that arrives in a folder other than the inbox reaches the
    feed as `message.created`.
@@ -297,7 +299,7 @@ Measured 2026-11-18, IMAP at Stalwart, service 0.7.5. The results stand in
 
 ## Order of the build
 
-Steps S1 to S7 of [sorting](sorting.md) came first: this version needed the
+Steps S1 to S7 of [sorting](agent-sorting.md) came first: this version needed the
 action `create_folder` and the measurements. Each step is one commit.
 
 | Step | Content | Done when |

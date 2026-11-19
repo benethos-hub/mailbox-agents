@@ -23,7 +23,7 @@ class Evidence(BaseModel):
     ``None`` before the check, then whether the quote is in the text the
     model was given. A value that code found by a rule, such as a field
     a sender rule chose, has no quote and is ``True`` from the start,
-    so nothing of the mail is stored for it. See docs/specs/safety.md.
+    so nothing of the mail is stored for it. See docs/concept/safety.md.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")

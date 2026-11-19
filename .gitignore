@@ -39,8 +39,8 @@ config/**
 containers/**/secrets/
 
 # data/: the state file of each agent and the gold set, which points at
-# real mail. Only the folders are versioned (.gitkeep). See SPECS.md
-# sections 9 and 12.
+# real mail. Only the folders are versioned (.gitkeep). See
+# docs/concept/state.md and docs/concept/evaluation.md.
 data/**
 !data/**/
 *.db

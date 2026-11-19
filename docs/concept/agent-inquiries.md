@@ -1,4 +1,6 @@
-# The agent `inquiries`
+# Concept: the agent `inquiries`
+
+Part of the [concept](../CONCEPT.md).
 
 **Question:** is this a project inquiry, and what does it say?
 
@@ -18,7 +20,7 @@ Fields, each optional: role, start, end, duration, workload, location,
 remote share, contract form, intermediary, end client, rate, required
 skills, desired skills, deadline to apply.
 
-Every field comes with a quote from the message ([safety](../safety.md)). What a
+Every field comes with a quote from the message ([safety](safety.md)). What a
 message does not say stays empty. The fields come in the same call as the
 label (built 2026-11-17, prompt `system.v3.md`, version `v3` since
 2026-11-18), each either null or a value with its quote, in the schema as
@@ -37,4 +39,4 @@ are cut at 300 characters each (2026-11-19). The evidence check looks a
 quote up in the same cut text.
 
 Recognising an inquiry seen before, and anything that writes a reply, come
-later ([roadmap](../roadmap.md)).
+later ([roadmap](../ROADMAP.md)).

@@ -27,7 +27,7 @@ the start, by ``sorting`` say, is looked in too.
 inbox goes. Unset, it is marked and stays. The inbox folder is an end
 station (decided 2026-11-19): looked in when the settings take it in, as
 ``*`` takes in one at the top, and an invoice there is marked and stays,
-nothing is made below it. See docs/specs/agents/invoices.md.
+nothing is made below it. See docs/concept/agent-invoices.md.
 """
 
 from __future__ import annotations

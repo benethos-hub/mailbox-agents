@@ -5,7 +5,7 @@ the value is right, wrong, missing or invented, and how often the field is
 rightly empty. Values are compared with case and whitespace made uniform.
 A decision the evidence check refused counts as no answer, since the agent
 does not act on it. The rules alone are scored the same way, beside the
-model. See docs/specs/evaluation.md.
+model. See docs/concept/evaluation.md.
 """
 
 from __future__ import annotations

@@ -1,4 +1,6 @@
-# Upstream: the mailbox service
+# Concept: the mailbox service
+
+Part of the [concept](../CONCEPT.md).
 
 The agents use the service's REST API through `benethos-mailbox-client`.
 Operation names below are the service's `operationId`s.
@@ -34,7 +36,7 @@ What the agents rely on:
   dropped.
 - A change of flags made in another mail client reaches the feed only where
   the provider reports it, for IMAP with CONDSTORE. `awaiting_reply` depends
-  on this ([awaiting reply](agents/awaiting_reply.md)).
+  on this ([awaiting reply](agent-awaiting-reply.md)).
 - Keywords are not available on every provider **(to verify per account
   before an agent is switched to the keyword stage)**.
 
@@ -45,7 +47,7 @@ Stalwart, on the test account:
   it as `message.updated` of that id, once per move.
 - A move made by a mail client over IMAP keeps the message's id as well
   (measured 2026-11-19 against 0.7.5, for the plan of
-  [invoices](agents/invoices.md) version 5). One message was moved out of
+  [invoices](agent-invoices.md) version 5). One message was moved out of
   the inbox into a folder made for the check and back, once with `MOVE`
   and once with `COPY`, `\Deleted` and `EXPUNGE`, as clients without
   `MOVE` do. Each way the feed named only `message.updated` of the same

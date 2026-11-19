@@ -246,7 +246,7 @@ async def sorting_first(live: Live) -> str:
 async def put_back_between(live: Live) -> str:
     """The mail back, compared by Message-ID: the service may name a
     message moved by sorting and back under another id afterwards, which
-    docs/specs/mailbox-service.md records. The checks after this one work
+    docs/concept/mailbox-service.md records. The checks after this one work
     on the inbox as it is then."""
     was = await by_header(live, live.before)
     moved = await live.restore()

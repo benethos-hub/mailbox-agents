@@ -1,4 +1,6 @@
-# The agent `counting`
+# Concept: the agent `counting`
+
+Part of the [concept](../CONCEPT.md).
 
 Counts every message created or sent, asks no model and declares no
 action. Each ends `done` with the label `counted`. It checks a deployment

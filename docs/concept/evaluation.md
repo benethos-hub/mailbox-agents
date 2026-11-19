@@ -1,4 +1,6 @@
-# Evaluation
+# Concept: evaluation
+
+Part of the [concept](../CONCEPT.md).
 
 A **gold set** is mail a person labelled by hand: for a classifying agent
 the right label, for an extracting agent the right value of each field. The

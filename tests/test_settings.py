@@ -1,5 +1,5 @@
 """Settings: prefix, .env, secrets from files, and the table of
-docs/specs/configuration.md."""
+docs/concept/configuration.md."""
 
 from __future__ import annotations
 
@@ -155,11 +155,11 @@ def test_missing_names_the_unset_settings() -> None:
 
 
 def _configuration_spec() -> str:
-    return (ROOT / "docs" / "specs" / "configuration.md").read_text("utf-8")
+    return (ROOT / "docs" / "concept" / "configuration.md").read_text("utf-8")
 
 
 def test_every_setting_of_the_configuration_spec_exists() -> None:
-    """The table of docs/specs/configuration.md against the code."""
+    """The table of docs/concept/configuration.md against the code."""
     rows = [
         line for line in _configuration_spec().splitlines() if line.startswith("| `")
     ]

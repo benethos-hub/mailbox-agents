@@ -1,5 +1,5 @@
 """The agent awaiting_reply: open items, deadlines in working days, the
-closing rules of docs/specs/agents/awaiting_reply.md, and each known miss."""
+closing rules of docs/concept/agent-awaiting-reply.md, and each known miss."""
 
 from __future__ import annotations
 

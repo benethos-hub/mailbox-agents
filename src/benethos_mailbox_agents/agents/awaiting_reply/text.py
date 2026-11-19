@@ -5,7 +5,7 @@ a message is an automatic answer.
 The mailbox service exposes no header of a message (measured 2026-11-17),
 so ``Auto-Submitted`` cannot be read. An automatic answer is told by its
 sender and its subject (decided 2026-11-17), and what that misses is
-counted by the evaluation. See docs/specs/agents/awaiting_reply.md.
+counted by the evaluation. See docs/concept/agent-awaiting-reply.md.
 """
 
 from __future__ import annotations

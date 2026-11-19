@@ -1,4 +1,6 @@
-# Runtime
+# Concept: runtime
+
+Part of the [concept](../CONCEPT.md).
 
 One loop per process:
 

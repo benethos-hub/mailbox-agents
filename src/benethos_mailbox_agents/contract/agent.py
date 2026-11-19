@@ -3,7 +3,7 @@
 Every agent package defines exactly one concrete subclass in its
 ``agent.py``. The class attributes are validated when the class is
 instantiated, so a mistake in a declaration stops the process at its
-start rather than at the first message. See docs/specs/agent-contract.md.
+start rather than at the first message. See docs/concept/agent-contract.md.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 class Action(StrEnum):
-    """The actions that exist. A new one is added to docs/specs/agent-contract.md
+    """The actions that exist. A new one is added to docs/concept/agent-contract.md
     first, with how it is taken back."""
 
     ADD_KEYWORD = "add_keyword"
@@ -127,7 +127,7 @@ class Shown:
 
 
 class Agent(ABC):
-    """Base class of every agent. See docs/specs/agent-contract.md."""
+    """Base class of every agent. See docs/concept/agent-contract.md."""
 
     name: ClassVar[str]
     version: ClassVar[str]

@@ -8,7 +8,7 @@ __all__ = ["ContractError"]
 
 
 class ContractError(MailboxAgentError):
-    """An agent class breaks the contract of docs/specs/agent-contract.md, or the
+    """An agent class breaks the contract of docs/concept/agent-contract.md, or the
     registry cannot find the agent named."""
 
     code = "contract"

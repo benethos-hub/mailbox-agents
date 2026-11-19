@@ -95,7 +95,9 @@ containers/
                   # a test account of invented mail
 config/           # .env.example and the example lists *.example.json
                   # versioned, .env local
-docs/             # specs/ (the details of SPECS.md), LOGGING.md
+docs/             # CONCEPT.md, the overview, and concept/, a file per
+                  # topic and per agent, ARCHITECTURE.md, LOGGING.md,
+                  # ROADMAP.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
 assets/           # brand/: icon.svg and the PNGs build.py renders from it
@@ -130,7 +132,7 @@ assets/           # brand/: icon.svg and the PNGs build.py renders from it
   process. Calls to SQLite are short and serialized.
 - **A state file can be read by another process.** It runs in WAL mode and
   its schema is part of this document, so a later overview of what every
-  agent did ([roadmap](roadmap.md)) reads the files without the agents knowing of it.
+  agent did ([roadmap](ROADMAP.md)) reads the files without the agents knowing of it.
   Another process of the same user, that is: the command line sets the
   umask to 077, so a state file is readable by its owner only (decided
   2026-11-17).

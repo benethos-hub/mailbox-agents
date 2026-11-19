@@ -1,4 +1,4 @@
-"""The evidence check of docs/specs/safety.md."""
+"""The evidence check of docs/concept/safety.md."""
 
 from __future__ import annotations
 

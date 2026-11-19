@@ -1,4 +1,6 @@
-# Safety
+# Concept: safety
+
+Part of the [concept](../CONCEPT.md).
 
 Three locks, in three places, none of which the model can reach:
 
@@ -28,7 +30,7 @@ Further rules:
   Unset, an invoice in the inbox is marked and stays. So in `full` a
   forged invoice that lies in such a folder is filed beside the real
   ones. The folder it lies in was chosen by a rule or by hand, never by
-  the model ([invoices](agents/invoices.md)).
+  the model ([invoices](agent-invoices.md)).
 - **A value needs evidence.** A label and every extracted field carry a
   quote. The code looks for the quote in the parts of the mail the model
   was given, each on its own: sender, subject, attachment names, text.

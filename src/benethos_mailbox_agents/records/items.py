@@ -19,7 +19,7 @@ MESSAGE_GONE = "message_gone"
 
 
 class OpenItem(BaseModel):
-    """One row of the table ``open_items``, docs/specs/state.md.
+    """One row of the table ``open_items``, docs/concept/state.md.
 
     ``keyword_set`` says whether the agent has put its keyword on the
     message, so a keyword a person takes off can be told from one never

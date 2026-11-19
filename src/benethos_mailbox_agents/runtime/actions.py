@@ -14,8 +14,8 @@ whose result is already there is not taken again, and a message the agent
 moved once is not moved again, so one the owner moved back stays, and no
 folder is made for its move. After a refused move or folder, the rest of
 the message's actions are not taken, and after one recorded only, the rest
-are recorded only. See docs/specs/agent-contract.md, docs/specs/runtime.md
-and docs/specs/safety.md.
+are recorded only. See docs/concept/agent-contract.md, docs/concept/runtime.md
+and docs/concept/safety.md.
 """
 
 from __future__ import annotations

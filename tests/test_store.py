@@ -87,7 +87,7 @@ def test_one_writer_per_state_file(path: Path, store: Store) -> None:
 
 
 def test_the_tables_are_those_of_the_state_spec(path: Path, store: Store) -> None:
-    section = (ROOT / "docs" / "specs" / "state.md").read_text(encoding="utf-8")
+    section = (ROOT / "docs" / "concept" / "state.md").read_text(encoding="utf-8")
     named = set(re.findall(r"^\| `([a-z_]+)` \|", section, flags=re.MULTILINE))
     tables = {
         row[0]

@@ -1,4 +1,6 @@
-# The agent `awaiting_reply`
+# Concept: the agent `awaiting_reply`
+
+Part of the [concept](../CONCEPT.md).
 
 **Question:** does this sent message expect an answer, and has one come?
 

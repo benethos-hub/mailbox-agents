@@ -1,1 +1,1 @@
-"""The mailbox service, behind one module. See docs/specs/mailbox-service.md."""
+"""The mailbox service, behind one module. See docs/concept/mailbox-service.md."""

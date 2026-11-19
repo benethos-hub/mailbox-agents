@@ -6,7 +6,7 @@ and an invoice word in its name or in the text. Otherwise an invoice word
 in the subject or an attachment name, a phrase that says an invoice is
 ready makes it an ``invoice``. The sender plays no part (agent version
 4). The evaluation sets these rules beside the model, so what the model
-adds is a number. See docs/specs/agents/invoices.md.
+adds is a number. See docs/concept/agent-invoices.md.
 """
 
 from __future__ import annotations

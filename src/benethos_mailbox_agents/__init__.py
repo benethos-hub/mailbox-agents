@@ -3,7 +3,7 @@
 Each agent decides one narrow question about a message and takes one
 reversible action. Mail is reached through the REST API of a mailbox
 service, a language model through an OpenAI-compatible gateway. See
-SPECS.md.
+docs/CONCEPT.md.
 """
 
 from importlib.metadata import PackageNotFoundError, version
