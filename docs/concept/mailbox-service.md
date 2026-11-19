@@ -154,7 +154,8 @@ only against the lines they were tested against (decided 2026-11-19).
 - **The lines** are `TESTED` in `sources/mailbox.py`, the newest last.
   Today there is one: 0.7 from 0.7.5. The newest line is also the pin of
   `benethos-mailbox-client` in `pyproject.toml` and the line of the image
-  in `containers/live/compose.yaml`. A test holds the three equal.
+  in `containers/live/compose.yaml`, and `README.md` names the lines with
+  a link to the service. A test holds the four equal.
 - **The check.** The worker asks the service for its version before every
   pass and every backfill. A service outside the lines, or one that names
   no version, ends the command with a `ServiceVersionError` and exit code
@@ -168,6 +169,16 @@ only against the lines they were tested against (decided 2026-11-19).
   weeks.
 - **`status`** names the version of the service and whether it is tested,
   and starts no agent.
+- **The client is not compared with the service.** Within a line the
+  installed client may be older or newer than the service, and the agents
+  run: a patch release of the service is taken to change no interface.
+  The pin `~=X.Y.Z` keeps the client in the line, from its lowest tested
+  release on. A pin to one exact release of both was decided against
+  (2026-11-19): after every patch release of the service no agent would
+  start until a release of the agents followed. A patch release that
+  changes what the service does after all is not seen by the check. The
+  live checks are there for it, run when the client or the image of the
+  live setup is raised.
 
 What follows from it: while the service is at 0.x, each of its minor
 releases needs a release of the agents before the two work together. So
@@ -185,10 +196,11 @@ A new line is a change of its own, in this order:
    [testing](testing.md) against it.
 3. Measure again what step 1 found changed, and write the result here
    with its date and the version. A statement that no longer holds goes.
-4. Add the line to `TESTED` and raise the pin of the client, both in the
-   same commit, with an entry in `CHANGELOG.md` that names the service the
-   release needs. The old line leaves `TESTED` once the code relies on
-   something only the new one does.
+4. Add the line to `TESTED`, raise the pin of the client and name the
+   line in `README.md`, all in the same commit, with an entry in
+   `CHANGELOG.md` that names the service the release needs. The old line
+   leaves `TESTED` once the code relies on something only the new one
+   does.
 
 A later release within a tested line needs none of this. Dependabot
 raises the client in `uv.lock` and the image of the live setup each in a
