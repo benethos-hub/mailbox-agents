@@ -27,7 +27,9 @@ inquiries and file the mail of listed senders into folders.
 ## How it works
 
 - Mail is reached only through the REST API of a mailbox service, with its
-  Python client `benethos-mailbox-client`.
+  Python client `benethos-mailbox-client`. An agent works only against a
+  version of the service it was tested against, today 0.7 from 0.7.5, and
+  refuses any other.
 - A language model is reached only through an OpenAI-compatible gateway,
   with one call per message, a JSON schema for the answer and no tools.
 - Everything else is deterministic code: which messages an agent looks at,

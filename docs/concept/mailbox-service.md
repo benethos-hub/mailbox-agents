@@ -16,6 +16,7 @@ Operation names below are the service's `operationId`s.
 | The messages received since a day, for `backfill` | `list_all_messages`, once for the inbox and once for sent mail |
 | The messages of one folder since a day, for `backfill` | `list_messages` of one account, the folder by its id |
 | The accounts to look in for those folders, and for the folders `status` checks, without `ACCOUNTS` | `get_me` |
+| The version of the service, before every pass and every backfill | `health` |
 
 `sources/mailbox.py` offers these and nothing else: no send, no delete, no
 trash. Which folder an agent may make is the runtime's to decide
@@ -138,3 +139,61 @@ folder. The service cannot refuse those to an agent that may move mail, so
 the runtime does ([safety](safety.md)). Narrowing a grant to chosen folders is
 possible in the service. Whether a move between two granted folders works
 under such a grant is **(to verify)**.
+
+## The version of the service
+
+The service names its version at `/health`, which it answers without a
+right and counts against no limit. While its major version is 0, a minor
+release may change what it does and what its interface takes, and the
+offline suite sees none of that: it mocks the service. So the agents work
+only against the lines they were tested against (decided 2026-11-19).
+
+- **A line** is the minor version while the major is 0, such as 0.7, and
+  the major version from 1 on. It starts at the lowest release that was
+  tested, and every later release of it counts as tested.
+- **The lines** are `TESTED` in `sources/mailbox.py`, the newest last.
+  Today there is one: 0.7 from 0.7.5. The newest line is also the pin of
+  `benethos-mailbox-client` in `pyproject.toml` and the line of the image
+  in `containers/live/compose.yaml`. A test holds the three equal.
+- **The check.** The worker asks the service for its version before every
+  pass and every backfill. A service outside the lines, or one that names
+  no version, ends the command with a `ServiceVersionError` and exit code
+  2, before the feed is read: nothing is read, decided or changed. It is
+  asked in every pass and not only at the start, since a service can be
+  replaced by another release between two passes without one request
+  failing.
+- **In every stage, with no setting to pass it.** The stage `shadow` is
+  refused as well: what it records would be read from a service nobody
+  measured. A warning alone would go unread in a process that runs for
+  weeks.
+- **`status`** names the version of the service and whether it is tested,
+  and starts no agent.
+
+What follows from it: while the service is at 0.x, each of its minor
+releases needs a release of the agents before the two work together. So
+that the agents can be updated first and the service after them, a
+release of the agents may hold two lines for a time, the old and the new.
+
+A new line is a change of its own, in this order:
+
+1. Read the changelog of the service from the last tested release to the
+   new one, its breaking changes and its fixes, against this file: each
+   statement here that carries a date and a version, and each one marked
+   **(to verify)**.
+2. Raise the image of `containers/live/compose.yaml`, tag and digest, set
+   the live setup up anew and run the live checks of
+   [testing](testing.md) against it.
+3. Measure again what step 1 found changed, and write the result here
+   with its date and the version. A statement that no longer holds goes.
+4. Add the line to `TESTED` and raise the pin of the client, both in the
+   same commit, with an entry in `CHANGELOG.md` that names the service the
+   release needs. The old line leaves `TESTED` once the code relies on
+   something only the new one does.
+
+A later release within a tested line needs none of this. Dependabot
+raises the client in `uv.lock` and the image of the live setup each in a
+pull request of its own, and each wants a run of the live checks.
+
+An agent does not go back to the stage `shadow` because of a new line
+(decided 2026-11-19): its prompt and its model are the same, and the live
+checks on the test account are the gate for the service.

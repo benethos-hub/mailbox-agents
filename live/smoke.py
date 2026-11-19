@@ -3,7 +3,8 @@
     sh containers/live/setup.sh          # once, in a shell with Docker
     uv run python live/smoke.py [--env-file containers/live/secrets/agent.env]
 
-It reads the change feed, the folders, every message of the last weeks, a
+It asks the service for its version, which has to be in a tested line, and
+reads the change feed, the folders, every message of the last weeks, a
 thread and the attachments, through the package's own module for the
 mailbox service, and runs the agent ``counting`` over all of it with a
 state file in a folder of its own. It writes nothing to the mailbox. Each
@@ -59,6 +60,11 @@ class Live:
     @property
     def accounts(self) -> list[str]:
         return self.settings.accounts
+
+
+async def version(live: Live) -> str:
+    found = await live.mailbox.ensure_tested()
+    return f"the service runs {found}, a tested line"
 
 
 async def feed(live: Live) -> str:
@@ -142,6 +148,7 @@ async def counting(live: Live) -> str:
 
 
 CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
+    ("the version of the service", version),
     ("feed", feed),
     ("folders", folders),
     ("recent messages", recent),

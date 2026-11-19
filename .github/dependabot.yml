@@ -22,7 +22,10 @@ updates:
         update-types: ["minor", "patch"]
         # Always alone: the suite mocks the mailbox service, so a change of
         # its client is not seen by the tests. It wants a live check against
-        # the test account of containers/live (CLAUDE.md, Verifying).
+        # the test account of containers/live (CLAUDE.md, Verifying). A
+        # release within the tested line changes uv.lock only. One of a new
+        # line fails tests/test_service_version.py until the line is added
+        # by the steps of docs/concept/mailbox-service.md.
         exclude-patterns: ["benethos-mailbox-client"]
 
   # The actions of the workflows, each pinned to a full commit SHA with its
@@ -53,7 +56,8 @@ updates:
 
   # The images of the live setup's compose file: Stalwart, the mailbox
   # service, LiteLLM, Postgres and llama.cpp, each pinned by digest. A bump
-  # of the mailbox service wants a live check as well.
+  # of the mailbox service wants a live check as well, and one to a new
+  # line the steps of docs/concept/mailbox-service.md.
   - package-ecosystem: "docker-compose"
     directory: "/containers/live"
     schedule:

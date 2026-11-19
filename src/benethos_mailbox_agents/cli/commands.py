@@ -21,6 +21,7 @@ from ..logbook import escaped, process, record
 from ..runtime.health import check
 from ..runtime.readiness import MAILBOX_SETTINGS, folder_lines, readiness, start
 from ..settings import DEFAULT_ENV_FILE, Settings
+from ..sources.mailbox import is_tested, line_names
 from ..store import STATES, Store, path_for
 from .report import report as make_report
 from .session import mailbox_for, now, session, upstreams
@@ -135,6 +136,29 @@ async def _folder_lines(agent: Agent, settings: Settings) -> list[str]:
         return await folder_lines(agent, mailbox)
 
 
+def _service(settings: Settings) -> str | None:
+    """What ``status`` says of the mailbox service: its version and whether
+    that is in a tested line, or why it was not asked. None while the
+    settings name no service, which each agent's line says already."""
+    if settings.missing(MAILBOX_SETTINGS):
+        return None
+    try:
+        found = asyncio.run(_version(settings))
+    except MailboxAgentError as exc:
+        return f"mailbox service not asked: {exc.message}"
+    if is_tested(found):
+        return f"mailbox service {found}: tested ({line_names()})"
+    return (
+        f"mailbox service {found[:40]}: not tested, no agent starts "
+        f"(tested: {line_names()})"
+    )
+
+
+async def _version(settings: Settings) -> str:
+    async with mailbox_for(settings) as mailbox:
+        return await mailbox.version()
+
+
 def _say(line: str) -> None:
     """Print one line of ``status``. A folder's name is the owner's or the
     server's: a control or direction character in it is written escaped,
@@ -148,6 +172,9 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
             "MAILBOX_AGENTS_KEYWORD is set for every agent of these settings: "
             "give each agent its own env file"
         )
+    service = _service(settings)
+    if service is not None:
+        _say(service)
     for cls in discover().values():
         found = readiness(cls, settings)
         if found.ready:

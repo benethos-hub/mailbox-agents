@@ -23,6 +23,7 @@ from .mailbox_refused import MailboxRefusedError
 from .mailbox_unavailable import MailboxUnavailableError
 from .message_gone import MessageGoneError
 from .redaction import forget_secrets, redact, register_secret
+from .service_version import ServiceVersionError
 from .state_file import StateFileError
 from .unavailable import UnavailableError
 
@@ -38,6 +39,7 @@ __all__ = [
     "MailboxRefusedError",
     "MailboxUnavailableError",
     "MessageGoneError",
+    "ServiceVersionError",
     "StateFileError",
     "UnavailableError",
     "describe_invalid",
