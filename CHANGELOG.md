@@ -195,6 +195,10 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- A move of a message the agent moved once before, which the owner then
+  moved elsewhere, is not taken and logged as `actions.kept` at INFO. It
+  was refused before, with a warning and a failure counted on every
+  update of the message.
 - Taking the keyword off a marked invoice that `invoices` skipped, since
   its state file did not know it, has it looked at again. The update was
   routed to `observe` before, found no item, and the invoice stayed.

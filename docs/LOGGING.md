@@ -158,4 +158,5 @@ operator's filters. It writes under the logger
 | `messages.quote_missing` | INFO | a quote the model gave for a field is not in the mail |
 | `actions.done` | INFO | an action was carried out on a message |
 | `actions.recorded` | INFO | an action was recorded, and the stage did not allow it to be carried out |
+| `actions.kept` | INFO | a move of a message the agent moved once before was not taken: the folder the owner chose since stands |
 | `actions.refused` | WARNING | the executor or the mailbox service refused an action |

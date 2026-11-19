@@ -442,15 +442,26 @@ async def test_a_folder_below_a_held_folder_is_recorded_only(world: Wired) -> No
 
 
 async def test_a_message_the_owner_moved_back_is_not_moved_again(
-    world: Wired,
+    world: Wired, caplog: pytest.LogCaptureFixture
 ) -> None:
+    """The owner's folder is a settled state, not a refusal: no warning and
+    no failure counted, however often an update asks for the move."""
+    caplog.set_level("INFO")
     run = executor(world)
     assert await run([MOVE]) == [Outcome.DONE]
     world.service.messages[(ACCOUNT, "m1")]["folder_ids"] = ["inbox"]
 
-    assert await run([MOVE]) == [Outcome.REFUSED]
+    for _ in range(3):
+        assert await run([MOVE, ADD]) == [Outcome.SKIPPED]
+
     assert world.service.writes() == [(PATH, {"folder_ids": ["inv-hosting"]})]
     assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
+    names = [r.name.rsplit(".", 1)[-1] for r in caplog.records if ".actions." in r.name]
+    assert names == ["done", "kept", "kept", "kept"]
+    failures = run.metrics.registry.get_sample_value(
+        "mailbox_agents_step_failures_total", {"kind": "action_refused"}
+    )
+    assert not failures
 
 
 async def test_no_folder_is_made_for_a_message_moved_before(world: Wired) -> None:
@@ -460,7 +471,7 @@ async def test_no_folder_is_made_for_a_message_moved_before(world: Wired) -> Non
 
     outcomes = await run([make("Providers"), MOVE])
 
-    assert outcomes == [Outcome.SKIPPED, Outcome.REFUSED]
+    assert outcomes == [Outcome.SKIPPED, Outcome.SKIPPED]
     assert world.service.made() == []
     assert [a.action for a in world.store.actions(REF)] == ["move_to_folder"]
     assert world.service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]

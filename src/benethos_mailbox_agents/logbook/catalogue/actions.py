@@ -45,6 +45,22 @@ class Recorded(Done):
 
 
 @dataclass(frozen=True, kw_only=True)
+class Kept(Activity):
+    """A move of a message the agent moved once already: the folder the
+    owner chose since stands, and the move is not taken."""
+
+    name: ClassVar[str] = "kept"
+
+    message_id: str
+
+    def says(self) -> str:
+        return (
+            f"left message {self.message_id} where the owner put it, "
+            "as it moved it once before"
+        )
+
+
+@dataclass(frozen=True, kw_only=True)
 class Refused(Failure):
     """The executor or the mailbox service refused the action."""
 
