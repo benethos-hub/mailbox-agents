@@ -24,7 +24,9 @@ person. It is not asked about again and not moved again. A message the
 state file knows goes on as before, so `backfill --again` after a change
 of stage or prompt still reaches it, and an update routed to `observe` is
 not touched. A person takes the keyword off to have the message looked at
-again. A message moved by a mail client keeps its id at the service
+again: the update that shows it without the keyword makes it `pending`
+anew, as long as no step of it is stored and the agent admits it
+(2026-11-19). A message moved by a mail client keeps its id at the service
 ([mailbox service](mailbox-service.md)), so this matters after a state file
 made anew, not after each move. Which agents declare it, and why the
 others do not:

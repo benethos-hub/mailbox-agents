@@ -24,7 +24,8 @@ ends the worker with a `StateFileError` and exit code 1: no pass goes on
 without it (2026-11-19).
 
 Message states: `pending`, `skipped` (not admitted, marked before the
-state file for an agent that declares `skip_marked`, or gone from the
+state file for an agent that declares `skip_marked`, which an update
+without the keyword makes `pending` again, or gone from the
 mailbox, also when it went in the middle of its actions), `decided` (recorded and not acted on, such as a label whose quote
 was not found), `done` (its effect carried out, in whatever stage),
 `failed` (given up after `MAX_ATTEMPTS`, or more model calls asked for

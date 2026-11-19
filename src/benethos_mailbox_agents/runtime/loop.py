@@ -28,7 +28,7 @@ from ..errors import (
     UnavailableError,
 )
 from ..logbook import feed, messages, record, worker
-from ..records import MESSAGE_GONE, Event, MessageRef
+from ..records import MESSAGE_GONE, Event, MailMessage, MessageRef
 from ..store import Store
 from .actions import Executor, Outcome, Writer
 from .metrics import Metrics
@@ -209,6 +209,7 @@ class Worker:
         try:
             message = await self._mailbox.message(ref)
             await self.executor(await self.agent.observe(message, self.context()))
+            self._look_again(message)
         except MailboxRefusedError as exc:
             record(
                 messages.StepFailed(
@@ -220,6 +221,21 @@ class Worker:
             )
             if isinstance(exc, MessageGoneError):
                 self.store.close_item(ref, MESSAGE_GONE, self._now())
+
+    def _look_again(self, message: MailMessage) -> None:
+        """Take up again a message skipped as marked before the state file,
+        once an update shows it without the agent's keyword: the owner took
+        it off to have the message looked at again (decided 2026-11-19).
+        Only for an agent that declares ``skip_marked``, and only a message
+        with no step stored that the agent admits now."""
+        agent = self.agent
+        if not agent.skip_marked or message.has_keyword(agent.keyword):
+            return
+        row = self.store.message(message.ref)
+        if row is None or row.state != "skipped" or self.store.steps(message.ref):
+            return
+        if agent.admit(message):
+            self.store.enqueue(message.ref, self._now(), again=True)
 
     async def process_due(self) -> int:
         """Run the steps of the pending messages that are due. Answers how

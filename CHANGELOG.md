@@ -195,6 +195,9 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- Taking the keyword off a marked invoice that `invoices` skipped, since
+  its state file did not know it, has it looked at again. The update was
+  routed to `observe` before, found no item, and the invoice stayed.
 - A state file that is no SQLite file, is damaged or meets a full disk
   is named in one line with exit code 1 by every command, not a
   traceback. `status` says so for that agent and lists the others, and
