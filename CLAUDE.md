@@ -84,8 +84,9 @@ containers/       # images/, production/, development/, and live/: a mail
                   # server and a mailbox service of their own for live/
 config/           # .env.example and *.example.json versioned, .env local
 docs/             # CONCEPT.md, the overview, and concept/, a file per
-                  # topic and per agent, ARCHITECTURE.md, LOGGING.md,
-                  # RELEASING.md, ROADMAP.md
+                  # topic and per agent, ARCHITECTURE.md,
+                  # COMPATIBILITY.md, LOGGING.md, RELEASING.md,
+                  # ROADMAP.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
 assets/           # brand/: icon.svg and the PNGs build.py renders from it

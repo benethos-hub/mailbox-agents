@@ -29,6 +29,8 @@ what the release holds, not how it came about.
   outside the tested lines ends `worker`, `run` and `backfill` with exit
   code 2 before anything is read or changed, in every stage. `status`
   names the version of the service and whether it is tested.
+  `docs/COMPATIBILITY.md` lists which releases of the service each
+  release works with.
 - `worker` runs one agent, pass after pass, and `run` one pass.
   `backfill` takes up the messages of the last days anew, those of the
   inbox, of sent mail and of the folders the agent looks in besides, in

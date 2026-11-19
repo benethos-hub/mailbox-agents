@@ -145,8 +145,10 @@ only against the lines they were tested against (decided 2026-11-19).
 - **The lines** are `TESTED` in `sources/mailbox.py`, the newest last.
   Today there is one: 0.8 from 0.8.0. The newest line is also the pin of
   `benethos-mailbox-client` in `pyproject.toml` and the line of the image
-  in `containers/live/compose.yaml`, and `README.md` names the lines with
-  a link to the service. A test holds the four equal.
+  in `containers/live/compose.yaml`. `README.md` names the lines with a
+  link to the service, and the top row of
+  [COMPATIBILITY.md](../COMPATIBILITY.md) names them beside the version
+  of the release. Tests hold all five equal.
 - **The check.** The worker asks the service for its version before every
   pass and every backfill. A service outside the lines, or one that names
   no version, ends the command with a `ServiceVersionError` and exit code
@@ -187,9 +189,11 @@ A new line is a change of its own, in this order:
    [testing](testing.md) against it.
 3. Measure again what step 1 found changed, and write the result here
    with its date and the version. A statement that no longer holds goes.
-4. Add the line to `TESTED`, raise the pin of the client and name the
-   line in `README.md`, all in the same commit, with an entry in
-   `CHANGELOG.md` that names the service the release needs. The old line
+4. Add the line to `TESTED`, raise the pin of the client, name the line
+   in `README.md` and in the top row of
+   [COMPATIBILITY.md](../COMPATIBILITY.md), all in the same commit,
+   with an entry in `CHANGELOG.md` that names the service the release
+   needs. The old line
    leaves `TESTED` once the code relies on something only the new one
    does.
 
