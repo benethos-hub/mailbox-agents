@@ -295,3 +295,25 @@ def test_the_readme_names_the_tested_lines_and_the_service() -> None:
 
     assert f"today {line_names()}," in text
     assert "[mailbox service](https://github.com/benethos-hub/mailbox)" in text
+
+
+def test_the_compatibility_table_names_this_release_on_top() -> None:
+    """The newest row of docs/COMPATIBILITY.md is the version of
+    pyproject.toml, with the tested lines and the pin of the client."""
+    project = (ROOT / "pyproject.toml").read_text("utf-8")
+    version = re.search(r'^version = "([^"]+)"', project, re.MULTILINE)
+    pin = re.search(r'"benethos-mailbox-client(~=[^"]+)"', project)
+    table = (ROOT / "docs" / "COMPATIBILITY.md").read_text("utf-8")
+    rows = [
+        [cell.strip() for cell in line.strip().strip("|").split("|")]
+        for line in table.splitlines()
+        if line.startswith("| ") and not line.startswith("| Mailbox Agents")
+    ]
+
+    assert version is not None
+    assert pin is not None
+    assert rows
+    agents, service, client = rows[0]
+    assert agents in (version.group(1), f"{version.group(1)} (not released yet)")
+    assert service == line_names()
+    assert client == f"`{pin.group(1)}`"

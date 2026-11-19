@@ -59,21 +59,15 @@ Stalwart, on the test account:
   under an id no state file knows, but with an agent's keyword, comes from
   a state file made anew, or from a provider that gives a moved message a
   new id, which this check did not see at Stalwart.
-- A message moved and moved back can come back under another id, measured
-  2026-11-19 in four runs of `live/invoices.py`. `sorting` moved four
-  messages of the inbox into its folders, three of them into
-  `Providers/CloudHost`, and the check moved all four back through
-  `update_message` some minutes later. Afterwards two of the three in
-  `Providers/CloudHost`, each time the same two and none of them an
-  invoice, were no longer read under their old id (`404`) and lay in the
-  inbox under a new one. The two short-lived ids the feed names while
-  moves sync (below) came in the same runs. Moving those three messages
-  into that folder and back through the service by a script, one after
-  the other with a keyword set and taken off, kept every id, as did a
-  single message moved alone. What gives the new id is **(to verify)**.
-  An agent that relies on its state file meets such a message as a new
-  one: `invoices` skips it when it carries the agent's keyword, and asks
-  about it when it does not.
+- A message moved and moved back keeps its id. Against 0.7.5 it did not
+  always: in each of four runs of `live/invoices.py` two of the messages
+  `sorting` moved into `Providers/CloudHost` and the check moved back
+  came back in the inbox under a new id. The service fixed this in 0.8.0
+  for a move made while it syncs the account, and in the run of
+  2026-11-19 against 0.8.0 no message of either put-back came back under
+  another id. An agent that relies on its state file would meet such a
+  message as a new one: `invoices` skips it when it carries the agent's
+  keyword, and asks about it when it does not.
 - `create_folder` makes a folder at the top without a parent, and below
   another with the parent's id. At IMAP a folder's id follows its path.
 - A name that exists in the same case is refused, `409 conflict`. The same
@@ -99,25 +93,22 @@ Stalwart, on the test account:
   `404 not_found`. `list_all_messages` takes a role only and answers a
   folder id with `422 validation_error`. So a backfill of a folder looks up
   the folder's id first and asks each account by itself.
-- `list_messages` of a folder named, in one run of 2026-11-18, one or two
-  messages that `get_message` then answered with `404`: messages moved out
-  of that folder shortly before **(to verify why)**. The runtime takes such
-  a message as gone and ends it as `skipped`.
-- The feed names, while moves are synced, a message that lives for one
-  sync only. Measured 2026-11-18 in two runs of `live/invoices.py`:
-  `sorting` moved four messages out of the inbox, and the feed then named
-  each moved message as `message.updated` under its own id, once per sync
-  of the service, roughly every 35 seconds. Beside them, in each run, two
-  ids that no listing of the account had named before came as
-  `message.created`, each named
-  `message.deleted` in the next sync, 34 to 38 seconds later.
-  `invoices` read both changes in one pass after `sorting` was done, took
-  the created id up, and `get_message` answered it `404`. The runtime
-  logs it as `failed step fetch of message <id>: MessageGoneError` and
-  ends the message as `skipped`, as for any message deleted before it is
-  read, and nothing is decided or done. So these two warnings per run of
-  the check are this behaviour of the service, not a fault of the agents.
-  Whether it is the same cause as the listing above is **(to verify)**.
+- A cursor of a list holds until the service starts again. One from
+  before a restart answers `400 bad_request`, measured 2026-11-19 against
+  0.8.0 with a restart between two pages of the inbox. The state of the
+  feed holds across a restart: the same measurement read the feed from a
+  state taken before it. A backfill keeps a cursor for one listing only,
+  so a restart of the service in the middle of a backfill ends it with
+  exit code 1 before it takes anything up, and the backfill is run again.
+- A message named that is gone by the time it is read: against 0.7.5 a
+  listing of a folder named one or two messages moved out of it shortly
+  before (2026-11-18), and while moves were synced the feed named two ids
+  per run of `live/invoices.py` as `message.created` that were deleted at
+  the next sync. Each was logged as a failed step `fetch` with
+  `MessageGoneError`. The service fixed both in 0.8.0, and the run of
+  2026-11-19 against 0.8.0 logged no such step. Should one come again, the
+  runtime ends the message as `skipped`, as for any message deleted
+  before it is read, and nothing is decided or done.
 - `get_me` answers the agents' user exactly the one account it is
   granted, the test account (measured 2026-11-18). `list_accounts` answers it `200` with no
   account at all: it belongs to the group `accounts.read`, which an agent
@@ -152,10 +143,12 @@ only against the lines they were tested against (decided 2026-11-19).
   the major version from 1 on. It starts at the lowest release that was
   tested, and every later release of it counts as tested.
 - **The lines** are `TESTED` in `sources/mailbox.py`, the newest last.
-  Today there is one: 0.7 from 0.7.5. The newest line is also the pin of
+  Today there is one: 0.8 from 0.8.0. The newest line is also the pin of
   `benethos-mailbox-client` in `pyproject.toml` and the line of the image
-  in `containers/live/compose.yaml`, and `README.md` names the lines with
-  a link to the service. A test holds the four equal.
+  in `containers/live/compose.yaml`. `README.md` names the lines with a
+  link to the service, and the top row of
+  [COMPATIBILITY.md](../COMPATIBILITY.md) names them beside the version
+  of the release. Tests hold all five equal.
 - **The check.** The worker asks the service for its version before every
   pass and every backfill. A service outside the lines, or one that names
   no version, ends the command with a `ServiceVersionError` and exit code
@@ -196,9 +189,11 @@ A new line is a change of its own, in this order:
    [testing](testing.md) against it.
 3. Measure again what step 1 found changed, and write the result here
    with its date and the version. A statement that no longer holds goes.
-4. Add the line to `TESTED`, raise the pin of the client and name the
-   line in `README.md`, all in the same commit, with an entry in
-   `CHANGELOG.md` that names the service the release needs. The old line
+4. Add the line to `TESTED`, raise the pin of the client, name the line
+   in `README.md` and in the top row of
+   [COMPATIBILITY.md](../COMPATIBILITY.md), all in the same commit,
+   with an entry in `CHANGELOG.md` that names the service the release
+   needs. The old line
    leaves `TESTED` once the code relies on something only the new one
    does.
 

@@ -115,7 +115,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "benethos-mailbox-client", specifier = "~=0.7.5" },
+    { name = "benethos-mailbox-client", specifier = "~=0.8.0" },
     { name = "httpx", specifier = "~=0.28.1" },
     { name = "prometheus-client", specifier = "~=0.26.0" },
     { name = "pydantic", specifier = "~=2.14.3" },
@@ -133,14 +133,14 @@ dev = [
 
 [[package]]
 name = "benethos-mailbox-client"
-version = "0.7.5"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/1e/031da6943e6a5430f56c93943ca8bc7d97820ee66bbc46bbd2118033602f/benethos_mailbox_client-0.7.5.tar.gz", hash = "sha256:4c6f9356647152ab1dda5e59dbcf2c943ea87f04ba3d9689e288418b4db56ce0", size = 51855, upload-time = "2026-11-17T11:18:55.607Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/77/84/18a5142a5989dc52dd7e9ca732ec92d768ff2b924fa9f7ad1d8d002f7754/benethos_mailbox_client-0.8.0.tar.gz", hash = "sha256:4de32d142a2ea3a41a52a94da5168228d3dc319d4430f7fa2126c9505c050393", size = 56569, upload-time = "2026-11-19T15:32:31.733Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/ce/246baf9126bd8bdf32c722eab47658a524e42d23b2656ccc127ea91c90ce/benethos_mailbox_client-0.7.5-py3-none-any.whl", hash = "sha256:227dbbaa8e1adc26db99199323da25076aca1d814250051e8bde563af0aa803e", size = 56464, upload-time = "2026-11-17T11:18:54.578Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/b5/21447104b647a307cf4194c998c6fb8a037f358c18610a0adf1c055de1a6/benethos_mailbox_client-0.8.0-py3-none-any.whl", hash = "sha256:3cfd5792634660eb532556d6d69d3e773c31b53c50f3612b5faf2b58a43696be", size = 58055, upload-time = "2026-11-19T15:32:30.741Z" },
 ]
 
 [[package]]

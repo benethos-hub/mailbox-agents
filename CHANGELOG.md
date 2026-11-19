@@ -24,11 +24,13 @@ what the release holds, not how it came about.
   service or gateway that is away or a state file that cannot be read
   with 1, each in one line.
 - The agents work only against the versions of the mailbox service they
-  were tested against: 0.7 from 0.7.5 in this release. The worker asks the
+  were tested against: 0.8 from 0.8.0 in this release. The worker asks the
   service for its version before every pass and every backfill. One
   outside the tested lines ends `worker`, `run` and `backfill` with exit
   code 2 before anything is read or changed, in every stage. `status`
   names the version of the service and whether it is tested.
+  `docs/COMPATIBILITY.md` lists which releases of the service each
+  release works with.
 - `worker` runs one agent, pass after pass, and `run` one pass.
   `backfill` takes up the messages of the last days anew, those of the
   inbox, of sent mail and of the folders the agent looks in besides, in
