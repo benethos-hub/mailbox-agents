@@ -59,7 +59,7 @@ services:
   # secrets/gateway.env, made by setup.sh. The image with the database
   # client built in: the web interface signs in only with a database.
   gateway:
-    image: ghcr.io/berriai/litellm-database:v1.108.10@sha256:ff0a4cb6aa43898d8ae5f3912b85bcb0b06340452bda1844a9ca1b1a4c393b5b
+    image: ghcr.io/berriai/litellm-database:1.110.1@sha256:7dfda5a5b70074800f80140b04a5181579a3fe5b1bb8ddbc47c1de813fd5127c
     restart: unless-stopped
     command: ["--config", "/etc/litellm/config.yaml", "--port", "4000"]
     env_file: ./secrets/gateway.env
