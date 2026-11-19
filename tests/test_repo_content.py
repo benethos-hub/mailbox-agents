@@ -6,9 +6,11 @@ suite and so in CI, and fails on:
 
 - an e-mail address or a sender pattern on a domain that is not reserved
   for examples, as a real supplier's or the owner's would be,
-- a path of a machine or of a user,
+- a path of a machine or of a user, also in the form Git Bash and WSL
+  write it,
 - an id of the mailbox service as a real account or message carries it,
-- a credential in the forms the hook knows.
+- a credential in the forms the pre-commit hook knows: a token by its
+  prefix, and a value given to a name such as ``*_TOKEN`` or ``password``.
 
 It holds no list of names: a list of the owner's real suppliers would
 publish what it is meant to keep out (decided 2026-11-19). A line that
@@ -38,14 +40,21 @@ ALLOWED_ADDRESSES = frozenset({"noreply@anthropic.com"})
 NOREPLY_DOMAINS = frozenset({"users.noreply.github.com"})
 
 # Something before the @, so a decorator such as @pytest.fixture is no
-# address, and * for a sender pattern such as *@*.example.
+# address, and * for a sender pattern such as *@*.example. A domain may
+# hold letters beyond ASCII.
 ADDRESS = re.compile(
     r"(?<![A-Za-z0-9._%+*-])([A-Za-z0-9._%+*-]+)@"
-    r"((?:[A-Za-z0-9*-]+\.)+[A-Za-z]{2,})\b"
+    r"((?:(?:[^\W_]|[*-])+\.)+[^\W\d_]{2,})\b"
 )
+# A user's folder on Windows, macOS and Linux, a drive as WSL and Git Bash
+# mount it, and any drive path but the programs' folders, which a script
+# may name on purpose. A letter after a backslash is a regular expression,
+# as \d:\d.
 PATH = re.compile(
     r"[A-Za-z]:[\\/]+Users[\\/]|(?<![\w.])/Users/\w|(?<![\w.])/home/\w"
     r"|(?<![\w.])/mnt/[a-z]/"
+    r"|(?<![\w.])/[A-Za-z]/(?:Users|home|projects)/\w"
+    r"|(?<![\w\\])[A-Za-z]:[\\/]+(?!Program Files|Windows\b)\w"
 )
 SERVICE_ID = re.compile(r"\b(?:acc|msg|usr|tok|thr|fld)_[0-9a-f]{16,}\b")
 CREDENTIAL = re.compile(
@@ -53,7 +62,24 @@ CREDENTIAL = re.compile(
     r"|Bearer [A-Za-z0-9._-]{16,}|\bgh[pousr]_[A-Za-z0-9]{16,}"
     r"|glpat-[A-Za-z0-9_-]{16,}|\bAKIA[0-9A-Z]{16}\b"
     r"|BEGIN (?:RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY"
+    # A name that ends in TOKEN, SECRET, PASSWORD or _KEY, maybe with more
+    # parts such as _FILE, then the value. _KEYWORD is no such name. A
+    # value that starts with / is a path.
+    r"|(?:TOKEN|SECRET|PASSWORD|_KEY)(?:_[A-Z]+)*\s*[:=]\s*[\"']?"
+    r"[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
 )
+# The same in any case, as JSON and YAML write it: a quoted value, or a
+# bare one that ends the line or a word. A bare value with a dot or a
+# bracket is code, such as token = base64.b64encode(raw).
+NAMED = re.compile(
+    r"(?:^|[^a-z0-9])[\"']?[a-z0-9_]*(?:token|secret|password|passwd|_key)[\"']?"
+    r"\s*[:=]\s*"
+    r"(?:[\"'][A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
+    r"|[A-Za-z0-9+_-][A-Za-z0-9+/_-]{11,}(?:\s|$))",
+    re.IGNORECASE,
+)
+# CREDENTIAL and NAMED follow the patterns of .githooks/pre-commit. A
+# change to one changes the other.
 
 
 def _reserved(domain: str) -> bool:
@@ -89,6 +115,7 @@ def problems(line: str) -> list[str]:
     found += [f"path {m.group(0)}" for m in PATH.finditer(line)]
     found += [f"service id {m.group(0)[:8]}..." for m in SERVICE_ID.finditer(line)]
     found += [f"credential {m.group(0)[:12]}..." for m in CREDENTIAL.finditer(line)]
+    found += [f"credential {m.group(0)[:12]}..." for m in NAMED.finditer(line)]
     return found
 
 
@@ -140,6 +167,7 @@ AT = "@"
         '"senders": ["*' + AT + 'real-host.com"]',
         "rechnung" + AT + "mail.provider.de",
         "Owner <someone" + AT + "provider.net>",
+        "rechnung" + AT + "müller.de",
     ],
 )
 def test_an_address_on_a_real_domain_is_found(line: str) -> None:
@@ -174,6 +202,10 @@ def test_an_address_for_examples_passes(line: str) -> None:
         "/" + "Users/someone/project",
         "/" + "home/someone/.local",
         "sh /" + "mnt/d/projects/x/setup.sh",
+        "/" + "c/Users/someone/project",
+        "cd /" + "d/projects/mailbox-agent",
+        "D:" + "\\projects\\mailbox-agent\\data",
+        "d:" + "/projects/mailbox-agent",
     ],
 )
 def test_a_path_of_a_machine_is_found(line: str) -> None:
@@ -198,10 +230,25 @@ def test_an_id_of_the_service_is_found() -> None:
         "key " + "sk-ant-" + "api03-abcdefghijklmnop",
         "-----" + "BEGIN " + "OPENSSH PRIVATE KEY-----",
         "Authorization: " + "Bearer " + "abcdefghijklmnopqrstu",
+        "POSTGRES_PASSWORD" + "=hunter2hunter2hunter2",
+        "MAILBOX_AGENTS_SERVICE_TOKEN" + "=abcdefghijklmnop",
+        "GATEWAY_KEY_FILE" + "=Zq7xW2pL9mN4vB8k",
+        "pass" + 'word: "Sup3rS3cretValue99"',
     ],
 )
 def test_a_credential_is_found(line: str) -> None:
     assert problems(line)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "MAILBOX_AGENTS_GATEWAY_KEY_FILE=/run/secrets/gateway_key",
+        "token = base64.b64encode(raw)",
+    ],
+)
+def test_a_name_that_is_no_credential_passes(line: str) -> None:
+    assert problems(line) == []
 
 
 def test_an_allowlisted_line_passes() -> None:

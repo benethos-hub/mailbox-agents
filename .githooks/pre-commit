@@ -41,6 +41,8 @@ if [ -n "$forbidden" ]; then
 fi
 
 # 2. Credentials inside the staged lines, whatever the file is called.
+# tests/test_repo_content.py holds the same patterns for every tracked
+# file. A change to one changes the other.
 patterns='sk-ant-[A-Za-z0-9_-]{16,}'
 patterns="$patterns|sk-[A-Za-z0-9_-]{20,}"
 patterns="$patterns|mbx_[A-Za-z0-9_-]{16,}"
