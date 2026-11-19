@@ -56,7 +56,7 @@ folder like any other, but nothing moves on from it:
 
 | Folder | Looked in | An invoice there |
 |---|---|---|
-| the inbox | always | the keyword and an open item, and a move to the inbox folder when one is set |
+| the inbox | always | the keyword and an open item, and a move to the inbox folder when one is set other than the inbox itself. Set to the inbox, it moves nothing, and `status` says so (2026-11-19) |
 | a folder the settings take in | when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in | the keyword and a move to the subfolder |
 | the inbox folder | when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, as `*` takes in one at the top or `Invoices/*` takes in `Invoices/Telco` | the keyword, and it stays. No subfolder is made below it |
 | a subfolder, such as `Invoices/Hosting/Rechnungen` | never | |
