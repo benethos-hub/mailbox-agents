@@ -44,8 +44,11 @@ looks in are a setting, and it knows nothing of groups or sender rules.
 | `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there and it is not made. It is an end station: looked in when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, and nothing moves on from it | it is marked and stays in the inbox |
 
 The inbox is always looked in. A folder is named by its path, case
-counting. A message in a folder below a named one, such as the subfolder
-itself, is not looked at, so an invoice is not asked about twice. The
+counting. A message in the subfolder of a folder looked in, or in a
+folder between the two, is not looked at, so an invoice is not asked
+about twice. Another folder below one looked in is looked in when the
+settings take it in, as `Providers,Providers/*` takes in
+`Providers/CloudHost`. The
 subfolder of a folder it looks in and the folders between the two are
 never looked in, even where the settings would take them in:
 `Invoices,Invoices/*` takes in `Invoices/Rechnungen`. An invoice put there

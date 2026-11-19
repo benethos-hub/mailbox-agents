@@ -11,9 +11,11 @@ commas, each written in one of three ways:
   (decided 2026-11-18). The inbox, sent mail, drafts, the trash, junk, the
   archive and the like have a role.
 
-The inbox is always looked in. A message in a folder below one looked in,
-such as the subfolder an invoice was put in, is not looked at, so an
-invoice is not asked about twice. The subfolder is not looked in even
+The inbox is always looked in. A message in the subfolder of a folder
+looked in, or in a folder between the two, is not looked at, so an
+invoice is not asked about twice. Another folder below one looked in is
+looked in when the settings take it in, as ``Providers,Providers/*``
+takes in ``Providers/CloudHost``. The subfolder is not looked in even
 where the settings would take it in, as ``Invoices`` and ``Invoices/*``
 take in ``Invoices/Rechnungen``. ``Parent/*`` and ``*`` are matched
 against the path of the folder a message lies in, so a folder made after
