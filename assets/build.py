@@ -13,11 +13,14 @@ repository.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
+import zlib
 from pathlib import Path
 
 ASSETS = Path(__file__).resolve().parent
@@ -245,14 +248,45 @@ def _screenshot(
         )
 
 
+def stamped(png: bytes, svg: str) -> bytes:
+    """``png`` with a text chunk after its header that names the hash of
+    the SVG it was rendered from, any such chunk before replaced. So a
+    change of the SVG that leaves the pixels as they were, such as its
+    title, still changes the PNG, and the PNG is never older than the SVG,
+    as the brand check of the organisation asks."""
+    signature, header_end = b"\x89PNG\r\n\x1a\n", 8 + 4 + 4 + 13 + 4
+    if not png.startswith(signature) or png[12:16] != b"IHDR":
+        raise ValueError("not a PNG file")
+    digest = hashlib.sha256(svg.encode("utf-8")).hexdigest()
+    data = b"Source\0" + f"{ICON_SOURCE.name} sha256:{digest}".encode("ascii")
+    chunk = (
+        struct.pack(">I", len(data))
+        + b"tEXt"
+        + data
+        + struct.pack(">I", zlib.crc32(b"tEXt" + data))
+    )
+    rest, position = png[header_end:], 0
+    kept = []
+    while position < len(rest):
+        (length,) = struct.unpack(">I", rest[position : position + 4])
+        end = position + 12 + length
+        piece = rest[position:end]
+        if not (piece[4:8] == b"tEXt" and piece[8:].startswith(b"Source\0")):
+            kept.append(piece)
+        position = end
+    return png[:header_end] + chunk + b"".join(kept)
+
+
 def render_icon() -> None:
     svg = ICON_SOURCE.read_text("utf-8")
     _screenshot(placed(svg, ICON_SIZE[0]), "icon.svg", ICON, ICON_SIZE, True)
+    ICON.write_bytes(stamped(ICON.read_bytes(), svg))
 
 
 def render_social() -> None:
     svg = ICON_SOURCE.read_text("utf-8")
     _screenshot(social(svg), "social.html", SOCIAL, SOCIAL_SIZE, False)
+    SOCIAL.write_bytes(stamped(SOCIAL.read_bytes(), svg))
 
 
 def main(arguments: list[str]) -> int:

@@ -1,0 +1,74 @@
+"""The stamp assets/build.py writes into the PNG files: the hash of the SVG,
+so a change of the SVG always changes them, as the brand check asks."""
+
+from __future__ import annotations
+
+import importlib.util
+import struct
+import zlib
+from pathlib import Path
+from types import ModuleType
+
+import pytest
+
+BUILD = Path(__file__).resolve().parent.parent / "assets" / "build.py"
+
+
+def _build() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("assets_build", BUILD)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+build = _build()
+
+
+def _chunk(kind: bytes, data: bytes) -> bytes:
+    return (
+        struct.pack(">I", len(data))
+        + kind
+        + data
+        + struct.pack(">I", zlib.crc32(kind + data))
+    )
+
+
+PNG = (
+    b"\x89PNG\r\n\x1a\n"
+    + _chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0))
+    + _chunk(b"IDAT", zlib.compress(b"\0\0\0\0\0"))
+    + _chunk(b"IEND", b"")
+)
+
+
+def _texts(png: bytes) -> list[bytes]:
+    position, found = 8, []
+    while position < len(png):
+        (length,) = struct.unpack(">I", png[position : position + 4])
+        if png[position + 4 : position + 8] == b"tEXt":
+            found.append(png[position + 8 : position + 8 + length])
+        position += 12 + length
+    return found
+
+
+def test_the_stamp_names_the_hash_of_the_svg() -> None:
+    stamped = build.stamped(PNG, "<svg/>")
+
+    (text,) = _texts(stamped)
+    assert text.startswith(b"Source\0icon.svg sha256:")
+    assert stamped.endswith(PNG[33:])
+
+
+def test_another_svg_gives_another_png_and_one_stamp_only() -> None:
+    first = build.stamped(PNG, "<svg><title>a</title></svg>")
+    second = build.stamped(first, "<svg><title>b</title></svg>")
+
+    assert first != second
+    assert len(_texts(second)) == 1
+    assert build.stamped(second, "<svg><title>b</title></svg>") == second
+
+
+def test_a_file_that_is_no_png_is_refused() -> None:
+    with pytest.raises(ValueError):
+        build.stamped(b"GIF89a", "<svg/>")
