@@ -150,6 +150,25 @@ def test_the_inbox_folder_the_settings_take_in_is_an_end_station() -> None:
     assert found.target(folder("Acme")) == "Acme/Rechnungen"
 
 
+def test_the_inbox_folder_is_not_made_where_it_is_a_subfolder_too() -> None:
+    found = places(
+        "Invoices", subfolder="{folder}/Rechnungen", inbox="Invoices/Rechnungen"
+    )
+    known = by_path(INBOX, folder("Invoices"))
+
+    assert not found.may_create("Invoices/Rechnungen", known)
+
+
+def test_an_inbox_folder_set_to_the_inbox_itself_moves_nothing() -> None:
+    found = places("Invoices/*", subfolder="{folder}/Rechnungen", inbox="INBOX")
+
+    assert found.target(INBOX) is None
+    assert found.describe(by_path(INBOX)) == [
+        "INBOX: looked in, the inbox folder is the inbox itself, "
+        "an invoice is marked and stays"
+    ]
+
+
 def test_nothing_is_made_below_the_end_station() -> None:
     found = places("*", subfolder="{folder}/Rechnungen/Eingang", inbox="Invoices")
     known = by_path(folder("Invoices"), folder("Invoices/Rechnungen"))

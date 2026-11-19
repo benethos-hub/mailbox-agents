@@ -24,7 +24,9 @@ person. It is not asked about again and not moved again. A message the
 state file knows goes on as before, so `backfill --again` after a change
 of stage or prompt still reaches it, and an update routed to `observe` is
 not touched. A person takes the keyword off to have the message looked at
-again. A message moved by a mail client keeps its id at the service
+again: the update that shows it without the keyword makes it `pending`
+anew, as long as no step of it is stored and the agent admits it
+(2026-11-19). A message moved by a mail client keeps its id at the service
 ([mailbox service](mailbox-service.md)), so this matters after a state file
 made anew, not after each move. Which agents declare it, and why the
 others do not:
@@ -127,13 +129,16 @@ stage: a stage that records only, or a folder held, records the folders and
 the move alike, and never sends a move into a folder that is not there.
 
 **A message is moved at most once by one agent (decided 2026-11-18).** A
-move of a message the agent has moved before is refused, so a message the
+move of a message the agent has moved before is not taken, so a message the
 owner moved back, into the inbox or anywhere, stays where the owner put it,
-also when `backfill` takes it up anew. The folders the move would need are
-not made either, so no empty folder is left behind the refused move. A move
-only recorded in `shadow` or `keyword` does not count. A message moved by
-hand never wanders back in a later pass. The actions of one message are
-taken in order, and after a refused move or folder the rest are not taken.
+also when `backfill` takes it up anew. It is a settled state, not a
+refusal: the line `actions.kept` says so at INFO, no failure is counted,
+however often an update asks for the move again (2026-11-19). The folders
+the move would need are not made either, so no empty folder is left behind
+it. A move only recorded in `shadow` or `keyword` does not count. A message
+moved by hand never wanders back in a later pass. The actions of one
+message are taken in order, and after a refused move or folder, or a move
+not taken, the rest are not taken.
 After a move or folder recorded only, by the stage or held, the rest are
 recorded only, as if held, whatever the stage allows (decided 2026-11-18).
 So a keyword that says a message was moved never stands without the move,

@@ -162,9 +162,10 @@ class Places:
     def target(self, folder: FolderRef) -> str | None:
         """Where an invoice in ``folder`` goes: the subfolder below it, the
         inbox folder for the inbox. None when it stays, as in the inbox
-        folder."""
+        folder, and in the inbox when the inbox folder is set to the inbox
+        itself."""
         if folder.role == "inbox":
-            return self.inbox_folder
+            return None if self.inbox_folder == folder.path else self.inbox_folder
         if not self.subfolder or self.is_end(folder):
             return None
         return "/".join((folder.path, *self.subfolder))
@@ -186,7 +187,10 @@ class Places:
         ``folders`` are the account's folders by path: the folder it looks
         in must be one of them, and is judged with its role, so ``*``
         makes nothing below sent mail or drafts. The inbox folder is not
-        made, nor anything below it."""
+        made, nor anything below it, also where its path is the subfolder
+        of a folder it looks in."""
+        if path == self.inbox_folder:
+            return False
         for count in range(1, len(self.subfolder) + 1):
             suffix = "/".join(self.subfolder[:count])
             if path.endswith("/" + suffix):
@@ -206,7 +210,12 @@ class Places:
         not look in. Sorted by path."""
         lines = []
         for path, found in sorted(folders.items()):
-            if found.role == "inbox":
+            if found.role == "inbox" and path == self.inbox_folder:
+                lines.append(
+                    f"{path}: looked in, the inbox folder is the inbox itself, "
+                    "an invoice is marked and stays"
+                )
+            elif found.role == "inbox":
                 lines.append(f"{path}: looked in, an invoice {self._goes(found)}")
             elif self.is_end(found):
                 looked = self._by_path(path, found.role)

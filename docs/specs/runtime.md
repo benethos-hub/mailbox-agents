@@ -18,10 +18,14 @@ One loop per process:
 A mailbox service or gateway that is away while the feed is read stops the
 pass before the cursor moves. One that is away while pending messages run
 leaves them `pending`, the cursor moves, and the next pass waits twice as
-long as the last, up to `BACKOFF_CEILING_SECONDS`.
+long as the last, up to `BACKOFF_CEILING_SECONDS`. A state file that
+cannot be read or written, one that is no SQLite file or a full disk,
+ends the worker with a `StateFileError` and exit code 1: no pass goes on
+without it (2026-11-19).
 
 Message states: `pending`, `skipped` (not admitted, marked before the
-state file for an agent that declares `skip_marked`, or gone from the
+state file for an agent that declares `skip_marked`, which an update
+without the keyword makes `pending` again, or gone from the
 mailbox, also when it went in the middle of its actions), `decided` (recorded and not acted on, such as a label whose quote
 was not found), `done` (its effect carried out, in whatever stage),
 `failed` (given up after `MAX_ATTEMPTS`, or more model calls asked for
@@ -79,8 +83,10 @@ changed until the evaluation was run again.
 | `paths` | the settings file, the data folder and each state file |
 
 `--env-file` names the settings file for every command. An error to
-correct ends with exit code 2, an upstream that is away with 1. `status`
-and `paths` start no agent and change nothing.
+correct ends with exit code 2, an upstream that is away or an unreadable
+state file with 1. `status` and `paths` start no agent and change
+nothing. `status` names a state file it cannot read and goes on with the
+next agent.
 
 ## Report
 

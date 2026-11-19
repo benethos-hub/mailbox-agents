@@ -110,6 +110,30 @@ def test_run_and_status_with_a_state_file(
     assert "last progress: 20" in out
 
 
+def test_a_broken_state_file_is_named_and_the_others_still_listed(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    assert main(["run", "--agent", "counting"]) == 0
+    capsys.readouterr()
+    Path("data", "awaiting_reply.db").write_text("no database " * 100)
+
+    assert main(["status"]) == 0
+    out = capsys.readouterr().out
+    assert "state file unreadable: the state file awaiting_reply.db" in out
+    starts = [line.split(" ")[0] for line in out.splitlines()]
+    for name in ("awaiting_reply", "counting", "inquiries", "invoices", "sorting"):
+        assert name in starts
+    assert "last progress: 20" in out
+
+    assert main(["health", "--agent", "awaiting_reply"]) == 1
+    err = capsys.readouterr().err
+    assert "awaiting_reply.db" in err
+    assert "Traceback" not in err
+
+
 def test_backfill_takes_recent_messages_up(
     service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
@@ -394,6 +418,36 @@ def test_status_says_when_no_account_is_granted(
     assert "  folders not checked: no account is granted" in capsys.readouterr().out
 
 
+def test_status_lists_the_folders_of_an_account_beside_one_refused(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1,acc2")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv(f"{PREFIX}GATEWAY_KEY", "gateway-key")
+    monkeypatch.setenv(f"{PREFIX}MODEL", "alias")
+    monkeypatch.setenv(f"{PREFIX}INVOICES_FOLDERS", "Invoices/*")
+    listed = service._folders
+
+    def folders(request: httpx.Request, parts: list[str]) -> httpx.Response:
+        if parts[1] == "acc2":
+            return httpx.Response(
+                403, json={"error": {"code": "forbidden", "message": "refused"}}
+            )
+        return listed(request, parts)
+
+    monkeypatch.setattr(service, "_folders", folders)
+
+    assert main(["status"]) == 0
+
+    out = capsys.readouterr().out
+    assert "  folders in acc1:\n" in out
+    assert "  folders not checked in acc2: " in out
+    assert "folders not checked: " not in out
+
+
 def test_status_says_why_folders_were_not_checked(
     service: FakeService,
     monkeypatch: pytest.MonkeyPatch,
@@ -412,4 +466,6 @@ def test_status_says_why_folders_were_not_checked(
     monkeypatch.setenv(f"{PREFIX}ACCOUNTS", "acc1")
 
     assert main(["status"]) == 0
-    assert "  folders not checked: the mailbox service" in capsys.readouterr().out
+    assert (
+        "  folders not checked in acc1: the mailbox service" in capsys.readouterr().out
+    )

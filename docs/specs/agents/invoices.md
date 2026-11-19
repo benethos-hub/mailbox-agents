@@ -56,7 +56,7 @@ folder like any other, but nothing moves on from it:
 
 | Folder | Looked in | An invoice there |
 |---|---|---|
-| the inbox | always | the keyword and an open item, and a move to the inbox folder when one is set |
+| the inbox | always | the keyword and an open item, and a move to the inbox folder when one is set other than the inbox itself. Set to the inbox, it moves nothing, and `status` says so (2026-11-19) |
 | a folder the settings take in | when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in | the keyword and a move to the subfolder |
 | the inbox folder | when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, as `*` takes in one at the top or `Invoices/*` takes in `Invoices/Telco` | the keyword, and it stays. No subfolder is made below it |
 | a subfolder, such as `Invoices/Hosting/Rechnungen` | never | |
@@ -156,7 +156,8 @@ state file that lies in a folder it looks in stays there, marked and not
 filed, as whether it was handed over or pulled back cannot be told from
 the message. Nothing moving is the safe side, as mail moved by hand never
 wanders back (decided 2026-11-18). To have such a message looked at
-again, take the keyword off. A message the state file knows goes on:
+again, take the keyword off: the update the service reports then takes
+it up again, in the same pass or the next (2026-11-19). A message the state file knows goes on:
 `backfill --again` after a change of stage or prompt reaches the marked
 messages, and an invoice marked in the inbox and moved later is filed over
 its open item and the update, as before. A move by a mail client keeps the
@@ -264,6 +265,11 @@ runs ([mailbox service](../mailbox-service.md)).
 | Actions | `add_keyword`, `move_to_folder` | the same and `create_folder`, for the subfolder only |
 | `report` | senders of invoices without a supplier | senders of invoices marked and not moved, as candidates for a group of `sorting` |
 | Evaluation | label, and the supplier by its source | label alone |
+
+The senders `report` lists count an invoice marked in the end station
+too, although it is where it belongs: the report knows what was decided
+and done for a message, not the folder it lay in, so it cannot tell such
+an invoice from one left in the inbox (2026-11-19).
 
 Version 3 decided the supplier by a sender rule of a list, and the model
 could name one of the list with a quote that names it (decided 2026-11-17).

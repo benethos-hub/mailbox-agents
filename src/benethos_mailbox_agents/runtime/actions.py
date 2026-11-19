@@ -77,7 +77,14 @@ class Outcome(StrEnum):
     PRESENT = "present"  # its result was already there
     RECORDED = "recorded"  # the stage does not allow it, it was recorded only
     REFUSED = "refused"  # the executor or the mailbox service refused it
-    SKIPPED = "skipped"  # a folder for a move that will be refused, not made
+    # a folder for a move not taken, not made, or a move of a message the
+    # agent moved once before, where the owner's folder stands
+    SKIPPED = "skipped"
+
+
+class _OwnersChoiceError(Exception):
+    """The message was moved by the agent once already: a move asked again
+    is not taken, the folder it lies in now is the owner's choice."""
 
 
 @dataclass(frozen=True)
@@ -179,7 +186,7 @@ class Executor:
             outcome = await self._run(replace(request, held=True) if held else request)
             outcomes.append(outcome)
             if request.action in _FOLDER_ACTIONS:
-                if outcome is Outcome.REFUSED:
+                if outcome in (Outcome.REFUSED, Outcome.SKIPPED):
                     break
                 if outcome is Outcome.RECORDED:
                     recorded.add(request.ref)
@@ -217,6 +224,13 @@ class Executor:
             planned = await self._plan(request, message)
         except (ActionRefusedError, MailboxRefusedError) as exc:
             return self._refused(request, exc)
+        except _OwnersChoiceError:
+            # Settled, not refused: no warning and no failure counted, as an
+            # update that asks for the move again comes with every change.
+            record(
+                actions.Kept(agent=self.agent.name, message_id=request.ref.message_id)
+            )
+            return Outcome.SKIPPED
         if planned is None:
             return Outcome.PRESENT
         executed = (
@@ -341,7 +355,7 @@ class Executor:
             if before == [folder.id]:
                 return None
             if self._moved_before(request.ref):
-                raise ActionRefusedError("the agent moved this message before")
+                raise _OwnersChoiceError
             return Plan(folder.path, {"folders": before}, folder.id)
         if request.action is Action.CREATE_FOLDER:
             return await self._plan_folder(account, request.folder)

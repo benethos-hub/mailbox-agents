@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ..contract import Agent, discover, load
-from ..errors import ConfigError, MailboxAgentError
+from ..errors import ConfigError, MailboxAgentError, StateFileError
 from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
@@ -136,14 +136,20 @@ async def _folder_lines(agent: Agent, settings: Settings) -> list[str]:
     matter, and a line for each folder it expects that is not there. One
     whose name is there in another case is said so: the executor neither
     moves into it nor makes it, as the service would make a second
-    folder."""
+    folder. An account whose folders are refused gets a line of its own,
+    and the others are still listed."""
     lines = []
     async with mailbox_for(settings) as mailbox:
         accounts = settings.accounts or list(await mailbox.accounts())
         if not accounts:
             return ["folders not checked: no account is granted"]
         for account in accounts:
-            there = {f.path: f for f in (await mailbox.folders(account)).values()}
+            try:
+                found = await mailbox.folders(account)
+            except MailboxAgentError as exc:
+                lines.append(f"folders not checked in {account}: {exc.message}")
+                continue
+            there = {f.path: f for f in found.values()}
             described = agent.describe_folders(there)
             if described:
                 lines.append(f"folders in {account}:")
@@ -186,10 +192,15 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
                 _say(f"  {line}")
         path = path_for(settings.data_dir, cls.name)
         if path.is_file():
-            with Store.open(path, read_only=True) as store:
-                last = store.progress()
-                _say(f"  {_counts(store)}")
-                _say(f"  last progress: {last.isoformat() if last else 'none'}")
+            try:
+                with Store.open(path, read_only=True) as store:
+                    last = store.progress()
+                    counts = _counts(store)
+            except StateFileError as exc:
+                _say(f"  state file unreadable: {exc.message}")
+                continue
+            _say(f"  {counts}")
+            _say(f"  last progress: {last.isoformat() if last else 'none'}")
     return 0
 
 

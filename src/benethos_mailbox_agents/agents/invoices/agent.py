@@ -187,7 +187,9 @@ class Invoices(Agent):
     def summarize(self, shown: list[Shown]) -> list[str]:
         """The senders of invoices marked and left where they lay, with how
         many each sent: candidates for a group of ``sorting``, so their
-        invoices reach a folder of their own."""
+        invoices reach a folder of their own. An invoice marked in the
+        inbox folder counts too, although it is where it belongs: ``shown``
+        names no folder, so it cannot be told from one left in the inbox."""
         counted = Counter(
             item.sender.lower()
             for item in shown

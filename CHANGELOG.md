@@ -195,6 +195,20 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- `status` checks the folders of each account on its own: an account
+  whose folders are refused gets a line of its own, and the folders of
+  the others are still listed. One refusal replaced all of them before.
+- A move of a message the agent moved once before, which the owner then
+  moved elsewhere, is not taken and logged as `actions.kept` at INFO. It
+  was refused before, with a warning and a failure counted on every
+  update of the message.
+- Taking the keyword off a marked invoice that `invoices` skipped, since
+  its state file did not know it, has it looked at again. The update was
+  routed to `observe` before, found no item, and the invoice stayed.
+- A state file that is no SQLite file, is damaged or meets a full disk
+  is named in one line with exit code 1 by every command, not a
+  traceback. `status` says so for that agent and lists the others, and
+  the worker ends instead of failing the same pass forever.
 - An evaluation report names only the labels and fields an agent declares
   as its own. Any other, such as the name of a group of `sorting`, becomes
   `label-<n>` or `field-<n>`, since a report is versioned.

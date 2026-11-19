@@ -967,3 +967,48 @@ def test_a_stranger_cannot_blow_up_the_call() -> None:
     assert all(f in rendered for f in files)
     assert f"invoice-{len(files)}.pdf" not in rendered
     assert text == "T" * MAX_TEXT
+
+
+async def test_taking_the_keyword_off_has_a_skipped_invoice_looked_at_again(
+    world: Wired,
+) -> None:
+    """The owner takes the keyword off a marked invoice the state file did
+    not know: the update takes it up again (decided 2026-11-19)."""
+    world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-77"))
+    running = worker(world, agent())
+    await running.run_pass()
+    mail(world, "filed")["keywords"] = ["agent-invoice"]
+    world.service.change("message.created", "filed")
+    await running.run_pass()
+    ref = MessageRef(account_id=ACCOUNT, message_id="filed")
+    row = world.store.message(ref)
+    assert row is not None and row.state == "skipped"
+
+    mail(world, "filed")["keywords"] = []
+    world.service.change("message.updated", "filed")
+    await running.run_pass()
+    await running.run_pass()
+
+    row = world.store.message(ref)
+    assert row is not None and row.state == "done"
+    assert len(world.fake_gateway.requests) == 1
+    assert mail(world, "filed")["folder_ids"] == ["inv-hosting/Rechnungen"]
+
+
+async def test_an_update_that_keeps_the_keyword_leaves_it_skipped(
+    world: Wired,
+) -> None:
+    running = worker(world, agent())
+    await running.run_pass()
+    mail(world, "filed")["keywords"] = ["agent-invoice"]
+    world.service.change("message.created", "filed")
+    await running.run_pass()
+
+    world.service.change("message.updated", "filed")
+    await running.run_pass()
+    await running.run_pass()
+
+    row = world.store.message(MessageRef(account_id=ACCOUNT, message_id="filed"))
+    assert row is not None and row.state == "skipped"
+    assert world.fake_gateway.requests == []
+    assert mail(world, "filed")["folder_ids"] == ["inv-hosting"]

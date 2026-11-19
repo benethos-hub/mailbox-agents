@@ -25,6 +25,7 @@ __all__ = [
     "MailboxRefusedError",
     "MailboxUnavailableError",
     "MessageGoneError",
+    "StateFileError",
     "UnavailableError",
     "describe_invalid",
     "forget_secrets",
@@ -157,6 +158,13 @@ class AnswerRefusedError(MailboxAgentError):
     def __init__(self, message: str, *, reason: str) -> None:
         super().__init__(message)
         self.reason = reason
+
+
+class StateFileError(MailboxAgentError):
+    """The state file cannot be read or written: it is no SQLite file, it
+    is damaged, or the disk is full. Nothing goes on without it."""
+
+    code = "state_file"
 
 
 class LimitReachedError(MailboxAgentError):

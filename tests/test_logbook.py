@@ -194,6 +194,10 @@ LINES: list[tuple[Activity, str]] = [
         "a recorded move on message m1 in stage shadow without carrying it out",
     ),
     (
+        actions.Kept(agent="a", message_id="m1"),
+        "a left message m1 where the owner put it, as it moved it once before",
+    ),
+    (
         actions.Refused(agent="a", message_id="m1", action="move", error=ERROR),
         "a was refused move on message m1: "
         "GatewayUnavailableError(gateway_unavailable)",

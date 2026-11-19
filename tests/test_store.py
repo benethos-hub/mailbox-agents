@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from benethos_mailbox_agents.errors import ConfigError
+from benethos_mailbox_agents.errors import ConfigError, StateFileError
 from benethos_mailbox_agents.records import (
     KEYWORD_REMOVED,
     MESSAGE_GONE,
@@ -119,7 +119,7 @@ def test_a_reader_sees_the_writer_and_cannot_write(path: Path, store: Store) -> 
 
     with Store.open(path, read_only=True) as reader:
         assert reader.cursor() == "s2"
-        with pytest.raises(sqlite3.OperationalError):
+        with pytest.raises(StateFileError, match="readonly"):
             reader.set_cursor("s3", NOW)
 
 
@@ -335,7 +335,7 @@ def test_a_failed_migration_leaves_the_file_as_it_was(
     steps = [MIGRATIONS.step(n) for n in range(1, SCHEMA_VERSION + 1)]
     monkeypatch.setattr(module, "MIGRATIONS", MigrationRegistry(*steps, _Broken()))
     monkeypatch.setattr(module, "SCHEMA_VERSION", SCHEMA_VERSION + 1)
-    with pytest.raises(sqlite3.OperationalError):
+    with pytest.raises(StateFileError):
         Store.open(tmp_path / "x.db")
 
     with closing(sqlite3.connect(tmp_path / "x.db")) as raw:
@@ -409,3 +409,12 @@ def test_a_file_of_an_earlier_schema_is_brought_forward(path: Path) -> None:
         assert store.migrated == Migrated(1, SCHEMA_VERSION)
         columns = _read(path, "PRAGMA table_info(open_items)")
     assert "keyword_recorded_stage" in {row[1] for row in columns}
+
+
+@pytest.mark.parametrize("read_only", [True, False])
+def test_a_file_that_is_no_state_file_is_named(tmp_path: Path, read_only: bool) -> None:
+    path = tmp_path / "counting.db"
+    path.write_text("not a database, but long enough to be read as one\n" * 20)
+
+    with pytest.raises(StateFileError, match="counting.db"):
+        Store.open(path, read_only=read_only)
