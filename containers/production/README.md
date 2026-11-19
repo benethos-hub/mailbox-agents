@@ -1,12 +1,12 @@
 # In operation
 
 The published image, one container per agent, each started by its profile.
-This folder is all it needs, no clone of the repository. No image is
-published yet, so `pull` fails until the first release.
+This folder is all it needs, no clone of the repository.
 
 ## Set it up
 
-1. Copy `.env.example` to `.env` and name the version.
+1. Copy `.env.example` to `.env` and name the version, best with the
+   digest of the release behind it, as `.env.example` says.
 2. For each agent you run, copy `agents/<name>/.env.example` to
    `agents/<name>/.env` and fill it in. `sorting` also needs
    `agents/sorting/sorting.json`, its groups, made after
@@ -29,8 +29,8 @@ published yet, so `pull` fails until the first release.
    else, and a key of its own at the gateway. See
    docs/concept/mailbox-service.md and docs/concept/model-gateway.md.
    The mailbox service has to run a version the agents are tested
-   against, which `status` names. An agent refuses any other and ends
-   with exit code 2, so update the agents before the service.
+   against, which `status` names and docs/COMPATIBILITY.md lists per
+   release. An agent refuses any other and ends with exit code 2.
 4. Start the agents, first `counting`, which changes nothing, to see the
    deployment work:
 

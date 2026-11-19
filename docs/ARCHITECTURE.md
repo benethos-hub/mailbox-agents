@@ -132,8 +132,8 @@ assets/           # brand/: icon.svg and the PNGs build.py renders from it
   mailbox client, an async httpx client for the gateway, one event loop per
   process. Calls to SQLite are short and serialized.
 - **A state file can be read by another process.** It runs in WAL mode and
-  its schema is part of this document, so a later overview of what every
-  agent did ([roadmap](ROADMAP.md)) reads the files without the agents knowing of it.
-  Another process of the same user, that is: the command line sets the
-  umask to 077, so a state file is readable by its owner only (decided
-  2026-11-17).
+  its schema is part of the concept ([state](concept/state.md)), so a
+  later overview of what every agent did ([roadmap](ROADMAP.md)) reads the
+  files without the agents knowing of it. Another process of the same
+  user, that is: the command line sets the umask to 077, so a state file
+  is readable by its owner only (decided 2026-11-17).

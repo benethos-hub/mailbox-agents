@@ -45,14 +45,35 @@ inquiries and file the mail of listed senders into folders.
   would do. The stages `keyword` and `full` follow after it was measured
   against labelled mail.
 
-## Setup
+## Install
 
-Needs [uv](https://docs.astral.sh/uv/) and Python 3.11 or newer.
+The package is `benethos-mailbox-agents` on PyPI, for Python 3.11 or
+newer:
+
+```
+uvx benethos-mailbox-agents --version
+```
+
+In operation each agent runs as a container of the image
+`ghcr.io/benethos-hub/benethos-mailbox-agents`.
+[containers/production](https://github.com/benethos-hub/mailbox-agents/blob/main/containers/production/README.md)
+holds the compose file and says how to set it up. Every setting is listed
+in
+[docs/concept/configuration.md](https://github.com/benethos-hub/mailbox-agents/blob/main/docs/concept/configuration.md).
+
+## Development
+
+Needs [uv](https://docs.astral.sh/uv/) and a clone of the repository.
 
 ```
 uv sync
 uv run benethos-mailbox-agents --version
+uv run pytest -q
 ```
+
+The suite is offline. The live checks run against a mail server and a
+mailbox service of their own with invented mail, see
+[containers/live](https://github.com/benethos-hub/mailbox-agents/blob/main/containers/live/README.md).
 
 ## Licence
 
