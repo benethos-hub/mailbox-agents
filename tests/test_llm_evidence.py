@@ -178,6 +178,20 @@ def test_marks_and_case_are_forgiven_words_are_not(quote: str, found: bool) -> N
     assert contains(content, quote) is found
 
 
+@pytest.mark.parametrize(
+    ("quote", "found"),
+    [
+        ("voice number 1234", False),
+        ("invoice number 1234", False),
+        ("voice number 12345", False),
+        ("invoice number 12345", True),
+        ("Please pay invoice number 12345 today", True),
+    ],
+)
+def test_a_word_cut_short_at_either_end_is_not_found(quote: str, found: bool) -> None:
+    assert contains("Please pay invoice number 12345 today", quote) is found
+
+
 def test_letters_and_digits_count_for_the_shortest_quote() -> None:
     assert not contains("R.-Nr.: 4711", "R.-Nr.: 4711")
     assert contains("Rechnung 4711", "Rechnung 4711")

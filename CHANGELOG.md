@@ -191,6 +191,9 @@ commit that makes the change. Design decisions live in
   zero, counts no tokens. It ended the worker before, after the paid call
   and before the step was stored, so the same message was asked again
   after each restart, outside the daily limit.
+- The evidence check matches whole words only, as specified: a quote
+  whose first or last word is cut short, such as `voice number 1234` for
+  `invoice number 12345`, is not found.
 - `health` says what it measures: `last progress 42s ago` and
   `no progress yet`, not the last pass, since the loop's progress is
   written after each message and while it waits as well.
