@@ -19,7 +19,7 @@ from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
 from ..logbook import escaped, process, record
 from ..runtime.health import check
-from ..runtime.readiness import MAILBOX_SETTINGS, readiness, start
+from ..runtime.readiness import MAILBOX_SETTINGS, folder_lines, readiness, start
 from ..settings import DEFAULT_ENV_FILE, Settings
 from ..store import STATES, Store, path_for
 from .report import report as make_report
@@ -131,38 +131,8 @@ def _folders(agent: Agent, settings: Settings) -> list[str]:
 
 
 async def _folder_lines(agent: Agent, settings: Settings) -> list[str]:
-    """For each account the settings name, or else every account the user
-    is granted, as the worker takes them: the folders the agent says
-    matter, and a line for each folder it expects that is not there. One
-    whose name is there in another case is said so: the executor neither
-    moves into it nor makes it, as the service would make a second
-    folder. An account whose folders are refused gets a line of its own,
-    and the others are still listed."""
-    lines = []
     async with mailbox_for(settings) as mailbox:
-        accounts = settings.accounts or list(await mailbox.accounts())
-        if not accounts:
-            return ["folders not checked: no account is granted"]
-        for account in accounts:
-            try:
-                found = await mailbox.folders(account)
-            except MailboxAgentError as exc:
-                lines.append(f"folders not checked in {account}: {exc.message}")
-                continue
-            there = {f.path: f for f in found.values()}
-            described = agent.describe_folders(there)
-            if described:
-                lines.append(f"folders in {account}:")
-                lines.extend(f"  {line}" for line in described)
-            folded = {path.casefold() for path in there}
-            for path in agent.folders_needed():
-                if path in there:
-                    continue
-                if path.casefold() in folded:
-                    lines.append(f"folder in another case in {account}: {path}")
-                else:
-                    lines.append(f"folder missing in {account}: {path}")
-    return lines
+        return await folder_lines(agent, mailbox)
 
 
 def _say(line: str) -> None:

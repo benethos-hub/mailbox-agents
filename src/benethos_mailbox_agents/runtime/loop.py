@@ -34,6 +34,7 @@ from .actions import Executor, Outcome, Writer
 from .metrics import Metrics
 from .model import Asker
 from .reader import ReadOnlyMailbox
+from .readiness import accounts_of
 from .steps import StepRunner, backoff, make_calls
 
 __all__ = ["BACKFILL_ROLES", "BATCH", "Upstream", "Worker"]
@@ -350,7 +351,7 @@ class Worker:
         works on: those the settings name, or else every account the user
         is granted, so one whose inbox and sent mail are empty is looked in
         too."""
-        accounts = self.accounts or list(await self._mailbox.accounts())
+        accounts = await accounts_of(self.settings, self._mailbox)
         refs: list[MessageRef] = []
         for account in accounts:
             folders = await self._mailbox.folders(account)
