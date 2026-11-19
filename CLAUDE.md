@@ -94,8 +94,8 @@ assets/           # brand/: icon.svg and the PNGs build.py renders from it
 ```
 
 Which layer may import which is a table in `tests/test_layers.py`. A new
-module or subpackage needs a row there, and an import against the order
-fails the suite.
+top-level module or subpackage needs a row there, an import against the
+order fails the suite, and so does an import that closes a circle.
 
 ## Verifying
 
