@@ -266,6 +266,11 @@ runs ([mailbox service](../mailbox-service.md)).
 | `report` | senders of invoices without a supplier | senders of invoices marked and not moved, as candidates for a group of `sorting` |
 | Evaluation | label, and the supplier by its source | label alone |
 
+The senders `report` lists count an invoice marked in the end station
+too, although it is where it belongs: the report knows what was decided
+and done for a message, not the folder it lay in, so it cannot tell such
+an invoice from one left in the inbox (2026-11-19).
+
 Version 3 decided the supplier by a sender rule of a list, and the model
 could name one of the list with a quote that names it (decided 2026-11-17).
 Only an address or a pattern rule moved. That list and its rules are now
