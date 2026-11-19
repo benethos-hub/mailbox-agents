@@ -169,6 +169,15 @@ def test_an_inbox_folder_set_to_the_inbox_itself_moves_nothing() -> None:
     ]
 
 
+def test_only_the_subfolder_below_a_folder_looked_in_is_left_out() -> None:
+    found = places("Providers", "Providers/*", subfolder="{folder}/Rechnungen")
+
+    assert found.looks_in(folder("Providers"))
+    assert found.looks_in(folder("Providers/CloudHost"))
+    assert not found.looks_in(folder("Providers/Rechnungen"))
+    assert not found.looks_in(folder("Providers/CloudHost/Rechnungen"))
+
+
 def test_nothing_is_made_below_the_end_station() -> None:
     found = places("*", subfolder="{folder}/Rechnungen/Eingang", inbox="Invoices")
     known = by_path(folder("Invoices"), folder("Invoices/Rechnungen"))

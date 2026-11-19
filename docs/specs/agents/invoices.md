@@ -44,8 +44,11 @@ looks in are a setting, and it knows nothing of groups or sender rules.
 | `MAILBOX_AGENTS_INVOICES_INBOX_FOLDER` | a folder for an invoice found in the inbox. It must be there and it is not made. It is an end station: looked in when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, and nothing moves on from it | it is marked and stays in the inbox |
 
 The inbox is always looked in. A folder is named by its path, case
-counting. A message in a folder below a named one, such as the subfolder
-itself, is not looked at, so an invoice is not asked about twice. The
+counting. A message in the subfolder of a folder looked in, or in a
+folder between the two, is not looked at, so an invoice is not asked
+about twice. Another folder below one looked in is looked in when the
+settings take it in, as `Providers,Providers/*` takes in
+`Providers/CloudHost`. The
 subfolder of a folder it looks in and the folders between the two are
 never looked in, even where the settings would take them in:
 `Invoices,Invoices/*` takes in `Invoices/Rechnungen`. An invoice put there
@@ -158,8 +161,8 @@ the message. Nothing moving is the safe side, as mail moved by hand never
 wanders back (decided 2026-11-18). To have such a message looked at
 again, take the keyword off: the update the service reports then takes
 it up again, in the same pass or the next (2026-11-19). A message the state file knows goes on:
-`backfill --again` after a change of stage or prompt reaches the marked
-messages, and an invoice marked in the inbox and moved later is filed over
+`backfill`, which takes up again the messages decided before, still
+reaches the marked messages after a change of stage or prompt, and an invoice marked in the inbox and moved later is filed over
 its open item and the update, as before. A move by a mail client keeps the
 message's id at the service ([mailbox service](../mailbox-service.md),
 measured 2026-11-19), so the open item follows it.

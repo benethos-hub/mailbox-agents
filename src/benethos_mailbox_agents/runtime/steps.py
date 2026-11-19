@@ -271,8 +271,8 @@ class StepRunner:
     def _marked_before(self, message: MailMessage) -> bool:
         """Whether the agent skips marked mail and the message carries its
         keyword with no step of it in the state file: marked before this
-        state file. One it ran a step for, as ``backfill --again`` takes
-        up, goes on."""
+        state file. One it ran a step for, as ``backfill`` takes up again
+        after a change of stage or prompt, goes on."""
         return (
             self.agent.skip_marked
             and message.has_keyword(self.agent.keyword)

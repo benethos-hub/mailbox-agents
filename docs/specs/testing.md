@@ -31,7 +31,10 @@
   `live/smoke.py` reads it through the package without writing to it.
   `live/sorting.py` runs `sorting` on it in `shadow` and in `full`, makes
   its folders, moves the mail and puts it back. `live/invoices.py` runs
-  `invoices` in `shadow` beside `sorting` in `full`, in both orders.
+  `invoices` in `shadow` beside `sorting` in `full`, in both orders. Then
+  two checks of version 5, each with a new state file: an invoice moved
+  by hand into the inbox folder `Invoices/Telco`, and an invoice marked
+  beforehand. Every message goes back without either keyword.
   The model gateway belongs to it (decided 2026-11-17): LiteLLM with Claude
   through the owner's API key, and local models under llama.cpp, one
   service on the graphics card and one on the CPU. `live/gold.py` turns
