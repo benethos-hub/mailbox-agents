@@ -104,6 +104,7 @@ def test_refuses_a_line_that_looks_like_a_credential(repo: Path) -> None:
         '{"password": "' + 'Tr0ub4dor3xyzabc"}',
         "token: " + "abcdefghijklmnopq",
         "Gateway_Key = " + "abcdefghijklmnopq",
+        "GATEWAY_KEY=" + "Zq7xW2pL9mN4vB8k",
     ],
     ids=[
         "json-token",
@@ -114,6 +115,7 @@ def test_refuses_a_line_that_looks_like_a_credential(repo: Path) -> None:
         "json-lower-case",
         "yaml-lower-case",
         "mixed-case",
+        "bare-key",
     ],
 )
 def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
@@ -136,6 +138,8 @@ def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
         "tokens_in=calls.tokens_in",
         'default_keyword = "agent-awaiting-reply"',
         '"secret": mailbox_password}',
+        'ADD_KEYWORD = "add_keyword_long_value"',
+        'REMOVE_KEYWORD = "remove_keyword"',
     ],
 )
 def test_a_reference_to_a_secret_passes(repo: Path, line: str) -> None:

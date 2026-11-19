@@ -243,6 +243,7 @@ def test_a_credential_is_found(line: str) -> None:
 @pytest.mark.parametrize(
     "line",
     [
+        'REMOVE_KEYWORD = "remove_keyword"',
         "MAILBOX_AGENTS_GATEWAY_KEY_FILE=/run/secrets/gateway_key",
         "token = base64.b64encode(raw)",
     ],

@@ -51,9 +51,11 @@ patterns="$patterns|gh[pousr]_[A-Za-z0-9]{16,}"
 patterns="$patterns|glpat-[A-Za-z0-9_-]{16,}"
 patterns="$patterns|AKIA[0-9A-Z]{16}"
 patterns="$patterns|BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY"
-# A name, then = or :, maybe a quote, then the value. A value that
-# starts with / is a path, as a *_FILE setting names one.
-patterns="$patterns|(TOKEN|SECRET|PASSWORD|API_KEY|_KEY)[A-Z_]*[[:space:]]*[:=][[:space:]]*[\"']?[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
+# A name that ends in TOKEN, SECRET, PASSWORD or _KEY, maybe with more
+# parts such as _FILE, then = or :, maybe a quote, then the value.
+# _KEYWORD is no such name. A value that starts with / is a path, as a
+# *_FILE setting names one.
+patterns="$patterns|(TOKEN|SECRET|PASSWORD|_KEY)(_[A-Z]+)*[[:space:]]*[:=][[:space:]]*[\"']?[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
 # The same in any case, as JSON and YAML write it: a name that ends in
 # token, secret, password or _key, then = or :, then a quoted value, or a
 # bare one that ends the line or a word. A bare value with a dot or a
