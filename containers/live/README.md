@@ -257,8 +257,11 @@ message back where it was, as the inbox was before the checks, also after
 a check that failed or a run cut short. The folders it made, `Providers` and two below
 it, stay, as no agent may delete a folder. `setup.sh` makes the account
 anew without them. `live/invoices.py` runs `invoices` in `shadow` beside
-`sorting` in `full`, in both orders, and puts the mail back. It asks the
-model of `agent.env`, one call per message and order.
+`sorting` in `full`, in both orders, and puts the mail back. Then two
+checks of version 5, each with a new state file: an invoice moved by hand
+into the inbox folder `Invoices/Telco`, and an invoice marked beforehand.
+Every message goes back without either keyword. It asks the model of
+`agent.env`, one call per message and run.
 
 ## Take it down
 
