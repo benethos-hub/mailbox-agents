@@ -49,21 +49,26 @@ BACKFILL_ROLES = ("inbox", "sent")
 class Upstream(Reader, Writer, Protocol):
     """What the loop needs of the mailbox service."""
 
-    async def start(self, accounts: list[str] | None = None) -> str: ...
+    async def start(self, accounts: list[str] | None = None) -> str:
+        """The state token of the feed as it is now."""
 
     async def changes(
         self, since: str, accounts: list[str] | None = None
-    ) -> tuple[list[Event], str]: ...
+    ) -> tuple[list[Event], str]:
+        """The events since ``since``, and the state token after them."""
 
     async def recent(
         self, since: date, accounts: list[str] | None = None, *, roles: tuple[str, ...]
-    ) -> list[MessageRef]: ...
+    ) -> list[MessageRef]:
+        """The messages received since a day in the folders of ``roles``."""
 
     async def recent_in(
         self, account_id: str, folder_id: str, since: date
-    ) -> list[MessageRef]: ...
+    ) -> list[MessageRef]:
+        """The messages received since a day in one folder of one account."""
 
-    async def accounts(self) -> tuple[str, ...]: ...
+    async def accounts(self) -> tuple[str, ...]:
+        """The ids of the accounts the user is granted."""
 
 
 class Worker:

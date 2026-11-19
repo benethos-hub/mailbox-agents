@@ -267,7 +267,7 @@ def admin_token() -> str:
             "password": one_time,
         },
     )
-    page = ui.post(
+    ui.post(
         "/ui/password",
         {
             "csrf_token": _field(page, "csrf_token"),

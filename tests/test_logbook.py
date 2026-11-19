@@ -16,7 +16,6 @@ from typing import ClassVar
 
 import pytest
 
-import benethos_mailbox_agents
 from benethos_mailbox_agents import errors, logbook
 from benethos_mailbox_agents.logbook import (
     Activity,
@@ -40,7 +39,8 @@ from benethos_mailbox_agents.logbook.output import (
     log_time,
 )
 
-SOURCE = Path(benethos_mailbox_agents.__file__).parent
+# The package folder, the one above logbook/.
+SOURCE = Path(logbook.__file__).resolve().parent.parent
 LOGGING_MD = SOURCE.parents[1] / "docs" / "LOGGING.md"
 NAME = re.compile(r"[a-z][a-z0-9]*(_[a-z0-9]+)*")
 LEVELS = {logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR}

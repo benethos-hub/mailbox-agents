@@ -33,7 +33,8 @@ class Asker(Protocol):
 
     model: str
 
-    async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]: ...
+    async def ask(self, *, system: str, content: str, schema: type[T]) -> Reply[T]:
+        """One call of the model, its answer in ``schema``."""
 
 
 class NoModel:

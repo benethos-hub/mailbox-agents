@@ -40,15 +40,18 @@ class Model(Protocol):
         content: str,
         schema: type[T],
         evidence: Sequence[str],
-    ) -> T: ...
+    ) -> T:
+        """The answer of the model, validated against ``schema``."""
 
 
 class Reader(Protocol):
     """The mailbox, read-only."""
 
-    async def message(self, ref: MessageRef) -> MailMessage: ...
+    async def message(self, ref: MessageRef) -> MailMessage:
+        """The message as it is now."""
 
-    async def thread(self, account_id: str, thread_id: str) -> Thread: ...
+    async def thread(self, account_id: str, thread_id: str) -> Thread:
+        """The conversation, its messages oldest first."""
 
 
 class Items(Protocol):
@@ -63,13 +66,17 @@ class Items(Protocol):
         """Start an item again with a new deadline, unless a person closed it
         by taking the keyword off."""
 
-    async def get(self, ref: MessageRef) -> OpenItem | None: ...
+    async def get(self, ref: MessageRef) -> OpenItem | None:
+        """The item of a message, open or closed, or None."""
 
-    async def in_thread(self, account_id: str, thread_id: str) -> list[OpenItem]: ...
+    async def in_thread(self, account_id: str, thread_id: str) -> list[OpenItem]:
+        """The open items of a thread."""
 
-    async def due(self, now: datetime) -> list[OpenItem]: ...
+    async def due(self, now: datetime) -> list[OpenItem]:
+        """The open items whose deadline has come."""
 
-    async def close(self, ref: MessageRef, reason: str) -> None: ...
+    async def close(self, ref: MessageRef, reason: str) -> None:
+        """Close the item of a message, saying why."""
 
 
 @dataclass(frozen=True)

@@ -34,6 +34,8 @@ ALLOW = "pragma: allowlist secret"
 RESERVED_SUFFIXES = (".example", ".test", ".invalid", ".localhost")
 RESERVED_DOMAINS = frozenset({"example.com", "example.org", "example.net"})
 ALLOWED_ADDRESSES = frozenset({"noreply@anthropic.com"})
+# The domain of GitHub's private commit addresses, as a whole.
+NOREPLY_DOMAINS = frozenset({"users.noreply.github.com"})
 
 # Something before the @, so a decorator such as @pytest.fixture is no
 # address, and * for a sender pattern such as *@*.example.
@@ -75,7 +77,7 @@ def addresses(line: str) -> list[str]:
         for found in ADDRESS.finditer(line)
         if not _reserved(found.group(2))
         and found.group(0).lower() not in ALLOWED_ADDRESSES
-        and not found.group(2).lower().endswith("users.noreply.github.com")
+        and found.group(2).lower() not in NOREPLY_DOMAINS
     ]
 
 
