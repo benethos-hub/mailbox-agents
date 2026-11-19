@@ -144,6 +144,12 @@ class Agent(ABC):
     # Read from the instance: an agent whose decision rests on a list it
     # reads sets it from that list.
     prompt_version: str = ""
+    # Whether a message that carries the agent's keyword and that its state
+    # file does not know is skipped after the fetch, before baseline and
+    # model: it was marked before this state file, by the agent or by a
+    # person, and is neither asked about nor moved again. A person takes
+    # the keyword off to have it looked at again. Off by default.
+    skip_marked: ClassVar[bool] = False
 
     def __init__(self, settings: Settings) -> None:
         self.validate_definition()

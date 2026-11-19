@@ -202,7 +202,7 @@ Its steps, one commit each:
 | E1 | Measured first: a move by a mail client, its id and its feed events, in [mailbox service](../mailbox-service.md) | done 2026-11-19 |
 | E2 | The inbox folder as an end station | done 2026-11-19 |
 | E3 | `status` lists the folders that matter | done 2026-11-19 |
-| E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | |
+| E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | done 2026-11-19 |
 | E5 | `invoices` declares it | |
 | E6 | Live on the test account | |
 

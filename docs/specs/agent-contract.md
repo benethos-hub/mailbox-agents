@@ -13,6 +13,27 @@ The class attributes are validated on instantiation.
 | `requires` | settings that must be present before it starts |
 | `default_keyword` | the keyword it sets when `MAILBOX_AGENTS_KEYWORD` is unset |
 | `prompt_version` | the version of the prompt its model step runs under. Read from the instance: `sorting` sets it from its list |
+| `skip_marked` | whether a message that carries its keyword and that its state file does not know is `skipped` before baseline and model. Off by default |
+
+**Marked mail a state file does not know (decided 2026-11-19).** An agent
+that declares `skip_marked` leaves a message alone that carries its keyword
+while its state file holds no step for it: the message was marked before
+this state file, by the agent before the file was made anew or by a
+person. It is not asked about again and not moved again. A message the
+state file knows goes on as before, so `backfill --again` after a change
+of stage or prompt still reaches it, and an update routed to `observe` is
+not touched. A person takes the keyword off to have the message looked at
+again. A message moved by a mail client keeps its id at the service
+([mailbox service](mailbox-service.md)), so this matters after a state file
+made anew, not after each move. Which agents declare it, and why the
+others do not:
+
+| Agent | `skip_marked` | Why |
+|---|---|---|
+| `inquiries` | off | its state file holds the fields of an inquiry, which a skipped message would lack |
+| `awaiting_reply` | off | it watches its marked mail to take the keyword off |
+| `counting` | off | it sets no keyword |
+| `sorting` | off | its own rule is stricter: `admit` refuses every message in the inbox that carries its keyword |
 
 **An agent's keyword is `agent-<word>` (decided 2026-11-18).** A keyword
 in that form is recognisable as set by an agent, shares no name with a

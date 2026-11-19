@@ -176,6 +176,78 @@ async def test_a_message_not_admitted_is_skipped_without_the_model(
     assert world.fake_gateway.requests == []
 
 
+class Marking(Echo):
+    """An Echo that skips a message marked before its state file."""
+
+    skip_marked = True
+
+
+MARKED = MessageRef(account_id=ACCOUNT, message_id="m3")
+
+
+def _marked(world: Wired, keyword: str = "ECHO") -> None:
+    """A message that carries the keyword, in another case, as IMAP keeps
+    it, and that the state file does not know."""
+    world.service.add(
+        wire_message("m3", subject="Your invoice", keywords=[keyword]), change=None
+    )
+    world.store.enqueue(MARKED, world.clock())
+
+
+async def test_a_marked_message_the_state_file_does_not_know_is_skipped(
+    world: Wired,
+) -> None:
+    _marked(world)
+    effects = Collected()
+
+    assert (
+        await runner(world, Marking(settings()), effects).process(MARKED) == "skipped"
+    )
+
+    assert world.store.steps(MARKED) == []
+    assert world.fake_gateway.requests == []
+    assert effects.requests == []
+
+
+async def test_a_marked_message_the_state_file_knows_goes_on(world: Wired) -> None:
+    """Marked by the agent itself and taken up again, as ``backfill`` does:
+    the stored decision is used, and a new prompt version asks anew."""
+    _marked(world, keyword="none-yet")
+    world.fake_gateway.answer(MATCH)
+    assert await runner(world, Marking(settings())).process(MARKED) == "done"
+    world.service.messages[(ACCOUNT, "m3")]["keywords"] = ["echo"]
+    world.store.enqueue(MARKED, world.clock(), again=True)
+
+    assert await runner(world, Marking(settings())).process(MARKED) == "done"
+    assert len(world.fake_gateway.requests) == 1
+
+    class Newer(Marking):
+        prompt_version = "p2"
+
+    world.fake_gateway.answer(MATCH)
+    world.store.enqueue(MARKED, world.clock(), again=True)
+
+    assert await runner(world, Newer(settings())).process(MARKED) == "done"
+    assert len(world.fake_gateway.requests) == 2
+
+
+async def test_another_keyword_does_not_skip(world: Wired) -> None:
+    _marked(world, keyword="agent-sorted")
+    world.fake_gateway.answer(MATCH)
+
+    assert await runner(world, Marking(settings())).process(MARKED) == "done"
+
+
+async def test_an_agent_that_declares_no_skip_asks_about_marked_mail(
+    world: Wired,
+) -> None:
+    _marked(world)
+    world.fake_gateway.answer(MATCH)
+
+    assert await runner(world).process(MARKED) == "done"
+    assert len(world.fake_gateway.requests) == 1
+
+
 async def test_the_daily_limit_waits_for_tomorrow(world: Wired) -> None:
     class Thrifty(Echo):
         limits = Limits(model_calls_per_day=0)

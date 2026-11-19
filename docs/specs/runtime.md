@@ -20,13 +20,17 @@ pass before the cursor moves. One that is away while pending messages run
 leaves them `pending`, the cursor moves, and the next pass waits twice as
 long as the last, up to `BACKOFF_CEILING_SECONDS`.
 
-Message states: `pending`, `skipped` (not admitted, or gone from the
+Message states: `pending`, `skipped` (not admitted, marked before the
+state file for an agent that declares `skip_marked`, or gone from the
 mailbox, also when it went in the middle of its actions), `decided` (recorded and not acted on, such as a label whose quote
 was not found), `done` (its effect carried out, in whatever stage),
 `failed` (given up after `MAX_ATTEMPTS`, or more model calls asked for
 than the limit per message allows).
 
-The steps of one message: fetch, `admit`, baseline, decision, effect. The
+The steps of one message: fetch, `admit`, baseline, decision, effect.
+After `admit`, a message that carries the keyword of an agent that
+declares `skip_marked`, with no step of it in the state file, ends as
+`skipped` ([agent contract](agent-contract.md), since 2026-11-19). The
 message is fetched anew before the effect when the decision asked the
 model, so the agent acts on where it lies now: another agent or a person
 may move it while the model answers, and one deleted meanwhile is
