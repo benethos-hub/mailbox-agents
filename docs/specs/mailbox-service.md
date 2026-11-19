@@ -43,6 +43,19 @@ Stalwart, on the test account:
 
 - A move through `update_message` keeps the message's id. The feed names
   it as `message.updated` of that id, once per move.
+- A move made by a mail client over IMAP keeps the message's id as well
+  (measured 2026-11-19 against 0.7.5, for the plan of
+  [invoices](agents/invoices.md) version 5). One message was moved out of
+  the inbox into a folder made for the check and back, once with `MOVE`
+  and once with `COPY`, `\Deleted` and `EXPUNGE`, as clients without
+  `MOVE` do. Each way the feed named only `message.updated` of the same
+  id, within one sync, no `message.created` and no `message.deleted`.
+  `get_message` read it under that id in its new folder, and a keyword
+  set before the move went with it. So the state file of an agent knows a
+  message a person moves by hand, and its open item follows it. A message
+  under an id no state file knows, but with an agent's keyword, comes from
+  a state file made anew, or from a provider that gives a moved message a
+  new id, which this check did not see at Stalwart.
 - `create_folder` makes a folder at the top without a parent, and below
   another with the parent's id. At IMAP a folder's id follows its path.
 - A name that exists in the same case is refused, `409 conflict`. The same
