@@ -158,8 +158,8 @@ the message. Nothing moving is the safe side, as mail moved by hand never
 wanders back (decided 2026-11-18). To have such a message looked at
 again, take the keyword off: the update the service reports then takes
 it up again, in the same pass or the next (2026-11-19). A message the state file knows goes on:
-`backfill --again` after a change of stage or prompt reaches the marked
-messages, and an invoice marked in the inbox and moved later is filed over
+`backfill`, which takes up again the messages decided before, still
+reaches the marked messages after a change of stage or prompt, and an invoice marked in the inbox and moved later is filed over
 its open item and the update, as before. A move by a mail client keeps the
 message's id at the service ([mailbox service](../mailbox-service.md),
 measured 2026-11-19), so the open item follows it.

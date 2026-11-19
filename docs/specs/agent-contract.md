@@ -21,8 +21,9 @@ that declares `skip_marked` leaves a message alone that carries its keyword
 while its state file holds no step for it: the message was marked before
 this state file, by the agent before the file was made anew or by a
 person. It is not asked about again and not moved again. A message the
-state file knows goes on as before, so `backfill --again` after a change
-of stage or prompt still reaches it, and an update routed to `observe` is
+state file knows goes on as before, so `backfill`, which takes up again
+the messages decided before, still reaches it after a change of stage or
+prompt, and an update routed to `observe` is
 not touched. A person takes the keyword off to have the message looked at
 again: the update that shows it without the keyword makes it `pending`
 anew, as long as no step of it is stored and the agent admits it
