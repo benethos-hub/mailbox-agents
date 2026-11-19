@@ -37,6 +37,7 @@ from common import (  # beside this script, not a package
 )
 
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
+from benethos_mailbox_agents.contract import Action
 from benethos_mailbox_agents.settings import Settings
 from benethos_mailbox_agents.sources.mailbox import Mailbox
 from benethos_mailbox_agents.store import ActionRow
@@ -92,8 +93,10 @@ async def shadow(live: Live) -> str:
     after = await inbox_snapshot(live.mailbox, live.settings)
     if after != live.before or await live.folders() != live.folders_before:
         raise AssertionError("the mailbox changed in shadow")
-    moves = sum(a.action == "move_to_folder" for a in actions)
-    made = sorted({a.argument for a in actions if a.action == "create_folder"})
+    moves = sum(a.action == Action.MOVE_TO_FOLDER.value for a in actions)
+    made = sorted(
+        {a.argument for a in actions if a.action == Action.CREATE_FOLDER.value}
+    )
     return (
         f"{sum(labels.values())} decided, {moves} moves and the folders "
         f"{made or 'none'} recorded, nothing changed"
@@ -103,7 +106,9 @@ async def shadow(live: Live) -> str:
 async def full(live: Live) -> str:
     with tempfile.TemporaryDirectory() as folder:
         actions, _ = await live.sort("full", Path(folder))
-    live.moved = [a for a in actions if a.action == "move_to_folder" and a.executed]
+    live.moved = [
+        a for a in actions if a.action == Action.MOVE_TO_FOLDER.value and a.executed
+    ]
     folders = await live.folders()
     missing = [path for path in FOLDERS if path not in folders]
     if missing:

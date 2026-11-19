@@ -9,6 +9,10 @@ from types import ModuleType
 
 import pytest
 
+from benethos_mailbox_agents.records import MessageRef
+from benethos_mailbox_agents.sources.mailbox import connect
+from fakes import ACCOUNT, FakeService, wire_message
+
 # live/ is no package and lies outside testpaths: the module is loaded by
 # its path, as a script would find it beside itself.
 COMMON = Path(__file__).resolve().parent.parent / "live" / "common.py"
@@ -76,3 +80,31 @@ def test_a_service_elsewhere_stops_the_check(
         common.live_settings(env_file(tmp_path, "https://real.example"), "x")
 
     assert raised.value.code == 2
+
+
+async def test_put_back_takes_off_each_keyword_and_moves_back_once(
+    common: ModuleType,
+) -> None:
+    service = FakeService()
+    service.add(wire_message("m1", folder_ids=["inbox"]), change=None)
+    service.add(wire_message("m2", folder_ids=["inbox"]), change=None)
+    service.messages[(ACCOUNT, "m2")]["keywords"] = ["mine"]
+    async with connect(
+        "https://mailbox.example.test", "t", transport=service.transport()
+    ) as mailbox:
+        refs = [MessageRef(account_id=ACCOUNT, message_id=m) for m in ("m1", "m2")]
+        before = await common.snapshot(mailbox, refs)
+        service.messages[(ACCOUNT, "m1")]["folder_ids"] = ["inv-hosting"]
+        service.messages[(ACCOUNT, "m1")]["keywords"] = ["agent-sorted"]
+        service.messages[(ACCOUNT, "m2")]["keywords"] = [
+            "mine",
+            "agent-sorted",
+            "agent-invoice",
+        ]
+
+        moved = await common.put_back(mailbox, before, "agent-sorted", "agent-invoice")
+
+    assert moved == 1
+    assert service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
+    assert service.messages[(ACCOUNT, "m1")]["keywords"] == []
+    assert service.messages[(ACCOUNT, "m2")]["keywords"] == ["mine"]

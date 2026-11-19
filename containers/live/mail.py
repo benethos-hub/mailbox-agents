@@ -51,6 +51,12 @@ def _message(
     return found
 
 
+def local(header: str | None) -> str:
+    """The part of a Message-ID before the @, without its brackets: the
+    name each message of :func:`messages` carries, as GOLD keys it."""
+    return (header or "").strip("<>").partition("@")[0]
+
+
 def messages(me: str) -> Iterator[tuple[str, str, EmailMessage]]:
     """Folder, flags and message of every invented message."""
     inbox, sent, seen = "inbox", "sent", r"(\Seen)"

@@ -215,22 +215,24 @@ async def sort_test_account(
         return store.actions(), labels(store)
 
 
-async def put_back(mailbox: Mailbox, before: Snapshot, keyword: str) -> int:
+async def put_back(mailbox: Mailbox, before: Snapshot, *keywords: str) -> int:
     """Put each message of ``before`` back as it lay: into its folder when
-    it lies elsewhere now, and with ``keyword`` taken off when it was not on
-    it. Taken from the snapshot, not from the actions of a state file, so a
-    run cut short in the middle is put back too. Answers how many messages
-    were moved back."""
+    it lies elsewhere now, then with each of ``keywords`` taken off that
+    was not on it. Taken from the snapshot, not from the actions of a state
+    file, so a run cut short in the middle is put back too. Each message is
+    read once: a second look right after a move may still see the folder
+    before it. Answers how many messages were moved back."""
     moved = 0
-    wanted = keyword.casefold()
-    for ref, (folders, keywords) in (await snapshot(mailbox, before)).items():
+    for ref, (folders, found) in (await snapshot(mailbox, before)).items():
         was_folders, was_keywords = before[ref]
         if folders != was_folders and was_folders:
             await mailbox.move(ref, was_folders[0])
             moved += 1
-        on = {k.casefold() for k in keywords}
-        if wanted in on and wanted not in {k.casefold() for k in was_keywords}:
-            await mailbox.remove_keyword(ref, keyword)
+        on = {k.casefold() for k in found}
+        was = {k.casefold() for k in was_keywords}
+        for keyword in keywords:
+            if keyword.casefold() in on and keyword.casefold() not in was:
+                await mailbox.remove_keyword(ref, keyword)
     return moved
 
 

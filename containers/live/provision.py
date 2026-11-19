@@ -41,6 +41,12 @@ COMPOSE = os.environ["COMPOSE"].split()
 DOMAIN = "agents.test"
 HOST = "mail.agents.test"
 ADDRESS = f"agents@{DOMAIN}"
+# The aliases of litellm.yaml the agents' key may call, and what it may
+# spend: the master key reaches every alias, Claude Opus included, on the
+# owner's Claude API key, with no budget. The master key stays in
+# secrets/gateway.env.
+AGENT_MODELS = ["mail-classifier", "mail-classifier-gpu", "mail-classifier-cpu"]
+AGENT_BUDGET_USD = 5.0
 
 
 def say(text: str) -> None:
@@ -308,7 +314,7 @@ def api(token: str, method: str, path: str, body: object | None = None) -> dict:
         ) from None
 
 
-def service(password: str) -> None:
+def service(password: str, gateway_key: str) -> None:
     token = admin_token()
     say("the account connected to the service")
     account = api(
@@ -361,7 +367,7 @@ def service(password: str) -> None:
                 "MAILBOX_AGENTS_INVOICES_SUBFOLDER={folder}/Rechnungen",
                 "MAILBOX_AGENTS_SORTING_FILE=containers/live/sorting.json",
                 f"MAILBOX_AGENTS_GATEWAY_URL={os.environ['GATEWAY_URL']}",
-                f"MAILBOX_AGENTS_GATEWAY_KEY={os.environ['GATEWAY_KEY']}",
+                f"MAILBOX_AGENTS_GATEWAY_KEY={gateway_key}",
                 f"MAILBOX_AGENTS_MODEL={os.environ['GATEWAY_MODEL']}",
                 # A local model on the CPU takes its time.
                 "MAILBOX_AGENTS_GATEWAY_TIMEOUT_SECONDS=600",
@@ -372,17 +378,36 @@ def service(password: str) -> None:
     )
 
 
-def gateway() -> None:
+def gateway() -> str:
+    """A key of the gateway for the agents: the aliases of AGENT_MODELS
+    only, within AGENT_BUDGET_USD. Made with the master key."""
+    base = os.environ["GATEWAY_URL"].removesuffix("/v1")
     say("waiting for the gateway")
-    wait_for(os.environ["GATEWAY_URL"].removesuffix("/v1") + "/health/liveliness", 180)
+    wait_for(base + "/health/liveliness", 180)
+    say("a key of the gateway for the agents, the mail-classifier aliases only")
+    body = json.dumps(
+        {
+            "models": AGENT_MODELS,
+            "max_budget": AGENT_BUDGET_USD,
+            "key_alias": "live-agents",
+        }
+    ).encode()
+    request = urllib.request.Request(base + "/key/generate", body, method="POST")
+    request.add_header("Authorization", f"Bearer {os.environ['GATEWAY_MASTER_KEY']}")
+    request.add_header("Content-Type", "application/json")
+    with urllib.request.urlopen(request, timeout=60) as answer:
+        made = json.loads(answer.read())
+    key = made.get("key")
+    if not isinstance(key, str) or not key:
+        raise SystemExit(f"provision: no key in the answer, keys {sorted(made)}")
+    return key
 
 
 def main() -> None:
     os.umask(0o077)
     password = stalwart()
     fill(password)
-    service(password)
-    gateway()
+    service(password, gateway())
 
 
 if __name__ == "__main__":

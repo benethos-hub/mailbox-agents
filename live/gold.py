@@ -43,7 +43,7 @@ async def write(settings: Settings) -> list[Path]:
         )
         for ref in refs:
             message = await mailbox.message(ref)
-            local = (message.message_id_header or "").strip("<>").partition("@")[0]
+            local = mail.local(message.message_id_header)
             for agent, (label, fields) in mail.GOLD.get(local, {}).items():
                 item = {
                     "account_id": ref.account_id,

@@ -37,6 +37,7 @@ import asyncio
 import sys
 import tempfile
 import time
+from collections import Counter
 from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
@@ -55,7 +56,6 @@ from common import (  # beside this script, not a package
     parse_settings,
     put_back,
     run_checks,
-    snapshot,
     sort_test_account,
     worker,
 )
@@ -63,6 +63,7 @@ from common import (  # beside this script, not a package
 from benethos_mailbox_agents.agents.invoices.agent import Invoices
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
 from benethos_mailbox_agents.agents.sorting.groups import load_groups
+from benethos_mailbox_agents.contract import Action
 from benethos_mailbox_agents.llm.gateway import Gateway
 from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
@@ -87,8 +88,8 @@ def _invoices() -> tuple[int, set[str]]:
     groups = load_groups(LIST)
     count, filed = 0, set()
     for folder, _, message in mail.messages("me@invented.example"):
-        local = str(message["Message-ID"]).strip("<>").partition("@")[0]
-        label = mail.GOLD.get(local, {}).get("invoices", ("", {}))[0]
+        gold = mail.GOLD.get(mail.local(str(message["Message-ID"])), {})
+        label = gold.get("invoices", ("", {}))[0]
         if folder != "inbox" or label != "invoice":
             continue
         count += 1
@@ -136,23 +137,19 @@ class Live:
         as mail.py names it."""
         for ref in self.before:
             message = await self.mailbox.message(ref)
-            header = (message.message_id_header or "").strip("<>")
-            if header.partition("@")[0] == local:
+            if mail.local(message.message_id_header) == local:
                 return ref
         raise AssertionError(f"{local} is not in the inbox")
 
+    @property
+    def marked(self) -> str:
+        """The keyword invoices sets with these settings."""
+        return Invoices(self.settings).keyword
+
     async def restore(self) -> int:
         """Every message back as it lay, without the keyword of either
-        agent where it had none. The messages are moved once: a second
-        look right after a move may still see the folder before it."""
-        moved = await put_back(self.mailbox, self.before, self.keyword)
-        marked = Invoices(self.settings).keyword
-        wanted = marked.casefold()
-        for ref, (_, keywords) in (await snapshot(self.mailbox, self.before)).items():
-            was = {k.casefold() for k in self.before[ref][1]}
-            if wanted in {k.casefold() for k in keywords} and wanted not in was:
-                await self.mailbox.remove_keyword(ref, marked)
-        return moved
+        agent where it had none."""
+        return await put_back(self.mailbox, self.before, self.keyword, self.marked)
 
     async def sort(self) -> None:
         await sort_test_account(self.settings, self.mailbox, "full", self.folder)
@@ -162,16 +159,23 @@ def recorded_moves(store: Store) -> set[str]:
     return {
         a.argument
         for a in store.actions()
-        if a.action == "move_to_folder" and not a.executed
+        if a.action == Action.MOVE_TO_FOLDER.value and not a.executed
     }
 
 
 async def by_header(live: Live, found: Snapshot) -> dict[str, MessageRef]:
-    """The messages of ``found`` by their Message-ID."""
-    return {
-        (await live.mailbox.message(ref)).message_id_header or ref.message_id: ref
-        for ref in found
+    """The messages of ``found`` by their Message-ID. A message without
+    one, or two with the same, end the check: the service may give a
+    message a new id, and only its Message-ID tells it again."""
+    headers = {
+        ref: (await live.mailbox.message(ref)).message_id_header for ref in found
     }
+    if any(not header for header in headers.values()):
+        raise AssertionError("a message of the inbox has no Message-ID")
+    twice = [h for h, n in Counter(headers.values()).items() if n > 1]
+    if twice:
+        raise AssertionError(f"{len(twice)} Message-IDs are in the inbox twice")
+    return {str(header): ref for ref, header in headers.items()}
 
 
 async def before(live: Live) -> str:
@@ -230,7 +234,11 @@ async def sorting_first(live: Live) -> str:
             )
         decided = labels(store)["invoice"]
         made = sorted(
-            {a.argument for a in store.actions() if a.action == "create_folder"}
+            {
+                a.argument
+                for a in store.actions()
+                if a.action == Action.CREATE_FOLDER.value
+            }
         )
     return f"{taken} taken up, {decided} invoices, folders recorded {made}"
 
@@ -254,9 +262,12 @@ async def put_back_between(live: Live) -> str:
         await asyncio.sleep(5)
     if not same:
         missing = len(set(was) - set(headers))
+        changed = sum(
+            now[headers[h]][1] != live.before[was[h]][1] for h in was if h in headers
+        )
         raise AssertionError(
-            f"the inbox is not as it was: {missing} of {len(was)} not there "
-            "or with other keywords"
+            f"the inbox is not as it was: {missing} of {len(was)} not there, "
+            f"{changed} with other keywords"
         )
     renewed = sum(headers[h] != was[h] for h in was)
     live.before = now
@@ -284,7 +295,7 @@ async def end_station(live: Live) -> str:
         if not decided or decided[-1].result["label"] != "invoice":
             raise AssertionError("the invoice in the end station was not decided")
         found = [(a.action, a.argument) for a in store.actions(ref)]
-        if found != [("add_keyword", "agent-invoice")]:
+        if found != [(Action.ADD_KEYWORD.value, live.marked)]:
             raise AssertionError(f"recorded {found}, the keyword alone expected")
         made = [a for a in store.actions() if a.argument.startswith(END + "/")]
         if made:
@@ -300,7 +311,7 @@ async def end_station(live: Live) -> str:
 
 async def marked_before(live: Live) -> str:
     ref = await live.ref_of(MARKED)
-    await live.mailbox.add_keyword(ref, Invoices(live.settings).keyword)
+    await live.mailbox.add_keyword(ref, live.marked)
     marking, store = live.invoices("made-anew")
     with store:
         await marking.backfill(DAYS)
