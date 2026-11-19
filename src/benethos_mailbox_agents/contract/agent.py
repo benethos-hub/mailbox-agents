@@ -22,7 +22,6 @@ from ..settings import KEYWORD_FORBIDDEN, Settings
 from .context import Context
 
 __all__ = [
-    "EVENTS",
     "NAME_PATTERN",
     "REVERSED_BY",
     "Action",

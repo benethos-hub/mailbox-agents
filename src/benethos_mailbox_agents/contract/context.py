@@ -17,7 +17,6 @@ from typing import Protocol, TypeVar
 from pydantic import BaseModel
 
 from ..records import MailMessage, MessageRef, OpenItem, Thread
-from ..settings import Settings
 
 __all__ = ["Context", "Items", "Model", "Reader"]
 
@@ -81,9 +80,9 @@ class Items(Protocol):
 
 @dataclass(frozen=True)
 class Context:
-    """What one step of an agent may reach."""
+    """What one step of an agent may reach. Its settings it has as
+    ``self.settings``."""
 
-    settings: Settings
     model: Model
     reader: Reader
     items: Items

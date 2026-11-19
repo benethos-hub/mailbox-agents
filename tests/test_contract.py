@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import importlib
 import re
 import textwrap
@@ -337,3 +338,9 @@ def test_the_tests_of_one_agent_import_no_other_agent(path: Path, own: str) -> N
 
 def test_every_test_of_an_agent_is_found() -> None:
     assert len(OF_ONE_AGENT) >= len(discover())
+
+
+def test_the_context_holds_what_the_spec_names() -> None:
+    names = [field.name for field in dataclasses.fields(Context)]
+
+    assert names == ["model", "reader", "items", "now"]
