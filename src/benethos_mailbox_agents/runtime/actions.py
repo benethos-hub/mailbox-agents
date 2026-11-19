@@ -6,17 +6,16 @@ only of names between slashes, a move only into a folder that exists and
 is not the trash, junk or spam, nor below them, and makes only a folder
 the agent may make, below a folder that exists and not below those three,
 nor one whose name exists in another case. A message in one of them, or
-in a folder below one, is left alone. What the
-stage allows is carried out, the rest is recorded as what would have been
-done, and so is an action the agent asks to be held, once per message and
-stage. Every action records what was there before, so it can be taken
-back. An action whose result is already there is not taken again, and a
-message the agent moved once is not moved again, so one the owner moved
-back stays, and no folder is made for its move. After a refused move or
-folder, the rest of the message's actions are not taken, and after one
-recorded only, the rest are recorded only. See
-docs/specs/agent-contract.md, docs/specs/runtime.md and
-docs/specs/safety.md.
+in a folder below one, is left alone. What the stage allows is carried
+out, the rest is recorded as what would have been done, and so is an
+action the agent asks to be held, once per message and stage. Every
+action records what was there before, so it can be taken back. An action
+whose result is already there is not taken again, and a message the agent
+moved once is not moved again, so one the owner moved back stays, and no
+folder is made for its move. After a refused move or folder, the rest of
+the message's actions are not taken, and after one recorded only, the rest
+are recorded only. See docs/specs/agent-contract.md, docs/specs/runtime.md
+and docs/specs/safety.md.
 """
 
 from __future__ import annotations

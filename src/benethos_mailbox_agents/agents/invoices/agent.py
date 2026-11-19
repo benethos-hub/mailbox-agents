@@ -13,9 +13,9 @@ its move may not be taken, and closes when the message reaches it. The
 inbox folder is an end station: where the settings take it in, an invoice
 there is marked and stays. A message that carries its keyword and that
 its state file does not know is skipped. Who put a message into a folder
-does not
-matter: ``sorting``, a rule of the mail server or the owner by hand. The
-agent knows nothing of groups and names no supplier (agent version 5).
+does not matter: ``sorting``, a rule of the mail server or the owner by
+hand. The agent knows nothing of groups and names no supplier (agent
+version 5).
 See docs/specs/agents/invoices.md.
 """
 
