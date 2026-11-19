@@ -58,6 +58,10 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- `MAILBOX_AGENTS_KEYWORD` takes lower case letters, digits and dashes
+  only, as the agents' own keywords. A keyword such as `$Junk`, which
+  would make every marked mail spam, or one with capitals or control
+  characters stops the start.
 - The sender's name and the subject a model is given are cut at 300
   characters, and `invoices` lists at most 20 attachments within 1000
   characters, so a mail cannot blow up a model call. Mail below these

@@ -133,10 +133,20 @@ def test_a_wrong_value_is_named_never_quoted(monkeypatch: pytest.MonkeyPatch) ->
     assert "everything-now" not in str(raised.value)
 
 
-@pytest.mark.parametrize("keyword", ["", "two words", "(x)", 'q"'])
-def test_a_keyword_is_one_atom(keyword: str) -> None:
-    with pytest.raises(errors.ConfigError, match="KEYWORD"):
+@pytest.mark.parametrize(
+    "keyword",
+    ["", "two words", "(x)", 'q"', "$Junk", "Agent-X", "a" + chr(1) + "b", "-x"],
+)
+def test_a_keyword_is_lower_case_letters_digits_and_dashes(keyword: str) -> None:
+    with pytest.raises(errors.ConfigError, match="KEYWORD") as raised:
         load_settings(keyword=keyword)
+
+    assert "Junk" not in str(raised.value)
+
+
+@pytest.mark.parametrize("keyword", ["agent-invoice", "agent-2", "x"])
+def test_a_keyword_of_that_form_passes(keyword: str) -> None:
+    assert load_settings(keyword=keyword).keyword == keyword
 
 
 def test_missing_names_the_unset_settings() -> None:
