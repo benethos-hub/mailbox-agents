@@ -266,7 +266,9 @@ New mail as it arrives, and older mail only through `backfill --days N`, in
 `sorting` asks no model. Its rules are the whole decision, and the tests on
 invented mail cover them. A gold set is optional. Where one is kept, its
 label is the name of the group or `none`, in the existing gold format, and
-the existing scoring serves.
+the existing scoring serves. The report names `none` and nothing else: each
+group becomes `label-<n>` there, as a group's name is the owner's own text
+and a report is versioned (decided 2026-11-19).
 
 ## 10. Tests, all on invented mail
 

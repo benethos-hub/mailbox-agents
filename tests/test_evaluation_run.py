@@ -9,11 +9,15 @@ from pathlib import Path
 import httpx
 import pytest
 
+from benethos_mailbox_agents.agents.invoices.agent import Invoices
+from benethos_mailbox_agents.agents.sorting.agent import Sorting
 from benethos_mailbox_agents.cli import main
 from benethos_mailbox_agents.errors import GatewayUnavailableError
 from benethos_mailbox_agents.evaluation.gold import GoldItem
 from benethos_mailbox_agents.evaluation.report import build, render, write
 from benethos_mailbox_agents.evaluation.run import evaluate
+from benethos_mailbox_agents.evaluation.scoring import Outcome
+from benethos_mailbox_agents.records import Decision
 from fakes import ACCOUNT, FakeService, wire_message
 from helpers import Echo, configure, settings, wired
 
@@ -97,6 +101,64 @@ async def test_a_gateway_that_is_away_ends_the_run(tmp_path: Path) -> None:
                 store=world.store,
                 now=world.clock,
             )
+
+
+def outcome(label: str, fields: dict[str, str | None], found: str) -> Outcome:
+    return Outcome(
+        item=GoldItem(account_id=ACCOUNT, message_id="m1", label=label, fields=fields),
+        baseline=Decision(
+            label=found,
+            source="baseline",
+            fields={k: v for k, v in fields.items() if v is not None},
+        ),
+        decision=None,
+    )
+
+
+def test_a_report_names_no_label_or_field_the_agent_does_not_declare(
+    tmp_path: Path,
+) -> None:
+    """A group of sorting is named by its owner, often after a person, and
+    a report is versioned: such a name becomes a placeholder."""
+    outcomes = [
+        outcome("Dr Jane Invented", {"free text": "x"}, "Dr Jane Invented"),
+        outcome("Acme Invented", {"free text": None}, "none"),
+        outcome("none", {}, "Dr Jane Invented"),
+    ]
+
+    report = build(Sorting(settings()), "", outcomes, WHEN)
+
+    text = (write(report, tmp_path)).read_text(encoding="utf-8")
+    assert "Jane" not in text
+    assert "Acme" not in text
+    assert "free text" not in text
+    labels = report["baseline"]["labels"]
+    assert sorted(labels) == ["label-1", "label-2", "none"]
+    # Numbered by the sorted names: Acme first, then Dr Jane.
+    assert labels["label-1"]["false_negative"] == 1
+    assert labels["label-2"] == {
+        "true_positive": 1,
+        "false_positive": 1,
+        "false_negative": 0,
+        "precision": 0.5,
+        "recall": 1.0,
+    }
+    assert labels["none"]["false_positive"] == 1
+    assert report["model"]["labels"].keys() == labels.keys()
+    assert report["baseline"]["fields"]["field-1"]["right"] == 1
+    assert report["baseline"]["fields"]["field-1"]["empty"] == 1
+
+
+def test_a_report_names_the_labels_and_fields_an_agent_declares() -> None:
+    outcomes = [
+        outcome("invoice", {}, "invoice"),
+        outcome("other", {"near_miss": "reminder"}, "other"),
+    ]
+
+    report = build(Invoices(settings()), "", outcomes, WHEN)
+
+    assert sorted(report["baseline"]["labels"]) == ["invoice", "other"]
+    assert sorted(report["baseline"]["fields"]) == ["near_miss"]
 
 
 def test_the_report_file_is_named_by_date_versions_and_model(tmp_path: Path) -> None:

@@ -180,6 +180,9 @@ commit that makes the change. Design decisions live in
 
 ### Fixed
 
+- An evaluation report names only the labels and fields an agent declares
+  as its own. Any other, such as the name of a group of `sorting`, becomes
+  `label-<n>` or `field-<n>`, since a report is versioned.
 - `health` says what it measures: `last progress 42s ago` and
   `no progress yet`, not the last pass, since the loop's progress is
   written after each message and while it waits as well.

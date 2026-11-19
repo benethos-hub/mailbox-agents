@@ -74,6 +74,7 @@ class Echo(Agent):
     actions = frozenset({Action.ADD_KEYWORD, Action.MOVE_TO_FOLDER})
     default_keyword = "echo"
     prompt_version = "p1"
+    report_labels = frozenset({"match", "other"})
 
     def select(self, event: Event) -> Route | None:
         return Route.DECIDE if event.type in self.triggers.events else None

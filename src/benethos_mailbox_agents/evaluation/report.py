@@ -4,7 +4,9 @@ It names the agent and its version, the prompt version, the model alias
 and the models the gateway reported, and the date. It holds the scores of
 the model and of the rules, what a message cost, and why messages went
 unanswered. No id, no label of a single message, nothing of a mail, so a
-report can be versioned beside the change it measures. See
+report can be versioned beside the change it measures. A label or field
+name the agent does not declare as its own, such as the name of a group
+of sorting, is replaced by ``label-<n>`` or ``field-<n>``. See
 docs/specs/evaluation.md.
 """
 
@@ -27,7 +29,19 @@ def _ratio(value: float | None) -> float | None:
     return round(value, 4) if value is not None else None
 
 
-def _scores(scores: Scores) -> dict[str, Any]:
+def _placeholders(
+    declared: frozenset[str], names: set[str], prefix: str
+) -> dict[str, str]:
+    """Each name as the report shows it: a declared one as it is, any other
+    as ``<prefix>-<n>``, numbered in the sorted order of the names."""
+    others = sorted(names - declared)
+    shown = {name: f"{prefix}-{n}" for n, name in enumerate(others, start=1)}
+    return {name: shown.get(name, name) for name in names}
+
+
+def _scores(
+    scores: Scores, labels: dict[str, str], fields: dict[str, str]
+) -> dict[str, Any]:
     return {
         "messages": scores.messages,
         "agreed": scores.agreed,
@@ -35,24 +49,24 @@ def _scores(scores: Scores) -> dict[str, Any]:
         "unanswered": scores.unanswered,
         "refused": scores.refused,
         "labels": {
-            name: {
+            labels[name]: {
                 "true_positive": s.true_positive,
                 "false_positive": s.false_positive,
                 "false_negative": s.false_negative,
                 "precision": _ratio(s.precision),
                 "recall": _ratio(s.recall),
             }
-            for name, s in sorted(scores.labels.items())
+            for name, s in sorted(scores.labels.items(), key=lambda i: labels[i[0]])
         },
         "fields": {
-            name: {
+            fields[name]: {
                 "right": f.right,
                 "wrong": f.wrong,
                 "missing": f.missing,
                 "invented": f.invented,
                 "empty": f.empty,
             }
-            for name, f in sorted(scores.fields.items())
+            for name, f in sorted(scores.fields.items(), key=lambda i: fields[i[0]])
         },
     }
 
@@ -64,6 +78,12 @@ def build(
     when: datetime,
 ) -> dict[str, Any]:
     model, rules = score(outcomes)
+    labels = _placeholders(
+        agent.report_labels, set(model.labels) | set(rules.labels), "label"
+    )
+    fields = _placeholders(
+        agent.report_fields, set(model.fields) | set(rules.fields), "field"
+    )
     count = len(outcomes) or 1
     return {
         "agent": agent.name,
@@ -73,8 +93,8 @@ def build(
         "models_reported": sorted({m for o in outcomes for m in o.models}),
         "date": when.date().isoformat(),
         "gold_messages": len(outcomes),
-        "model": _scores(model),
-        "baseline": _scores(rules),
+        "model": _scores(model, labels, fields),
+        "baseline": _scores(rules, labels, fields),
         "per_message": {
             "tokens_in": round(sum(o.tokens_in for o in outcomes) / count, 1),
             "tokens_out": round(sum(o.tokens_out for o in outcomes) / count, 1),

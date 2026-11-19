@@ -150,6 +150,12 @@ class Agent(ABC):
     # person, and is neither asked about nor moved again. A person takes
     # the keyword off to have it looked at again. Off by default.
     skip_marked: ClassVar[bool] = False
+    # The labels and field names an evaluation report names in plain text.
+    # Any other, such as the name of a group the owner chose, becomes
+    # label-<n> or field-<n> there, as a report is versioned. None by
+    # default.
+    report_labels: ClassVar[frozenset[str]] = frozenset()
+    report_fields: ClassVar[frozenset[str]] = frozenset()
 
     def __init__(self, settings: Settings) -> None:
         self.validate_definition()

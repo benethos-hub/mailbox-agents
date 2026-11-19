@@ -65,6 +65,8 @@ class Invoices(Agent):
     )
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
     default_keyword = "agent-invoice"
+    report_labels = frozenset({"invoice", "other"})
+    report_fields = frozenset({"near_miss"})
     prompt_version = "v4"
     # A marked invoice its state file does not know stays where it lies,
     # also one the owner took out of its subfolder (decided 2026-11-19).
