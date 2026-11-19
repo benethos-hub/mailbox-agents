@@ -121,6 +121,7 @@ that still names them starts, as an unknown setting is ignored.
 | The message | What happens |
 |---|---|
 | lies in no folder it looks in | nothing, `skipped` |
+| carries the keyword, and the state file holds no step of it | nothing, `skipped`, before the rules and the model |
 | is no invoice | nothing |
 | is an invoice in a folder it looks in | the keyword, and a move to the subfolder, made when missing, each folder of the path as an action of its own |
 | is an invoice in a folder it looks in, no subfolder pattern set | the keyword. It stays |
@@ -142,6 +143,25 @@ Where the message lies is looked up again when the agent acts. In
 the keyword is set and the rest recorded. The runtime moves a message at
 most once for the agent, so an invoice the owner takes out of its
 subfolder stays where the owner put it.
+
+**Marked mail the state file does not know is skipped (decided
+2026-11-19).** The runtime's record of a move lives in the state file. A
+state file made anew, or a message that comes back under another id,
+would let a filed invoice the owner pulled out of its subfolder be asked
+about and moved again. So `invoices` declares `skip_marked`
+([agent contract](../agent-contract.md)): a message that carries its
+keyword and that its state file does not know ends as `skipped`, before
+the rules and the model. It costs this: a marked message unknown to the
+state file that lies in a folder it looks in stays there, marked and not
+filed, as whether it was handed over or pulled back cannot be told from
+the message. Nothing moving is the safe side, as mail moved by hand never
+wanders back (decided 2026-11-18). To have such a message looked at
+again, take the keyword off. A message the state file knows goes on:
+`backfill --again` after a change of stage or prompt reaches the marked
+messages, and an invoice marked in the inbox and moved later is filed over
+its open item and the update, as before. A move by a mail client keeps the
+message's id at the service ([mailbox service](../mailbox-service.md),
+measured 2026-11-19), so the open item follows it.
 
 **An invoice in the inbox is marked only, unless the owner sets a folder
 (decided 2026-11-18).** A forged invoice is the commonest bait, and a
@@ -192,6 +212,7 @@ has no tick. Every update of a message is fetched and looked at, as for
 |---|---|---|
 | The inbox folder | never looked in | an end station: looked in when `MAILBOX_AGENTS_INVOICES_FOLDERS` takes it in, an invoice there is marked and stays |
 | An invoice moved from the inbox into the inbox folder | its item closes as `moved_elsewhere` | its item closes as `filed` where the agent looks in that folder |
+| Marked mail the state file does not know | asked about, and moved when the state file has no record of a move | `skipped` before the rules and the model |
 | Prompt | `v4` | `v4`, unchanged |
 
 The agent version is 5, and it starts in `shadow` (decided 2026-11-19).
@@ -203,7 +224,7 @@ Its steps, one commit each:
 | E2 | The inbox folder as an end station | done 2026-11-19 |
 | E3 | `status` lists the folders that matter | done 2026-11-19 |
 | E4 | The contract and the step runner: a declared skip of marked mail the state file does not know | done 2026-11-19 |
-| E5 | `invoices` declares it | |
+| E5 | `invoices` declares it | done 2026-11-19 |
 | E6 | Live on the test account | |
 
 ## What changed from version 3

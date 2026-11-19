@@ -83,6 +83,12 @@ commit that makes the change. Design decisions live in
   `sorting` or by hand is marked and stays, and nothing is made below it.
   Before, that folder was never looked in, and such an invoice was neither
   marked nor filed.
+- `invoices` skips a message that carries its keyword and that its state
+  file does not know, before the rules and the model: after a state file
+  made anew, a filed invoice taken out of its subfolder is neither asked
+  about nor moved again. Taking the keyword off has such a message looked
+  at again. `backfill` still reaches the marked messages the state file
+  knows.
 - `status` lists for `invoices`, per account, the folders that matter: the
   inbox and each folder it looks in with where an invoice there goes, the
   inbox folder, and each subfolder, which it does not look in.

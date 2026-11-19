@@ -856,3 +856,63 @@ async def test_backfill_of_an_agent_that_wants_no_folder(world: Wired) -> None:
     pending = {row.ref.message_id for row in world.store.messages("pending", 100)}
     assert "filed" not in pending
     assert "inv-unlisted" in pending
+
+
+# -- marked mail the state file does not know -----------------------------------------
+
+
+@pytest.mark.parametrize("message_id", ["filed", "inv-unlisted"])
+async def test_a_marked_invoice_the_state_file_does_not_know_is_skipped(
+    world: Wired, message_id: str
+) -> None:
+    """In a folder it looks in and in the inbox: no baseline, no model call,
+    no action, and it stays where it lies."""
+    mail(world, message_id)["keywords"] = ["agent-invoice"]
+    before = list(mail(world, message_id)["folder_ids"])
+
+    assert await run(world, message_id, agent()) == "skipped"
+
+    ref = MessageRef(account_id=ACCOUNT, message_id=message_id)
+    assert world.store.steps(ref) == []
+    assert world.fake_gateway.requests == []
+    assert actions(world, message_id) == []
+    assert mail(world, message_id)["folder_ids"] == before
+    assert world.service.made() == []
+
+
+async def test_a_marked_invoice_the_state_file_knows_goes_on(world: Wired) -> None:
+    """Marked in stage keyword, taken up again after a change of stage:
+    the stored decision is used and it moves."""
+    world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-77"))
+    await run(world, "filed", agent("keyword"))
+    assert mail(world, "filed")["keywords"] == ["agent-invoice"]
+
+    assert await run(world, "filed", agent(), again=True) == "done"
+
+    assert mail(world, "filed")["folder_ids"] == ["inv-hosting/Rechnungen"]
+    assert len(world.fake_gateway.requests) == 1
+
+
+async def test_a_marked_inbox_invoice_moved_later_is_still_filed(world: Wired) -> None:
+    """The update route is untouched: an invoice marked in the inbox and
+    moved by sorting into a folder it looks in moves on."""
+    world.fake_gateway.answer(answer("invoice", "please find attached invoice INV-77"))
+    marking = worker(world, agent())
+    await marking.run_pass()
+    await run(world, "inv-unlisted", agent())
+    assert mail(world, "inv-unlisted")["keywords"] == ["agent-invoice"]
+
+    mail(world, "inv-unlisted")["folder_ids"] = ["inv-hosting"]
+    world.service.change("message.updated", "inv-unlisted")
+    await marking.run_pass()
+
+    assert mail(world, "inv-unlisted")["folder_ids"] == ["inv-hosting/Rechnungen"]
+    found = item(world, "inv-unlisted")
+    assert found is not None and found.reason == "filed"
+    assert len(world.fake_gateway.requests) == 1
+
+
+def test_only_invoices_skips_marked_mail() -> None:
+    from benethos_mailbox_agents.contract import discover
+
+    assert {name for name, cls in discover().items() if cls.skip_marked} == {"invoices"}

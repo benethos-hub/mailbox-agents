@@ -11,7 +11,9 @@ message reaches the agent, which moves it on into the subfolder without a
 new model call. The item is opened also when an inbox folder is set, as
 its move may not be taken, and closes when the message reaches it. The
 inbox folder is an end station: where the settings take it in, an invoice
-there is marked and stays. Who put a message into a folder does not
+there is marked and stays. A message that carries its keyword and that
+its state file does not know is skipped. Who put a message into a folder
+does not
 matter: ``sorting``, a rule of the mail server or the owner by hand. The
 agent knows nothing of groups and names no supplier (agent version 5).
 See docs/specs/agents/invoices.md.
@@ -64,6 +66,9 @@ class Invoices(Agent):
     limits = Limits(model_calls_per_message=1, model_calls_per_day=2000)
     default_keyword = "agent-invoice"
     prompt_version = "v4"
+    # A marked invoice its state file does not know stays where it lies,
+    # also one the owner took out of its subfolder (decided 2026-11-19).
+    skip_marked = True
 
     # -- what it reads besides its settings -----------------------------------
 
