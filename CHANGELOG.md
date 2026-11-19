@@ -183,6 +183,10 @@ commit that makes the change. Design decisions live in
 - An evaluation report names only the labels and fields an agent declares
   as its own. Any other, such as the name of a group of `sorting`, becomes
   `label-<n>` or `field-<n>`, since a report is versioned.
+- A gateway answer whose token counts are garbled, not numbers or below
+  zero, counts no tokens. It ended the worker before, after the paid call
+  and before the step was stored, so the same message was asked again
+  after each restart, outside the daily limit.
 - `health` says what it measures: `last progress 42s ago` and
   `no progress yet`, not the last pass, since the loop's progress is
   written after each message and while it waits as well.
