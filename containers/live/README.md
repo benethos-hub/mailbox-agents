@@ -34,7 +34,11 @@ earlier run, then, not in this order:
    once for the first token, connects the account, and creates the user
    `agents` with `mail.read` and `mail.write` on it and that user's token,
 - starts the gateway with a master key of its own, and a local model when
-   the agents are to use one (below).
+   the agents are to use one (below),
+- makes a key of the gateway for the agents that reaches the three
+   `mail-classifier` aliases only, with a budget of 5 USD, so the lock of
+   the gateway that the safety spec counts on is used here too. The
+   master key stays in `secrets/gateway.env`.
 
 ### Which model the agents use
 
@@ -114,10 +118,14 @@ docker compose -f containers/live/compose.yaml --profile gpu up -d llama-gpu
 ### Comparing models
 
 `live/gold.py` writes the labels of the invented mail as gold files, and
-`eval` runs an agent against them with any alias of the gateway:
+`eval` runs an agent against them with any alias of the gateway. The key
+of `agent.env` reaches the `mail-classifier` aliases only, so another
+alias needs the master key of `secrets/gateway.env`:
 
 ```
 uv run python live/gold.py
+export MAILBOX_AGENTS_GATEWAY_KEY=$(sed -n 's/^LITELLM_MASTER_KEY=//p' \
+    containers/live/secrets/gateway.env)
 MAILBOX_AGENTS_MODEL=claude/haiku-5-5 uv run benethos-mailbox-agents \
     --env-file containers/live/secrets/agent.env \
     eval --agent invoices --gold containers/live/secrets/gold-invoices.jsonl \
