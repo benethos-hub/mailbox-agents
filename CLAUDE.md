@@ -113,6 +113,12 @@ uv lock --check
   with `httpx.MockTransport`. Never write a test that reaches a network,
   and never one that skips itself when a credential is missing.
 - The coverage floor of 80 % is part of the pytest run.
+- `tests/test_repo_content.py` reads every tracked file and fails on an
+  address or a sender pattern on a real domain, a path of a machine, an
+  id of the mailbox service or a credential. Example data uses domains
+  reserved for examples (`*.example`, `*.test`) and invented names, never
+  a real supplier, company or person from a mailbox. The test holds no
+  list of such names, as it would publish them.
 - Async tests run with pytest-asyncio in `auto` mode.
 - **The gates do not cover the upstreams changing.** Verify a new
   assumption about the mailbox service or the gateway with a live check

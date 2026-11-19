@@ -10,6 +10,12 @@
   [state](state.md) and [agent contract](agent-contract.md) to the code
   where they can be compared.
 - Async tests run with pytest-asyncio.
+- A test reads every file git tracks and fails on an address or sender
+  pattern on a domain not reserved for examples, a path of a machine or a
+  user, an id of the mailbox service and a credential (decided
+  2026-11-19). It runs in CI as well, where the pre-commit hook does not.
+  It holds no list of names: a list of the owner's real suppliers would
+  publish them, so example data keeps to invented names by convention.
 - The CI, `.github/workflows/ci.yml`, runs the gates on every push to
   `main` and every pull request, the tests on Python 3.11 to 3.15. Besides
   them: a fresh install of the wheel without the lockfile, the tests
