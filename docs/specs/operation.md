@@ -11,7 +11,10 @@
   token and the key mounted as files and named in `*_FILE` settings, at
   most five log files of 10 MB. One Compose service per agent from the same
   image, each behind a profile of its own name, `restart: unless-stopped`,
-  its health check `health --agent <name>`.
+  its health check `health --agent <name>`. The image is named by
+  `MAILBOX_AGENTS_VERSION`, best as the version with the digest of the
+  release, `0.1.0@sha256:<digest>`: a tag on ghcr.io can be moved, a
+  digest cannot (2026-11-19). The live setup pins every image so.
 - **Health:** `health --agent <name>` exits 0 while the loop's last sign
   of progress, written to the state file after each message and at the end
   of each pass, is younger than three poll intervals plus one model call
