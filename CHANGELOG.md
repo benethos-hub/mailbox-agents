@@ -11,6 +11,14 @@ commit that makes the change. Design decisions live in
 
 ## [Unreleased]
 
+### Changed
+
+- The package page on PyPI links the repository, the README, the issues
+  and the changelog. The package states its licence as the expression
+  `MIT` with its licence file, and its description, keywords and
+  classifiers say what it is: self-hosted agents for a mailbox, typed and
+  asyncio.
+
 ## [0.1.0] - 2026-11-19
 
 The first release. Nothing was released before it, so each entry says
