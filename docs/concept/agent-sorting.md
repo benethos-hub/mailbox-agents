@@ -231,7 +231,10 @@ genuine.
 What would settle it is the result of the receiving server's check of the
 sender (SPF, DKIM, DMARC), which the server writes into the message. The
 mailbox service exposes no header of a message (measured 2026-11-17 against
-0.7.5). The need was handed to that project on 2026-11-18.
+0.7.5). Since 0.8.0 it names that result for each message as
+`sender_check`, and `unknown` for an account without the name of its
+receiving server set (measured 2026-11-19 on the test account). The agents
+do not read it yet.
 
 Until then **a group can be held (decided 2026-11-18)**: `"hold": true`
 records its moves as `shadow` does, whatever the stage of the agent, and

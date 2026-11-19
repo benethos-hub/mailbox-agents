@@ -64,7 +64,7 @@ _PAGE = 200
 # in pyproject.toml and the line of the image of containers/live, which
 # tests/test_service_version.py holds equal. A line is added by a change of
 # its own, see docs/concept/mailbox-service.md.
-TESTED: tuple[tuple[int, int, int], ...] = ((0, 7, 5),)
+TESTED: tuple[tuple[int, int, int], ...] = ((0, 8, 0),)
 
 _VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 

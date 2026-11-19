@@ -29,7 +29,7 @@ inquiries and file the mail of listed senders into folders.
 - Mail is reached only through the REST API of the
   [mailbox service](https://github.com/benethos-hub/mailbox), with its
   Python client `benethos-mailbox-client`. An agent works only against a
-  version of the service it was tested against, today 0.7 from 0.7.5, and
+  version of the service it was tested against, today 0.8 from 0.8.0, and
   refuses any other.
 - A language model is reached only through an OpenAI-compatible gateway,
   with one call per message, a JSON schema for the answer and no tools.

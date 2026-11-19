@@ -103,7 +103,7 @@ class FakeService:
         self.expired: set[str] = set()
         self.down = False
         # What /health names, and how often it was asked.
-        self.version = "0.7.5"
+        self.version = "0.8.0"
         self.health_asked = 0
         # Status and code every request is refused with while set.
         self.refusal: tuple[int, str] | None = None
