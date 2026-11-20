@@ -18,7 +18,7 @@ from collections.abc import AsyncIterator, Awaitable, Iterable, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from datetime import date
 from types import TracebackType
-from typing import TypeVar, overload
+from typing import TypeVar
 
 import httpx
 from benethos_mailbox_client import (
@@ -133,26 +133,16 @@ async def _call(pending: Awaitable[T]) -> T:
         ) from None
 
 
-@overload
-def _sound(value: str) -> str: ...
-
-
-@overload
-def _sound(value: None) -> None: ...
-
-
-@overload
-def _sound(value: str | None) -> str | None: ...
-
-
-def _sound(value: str | None) -> str | None:
+def _sound(value: str) -> str:
     """``value`` with each lone surrogate replaced by U+FFFD. One comes from
     the JSON escape of half a pair, and it cannot be encoded as UTF-8: a
     request to the gateway or a write to the state file would raise
     outside every error of this package."""
-    if value is None:
-        return None
     return "".join("\ufffd" if 0xD800 <= ord(c) <= 0xDFFF else c for c in value)
+
+
+def _sound_or_none(value: str | None) -> str | None:
+    return None if value is None else _sound(value)
 
 
 @contextmanager
@@ -173,11 +163,13 @@ def _as_described() -> Iterator[None]:
 def _address(found: wire.Address | None) -> Address | None:
     if not found:
         return None
-    return Address(email=_sound(found.email), name=_sound(found.name))
+    return Address(email=_sound(found.email), name=_sound_or_none(found.name))
 
 
 def _addresses(found: Iterable[wire.Address]) -> tuple[Address, ...]:
-    return tuple(Address(email=_sound(a.email), name=_sound(a.name)) for a in found)
+    return tuple(
+        Address(email=_sound(a.email), name=_sound_or_none(a.name)) for a in found
+    )
 
 
 class Mailbox:
@@ -355,7 +347,7 @@ class Mailbox:
                 ref=ref,
                 thread_id=found.thread_id,
                 folders=await self._refs(ref.account_id, found.folder_ids),
-                subject=_sound(found.subject),
+                subject=_sound_or_none(found.subject),
                 sender=_address(found.sender),
                 to=_addresses(found.to),
                 cc=_addresses(found.cc),
@@ -365,7 +357,7 @@ class Mailbox:
                 text=_sound(found.text_body or ""),
                 attachments=tuple(
                     Attachment(
-                        filename=_sound(a.filename),
+                        filename=_sound_or_none(a.filename),
                         content_type=a.content_type,
                         size=a.size,
                         inline=a.inline,
@@ -387,7 +379,7 @@ class Mailbox:
                         ref=MessageRef(account_id=account_id, message_id=item.id),
                         thread_id=item.thread_id,
                         folders=await self._refs(account_id, item.folder_ids),
-                        subject=_sound(item.subject),
+                        subject=_sound_or_none(item.subject),
                         sender=_address(item.sender),
                         to=_addresses(item.to),
                         date=item.date,
