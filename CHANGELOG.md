@@ -19,6 +19,9 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- The live setup of `containers/live` runs LiteLLM 1.110.2 and Postgres
+  19. Run `containers/live/setup.sh` again after the update: the database
+  of the gateway starts empty, and the agents' key with it.
 - The package page on PyPI links the repository, the README, the issues
   and the changelog. The package states its licence as the expression
   `MIT` with its licence file, and its description, keywords and
