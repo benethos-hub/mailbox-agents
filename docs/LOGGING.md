@@ -20,6 +20,19 @@ host may drop the log, the state file stays.
 | The operator who asks "what happened to message X" | what did the agent do? | `INFO` |
 | The developer | how long did each step take? | `DEBUG` |
 
+One line on stderr is not the log's. When a command ends with an error
+of this package, the command line writes `benethos-mailbox-agents:` and
+the error's message, and exits with code 2 for a configuration to
+correct or 1 for an upstream that is away
+([concept/runtime.md](concept/runtime.md), the commands). That line has no time, level or
+source, and it is written also when the log was never set up, as for a
+setting that cannot be read. Its message may hold more than a log line
+may say of the error: a status and a code of an upstream, a name of a
+setting, the text of the mailbox client about its configuration. It
+holds nothing of a mail, and the service token and the gateway key are
+redacted from it as from every error text. A log line names the same
+error by its class and code only.
+
 ## 2. Levels
 
 `MAILBOX_AGENTS_LOG_LEVEL` sets the level of the agent's own lines,
