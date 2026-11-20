@@ -89,6 +89,15 @@ CONFINED: dict[str, frozenset[str]] = {
     "httpx": frozenset({"sources/mailbox.py", "llm/gateway.py"}),
     "prometheus_client": frozenset({"runtime/metrics.py"}),
     "pydantic_settings": frozenset({"settings/__init__.py"}),
+    # The TLS context of the own CA: read in the settings, used by the two
+    # modules that talk to an upstream.
+    "ssl": frozenset({"settings/__init__.py", "sources/mailbox.py", "llm/gateway.py"}),
+    # Nothing starts a process or opens a socket of its own, and no mail is
+    # read or sent but through the mailbox service: no IMAP, no SMTP.
+    "subprocess": frozenset(),
+    "socket": frozenset(),
+    "smtplib": frozenset(),
+    "imaplib": frozenset(),
 }
 
 # contract/registry.py is the one module that reaches into the package by
