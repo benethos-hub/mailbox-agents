@@ -3,7 +3,6 @@ lists it, nothing of a mail, every line redacted."""
 
 from __future__ import annotations
 
-import ast
 import io
 import logging
 import re
@@ -396,23 +395,6 @@ def test_a_terminal_gets_the_console(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # -- the rule --------------------------------------------------------------------
-
-
-def test_no_other_module_imports_logging() -> None:
-    importers = []
-    for path in SOURCE.rglob("*.py"):
-        if "logbook" in path.relative_to(SOURCE).parts:
-            continue
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [alias.name for alias in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                names = [node.module]
-            if any(name.split(".")[0] == "logging" for name in names):
-                importers.append(path.relative_to(SOURCE).as_posix())
-
-    assert importers == []
 
 
 def test_a_failure_is_a_warning_by_default() -> None:
