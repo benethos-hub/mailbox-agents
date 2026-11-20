@@ -45,15 +45,25 @@ class Answer(BaseModel):
 def render(message: MailMessage) -> str:
     """Recipients, subject and the text the sender wrote, without what it
     quotes."""
-    to = ", ".join(a.email for a in (*message.to, *message.cc)) or "(none)"
-    text = own_text(message.text)
-    subject = (message.subject or "")[:MAX_SUBJECT]
-    return f"To: {to}\nSubject: {subject}\n\n{text[-MAX_TEXT:]}"
+    to = _to(message) or "(none)"
+    return f"To: {to}\nSubject: {_subject(message)}\n\n{_text(message)}"
 
 
 def parts(message: MailMessage) -> list[str]:
     """The parts of the mail :func:`render` gives the model, without its
     frame: what a quote is looked up in."""
-    to = ", ".join(a.email for a in (*message.to, *message.cc))
-    subject = (message.subject or "")[:MAX_SUBJECT]
-    return [to, subject, own_text(message.text)[-MAX_TEXT:]]
+    return [_to(message), _subject(message), _text(message)]
+
+
+def _to(message: MailMessage) -> str:
+    """The recipients, to and cc, empty for none."""
+    return ", ".join(a.email for a in (*message.to, *message.cc))
+
+
+def _subject(message: MailMessage) -> str:
+    return (message.subject or "")[:MAX_SUBJECT]
+
+
+def _text(message: MailMessage) -> str:
+    """The end of what the sender wrote, without what it quotes."""
+    return own_text(message.text)[-MAX_TEXT:]

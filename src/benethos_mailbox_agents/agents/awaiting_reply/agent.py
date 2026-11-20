@@ -41,7 +41,7 @@ from ...records import (
     OpenItem,
 )
 from .schema import Answer, parts, render
-from .text import add_working_days, asks, automatic
+from .text import add_working_days, address, asks, automatic
 
 __all__ = ["AwaitingReply"]
 
@@ -59,11 +59,6 @@ CLOSED_WITH_KEYWORD = (REPLIED, FOLLOWED_UP)
 
 def _sent(message: MailMessage) -> bool:
     return message.in_role("sent")
-
-
-def _address(message: MailMessage) -> str:
-    """The sender's address in lower case, empty for a message without one."""
-    return message.sender.email.lower() if message.sender else ""
 
 
 def _when(message: MailMessage, fallback: datetime) -> datetime:
@@ -175,9 +170,9 @@ class AwaitingReply(Agent):
         if automatic(message):
             return []
         requests: list[ActionRequest] = []
-        sender = _address(message)
+        sender = address(message)
         for item, sent in await self._earlier(message, context):
-            owner = _address(sent)
+            owner = address(sent)
             if sender and sender == owner:
                 continue
             await context.items.close(item.ref, REPLIED)
@@ -212,10 +207,10 @@ class AwaitingReply(Agent):
             return False
         now = context.now()
         thread = await context.reader.thread(message.ref.account_id, message.thread_id)
-        me = _address(message)
+        me = address(message)
         sent = _when(message, now)
         for other in thread.messages:
-            sender = _address(other)
+            sender = address(other)
             if (
                 other.ref != message.ref
                 and sender not in ("", me)
