@@ -7,7 +7,7 @@ import unicodedata
 import pytest
 
 from benethos_mailbox_agents.agents.invoices.schema import parts, render
-from benethos_mailbox_agents.llm.evidence import check, contains, normalize
+from benethos_mailbox_agents.llm.evidence import check, contains
 from benethos_mailbox_agents.records import (
     LABEL,
     Address,
@@ -28,10 +28,6 @@ CONTENT = f"Subject: Ihre Rechnung\n\n{TEXT}"
 
 # The same mail as the parts the model was given, without the frame.
 PARTS = ("CloudHost <billing@cloudhost.example>", "Ihre Rechnung", TEXT)
-
-
-def test_whitespace_is_made_uniform() -> None:
-    assert normalize(f"  a\n\n b\t{NBSP}c  ") == "a b c"
 
 
 @pytest.mark.parametrize(

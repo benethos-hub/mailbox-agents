@@ -23,22 +23,15 @@ from collections.abc import Sequence
 
 from ..records import LABEL, Decision
 
-__all__ = ["MIN_QUOTE", "check", "contains", "normalize", "words"]
+__all__ = ["MIN_QUOTE", "check", "contains", "words"]
 
 # The fewest letters and digits a quote must have to be found.
 MIN_QUOTE = 8
 
-_SPACE = re.compile(r"\s+", flags=re.UNICODE)
 # Everything between two words: whitespace, punctuation, quotes, dashes.
 _BETWEEN = re.compile(r"[\W_]+", flags=re.UNICODE)
 # The words of the frame render() writes before a part of the mail.
 _FRAME = re.compile(r"^\s*(?:from|to|subject|attachments)\s*:", flags=re.IGNORECASE)
-
-
-def normalize(text: str) -> str:
-    """``text`` in Unicode NFC, every run of whitespace one space, the ends
-    trimmed."""
-    return _SPACE.sub(" ", unicodedata.normalize("NFC", text)).strip()
 
 
 def words(text: str) -> str:
