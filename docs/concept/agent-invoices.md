@@ -224,7 +224,7 @@ has no tick. Every update of a message is fetched and looked at, as for
 
 The agent version is 5, and it starts in `shadow` (decided 2026-11-19).
 
-## Measured, version 5
+## Checked live, version 5
 
 `live/invoices.py` ran on the test account on 2026-11-19 with version 5,
 `invoices` in `shadow` and the model of the live setup, and all its checks
@@ -245,6 +245,24 @@ service 0.7.5 two of the four messages `sorting` had moved were named
 under another id after they were moved back, in each of four runs.
 Against 0.8.0, on the same day, none was
 ([mailbox service](mailbox-service.md)).
+
+## Measured, version 5
+
+On the 12 invented messages of the test account, 2026-11-20, the reports
+`2026-11-20-v5-v4-*` in `reports/invoices/`. The prompt is `v4` as in
+version 4. The twelfth message, a receipt that carries its invoice, came
+after the measurement of version 4. Numbers on invented mail say that the
+agent works as built, not how well it sorts real mail.
+
+| Model | Right | Invoices found | Near miss invented | Tokens in per message |
+|---|---|---|---|---|
+| `mail-classifier` (Claude Haiku 5.5) | 12 of 12 | 4 of 4 | 1 | 1082 |
+| `mail-classifier-gpu` (local) | 12 of 12 | 4 of 4 | 2 | 496 |
+| `mail-classifier-cpu` (local) | 12 of 12 | 4 of 4 | 2 | 496 |
+| the rules alone | 11 of 12 | 4 of 4, and one more | | |
+
+The other models of the gateway are in the table of
+[containers/live/README.md](../../containers/live/README.md).
 
 ## What changed from version 3
 
@@ -278,24 +296,6 @@ supplier counts as missing, as the agent no longer answers it: drop the
 field. The settings of version 3, `MAILBOX_AGENTS_INVOICES_FOLDER` and
 `MAILBOX_AGENTS_INVOICES_SUPPLIERS_FILE`, went with the supplier list. A
 `.env` that still names them starts, as an unknown setting is ignored.
-
-## Measured, version 5
-
-On the 12 invented messages of the test account, 2026-11-20, the reports
-`2026-11-20-v5-v4-*` in `reports/invoices/`. The prompt is `v4` as in
-version 4. The twelfth message, a receipt that carries its invoice, came
-after the measurement of version 4. Numbers on invented mail say that the
-agent works as built, not how well it sorts real mail.
-
-| Model | Right | Invoices found | Near miss invented | Tokens in per message |
-|---|---|---|---|---|
-| `mail-classifier` (Claude Haiku 5.5) | 12 of 12 | 4 of 4 | 1 | 1082 |
-| `mail-classifier-gpu` (local) | 12 of 12 | 4 of 4 | 2 | 496 |
-| `mail-classifier-cpu` (local) | 12 of 12 | 4 of 4 | 2 | 496 |
-| the rules alone | 11 of 12 | 4 of 4, and one more | | |
-
-The other models of the gateway are in the table of
-[containers/live/README.md](../../containers/live/README.md).
 
 ## Measured, version 4
 

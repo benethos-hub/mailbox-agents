@@ -146,8 +146,9 @@ have filled or did fill. Every model named the 4 right ones, the rest is
 a near miss named where the gold set has none. The seconds are per
 message, the first message of a run waiting for a local model to load.
 The aliases of the agents, `mail-classifier`, `mail-classifier-gpu` and
-`mail-classifier-cpu`, gave the numbers of their models with the agents'
-own key:
+`mail-classifier-cpu`, gave the same labels and fields as their models,
+with the agents' own key. Their seconds are in the reports under
+`reports/invoices/`.
 
 | Model | Size | invoices | inquiries | awaiting_reply | Fields | Seconds, invoices / inquiries |
 |---|---|---|---|---|---|---|

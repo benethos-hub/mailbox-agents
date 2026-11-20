@@ -33,7 +33,10 @@ class Done(Activity):
 
 @dataclass(frozen=True, kw_only=True)
 class Recorded(Done):
-    """The stage did not allow the action: recorded, not carried out."""
+    """The action was recorded, not carried out: the stage did not allow
+    it, the agent asked it to be held, as a group of ``sorting`` with
+    ``hold`` does also in ``full``, or it comes after a folder or move
+    that was recorded only."""
 
     name: ClassVar[str] = "recorded"
 

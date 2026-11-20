@@ -33,7 +33,7 @@ trigger          selection        decision                  effect
 ---------------------------------------------------------------------------
 change feed  ->  code: is    ->   1. baseline (rules)   ->  shadow
 tick (clock)     this mine?       2. model, one call,       keyword
-                                     schema, no tools       folder
+                                     schema, no tools       full
                                   3. check in code:
                                      schema, evidence
 
@@ -68,7 +68,8 @@ src/benethos_mailbox_agents/
                   # calls of one message, open items over the state file,
                   # the read-only mailbox, action executor, readiness,
                   # health, metrics
-  evaluation/     # the gold format, scoring per label and per field, report
+  evaluation/     # the gold format, the run, scoring per label and per
+                  # field, the report
   agents/
     <name>/       # one package per agent
       agent.py    # one Agent subclass, no side effects at import, always

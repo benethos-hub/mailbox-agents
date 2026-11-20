@@ -73,7 +73,7 @@ src/benethos_mailbox_agents/
   runtime/        # worker loop, step runner, model calls, open items, the
                   # read-only mailbox, action executor, readiness, health,
                   # metrics
-  evaluation/     # the gold format, the scoring, the report
+  evaluation/     # the gold format, the run, the scoring, the report
   agents/<name>/  # one package per agent: agent.py always, schema.py
                   # and prompts/ for one that asks a model, baseline.py
                   # where its rules need a module, and modules of its own

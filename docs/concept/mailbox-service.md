@@ -149,7 +149,7 @@ release may change what it does and what its interface takes, and the
 offline suite sees none of that: it mocks the service. So the agents work
 only against the lines they were tested against (decided 2026-11-19).
 
-- **A line** is the minor version while the major is 0, such as 0.7, and
+- **A line** is the minor version while the major is 0, such as 0.8, and
   the major version from 1 on. It starts at the lowest release that was
   tested, and every later release of it counts as tested. A release is
   three numbers with at most a local part after a `+`, such as
@@ -157,12 +157,13 @@ only against the lines they were tested against (decided 2026-11-19).
   no line, also one of a later patch, since a line counts releases
   (decided 2026-11-20).
 - **The lines** are `TESTED` in `sources/mailbox.py`, the newest last.
-  Today there is one: 0.8 from 0.8.0. The newest line is also the pin of
-  `benethos-mailbox-client` in `pyproject.toml` and the line of the image
-  in `containers/live/compose.yaml`. `README.md` names the lines with a
-  link to the service, and the top row of
+  The newest line is also the pin of `benethos-mailbox-client` in
+  `pyproject.toml` and the line of the image in
+  `containers/live/compose.yaml`. `README.md` names the lines with a link
+  to the service, and the top row of
   [COMPATIBILITY.md](../COMPATIBILITY.md) names them beside the version
-  of the release. Tests hold all five equal.
+  of the release, which is where to read the lines of today. Tests hold
+  all five equal.
 - **The check.** The worker asks the service for its version before every
   pass and every backfill. A service outside the lines, or one that names
   no version or refuses `/health`, ends the command with a

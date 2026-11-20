@@ -1,7 +1,9 @@
 """Whether an agent can start: its settings, and what it reads besides.
 
-``status`` asks this of every agent without starting one. :func:`start`
-builds the agent a command runs, once. See docs/concept/agent-contract.md.
+``status`` asks this of every agent without starting one, and the lines
+of :func:`folder_lines` for the folders that matter to it, in the accounts
+:func:`accounts_of` names. :func:`start` builds the agent a command runs,
+once. See docs/concept/agent-contract.md.
 """
 
 from __future__ import annotations

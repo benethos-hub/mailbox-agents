@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 from email.utils import format_datetime
 
-__all__ = ["FOLDERS", "GOLD", "SUB_FOLDERS", "messages"]
+__all__ = ["FOLDERS", "GOLD", "SUB_FOLDERS", "local", "messages"]
 
 # A folder at the top and two below it, for the checks of the folders.
 SUB_FOLDERS = ("Invoices/CloudHost", "Invoices/Telco")

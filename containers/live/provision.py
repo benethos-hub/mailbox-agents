@@ -4,11 +4,13 @@
    restart out of bootstrap mode, the test certificate, and the account
    ``agents@agents.test``.
 2. The invented mail, appended over IMAP with the test CA: see mail.py.
-3. The mailbox service: the administrator's password set through the UI
+3. The model gateway: a key for the agents, made with the master key, for
+   the aliases of AGENT_MODELS only and within AGENT_BUDGET_USD.
+4. The mailbox service: the administrator's password set through the UI
    and a token made there, the account connected, a user ``agents`` with
-   mail.read and mail.write on it, and that user's token.
-4. ``secrets/agent.env``: the settings the agents and smoke.py read, the
-   model gateway and its alias among them.
+   mail.read and mail.write on it, and that user's token. The same step
+   writes ``secrets/agent.env``: the settings the agents and smoke.py
+   read, the model gateway, the agents' key and its alias among them.
 
 Every secret goes to a file under ``secrets/``, none to the terminal.
 """
