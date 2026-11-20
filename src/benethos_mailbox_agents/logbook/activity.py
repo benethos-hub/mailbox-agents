@@ -20,7 +20,8 @@ __all__ = ["Activity", "Failure", "describe", "escaped", "plural", "record"]
 
 # What ends a line or moves the cursor for a reader: the control
 # characters, C1 among them, and the separators of lines and paragraphs.
-_BREAKS = frozenset({"Cc", "Zl", "Zp"})
+# And a lone surrogate, which cannot be written to a terminal at all.
+_BREAKS = frozenset({"Cc", "Zl", "Zp", "Cs"})
 
 # What turns the direction of the text after it: the Arabic letter mark,
 # the marks left to right and right to left, the embeddings and overrides,

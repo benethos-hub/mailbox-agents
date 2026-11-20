@@ -53,6 +53,9 @@ commit that makes the change. Design decisions live in
 - The error line a command ends with writes a control or direction
   character escaped, as `status` and `report` do. Before, a code the
   mailbox service answered reached the terminal raw.
+- A lone surrogate in a line of the log, of `status` or of `report` is
+  written as its escape. Before, writing it to a terminal raised an
+  error.
 
 ## [0.1.0] - 2026-11-19
 
