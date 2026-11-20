@@ -4,8 +4,10 @@ so a change of the SVG always changes them, as the brand check asks."""
 from __future__ import annotations
 
 import struct
+import subprocess
 import zlib
 from collections.abc import Iterator
+from pathlib import Path
 from types import ModuleType
 
 import pytest
@@ -75,6 +77,25 @@ def test_a_png_cut_short_or_with_bytes_after_its_end_is_refused(
 ) -> None:
     with pytest.raises(ValueError, match="PNG"):
         build.stamped(png, "<svg/>")
+
+
+def test_a_browser_that_writes_no_screenshot_leaves_the_png_as_it_was(
+    build: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    icon = tmp_path / "icon.png"
+    icon.write_bytes(PNG)
+    monkeypatch.setattr(build, "ICON", icon)
+    monkeypatch.setattr(build, "_browser", lambda: "chromium")
+    monkeypatch.setattr(
+        build.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, b"", b""),
+    )
+
+    with pytest.raises(RuntimeError, match="no screenshot for icon.png"):
+        build.render_icon()
+
+    assert icon.read_bytes() == PNG
 
 
 def test_a_file_that_is_no_png_is_refused(build: ModuleType) -> None:

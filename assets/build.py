@@ -240,10 +240,13 @@ def _capture(
 ) -> None:
     """Render the page at an address as a PNG with a headless browser, of
     ``scale`` pixels for each of its own. A transparent page keeps its
-    alpha channel instead of the browser's white."""
+    alpha channel instead of the browser's white. The browser writes into
+    a folder of its own first: a browser that ends well and writes nothing
+    raises, and the PNG there before stays untouched."""
     width, height = size
     background = ["--default-background-color=00000000"] if transparent else []
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as profile:
+        shot = Path(profile) / "screenshot.png"
         subprocess.run(
             [
                 _browser(),
@@ -254,13 +257,16 @@ def _capture(
                 f"--force-device-scale-factor={scale}",
                 f"--user-data-dir={profile}",
                 f"--window-size={width},{height}",
-                f"--screenshot={target}",
+                f"--screenshot={shot}",
                 address,
             ],
             check=True,
             capture_output=True,
             timeout=120,
         )
+        if not shot.is_file() or shot.stat().st_size == 0:
+            raise RuntimeError(f"the browser wrote no screenshot for {target.name}")
+        shutil.move(shot, target)
 
 
 def _screenshot(
