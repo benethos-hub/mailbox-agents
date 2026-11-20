@@ -47,7 +47,9 @@ in that form is recognisable as set by an agent, shares no name with a
 keyword another mail client or tool uses, and carries no `$` in front, as
 IMAP registers such keywords with meanings, `$Junk` for a spam filter,
 `$label1` for a tag of Thunderbird. It is lower case, as a service may
-answer keywords in lower case. The defaults:
+answer keywords in lower case. The contract refuses a `default_keyword`
+that is not lower case letters, digits and dashes, the same form
+`MAILBOX_AGENTS_KEYWORD` must have (2026-11-20). The defaults:
 
 | Agent | Keyword |
 |---|---|

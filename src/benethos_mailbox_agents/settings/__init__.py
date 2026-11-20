@@ -21,7 +21,6 @@ from ..errors import ConfigError, describe_invalid, register_secret
 
 __all__ = [
     "DEFAULT_ENV_FILE",
-    "KEYWORD_FORBIDDEN",
     "KEYWORD_FORM",
     "PREFIX",
     "Settings",
@@ -29,12 +28,10 @@ __all__ = [
     "load_settings",
 ]
 
-# Characters an IMAP keyword may not carry: it is one atom.
-KEYWORD_FORBIDDEN = frozenset(' \t()[]{}"\\%*')
-
-# The form MAILBOX_AGENTS_KEYWORD must have: lower case letters, digits
-# and dashes, as agent-invoice. No $, which IMAP registers with meanings
-# such as $Junk, no capitals, no control character.
+# The form a keyword must have, MAILBOX_AGENTS_KEYWORD and an agent's
+# default_keyword alike: lower case letters, digits and dashes, as
+# agent-invoice. No $, which IMAP registers with meanings such as $Junk, no
+# capitals, no control character, and so one IMAP atom.
 KEYWORD_FORM = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 PREFIX = "MAILBOX_AGENTS_"

@@ -27,6 +27,9 @@ commit that makes the change. Design decisions live in
 - An answer of `inquiries` holds at most 2000 characters in all its
   quotes and values, beside the 300 of each. A longer one is refused as
   not fitting the schema.
+- The contract refuses an agent whose `default_keyword` is not lower
+  case letters, digits and dashes, the form `MAILBOX_AGENTS_KEYWORD` must
+  have. Before, it checked a shorter list of characters only.
 - `counting` needs `mail.read` alone in the mailbox service, as the
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.
