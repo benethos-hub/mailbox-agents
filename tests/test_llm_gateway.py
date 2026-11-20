@@ -21,6 +21,10 @@ from fakes import FakeGateway
 
 OTHER = '{"label": "other", "quote": "q", "supplier": null}'
 
+# Brackets nested deeper than any parser's stack holds: 20 000 raise a
+# RecursionError on Windows, not on Linux from Python 3.14.
+DEEP = 1_000_000
+
 
 class Inner(BaseModel):
     value: str | None
@@ -269,7 +273,7 @@ async def test_an_answer_with_a_lone_surrogate_is_refused(
 
 
 async def test_a_body_nested_too_deep_is_refused() -> None:
-    deep = httpx.Response(200, content=b"[" * 20000)
+    deep = httpx.Response(200, content=b"[" * DEEP)
     async with Gateway(
         "https://gateway.example.test/v1/",
         "gateway-key",
@@ -286,7 +290,7 @@ async def test_a_body_nested_too_deep_is_refused() -> None:
 async def test_a_content_nested_too_deep_is_refused(
     fake: FakeGateway, gateway: Gateway
 ) -> None:
-    fake.answer("[" * 20000)
+    fake.answer("[" * DEEP)
 
     with pytest.raises(AnswerRefusedError) as found:
         await gateway.ask(system="s", content="mail", schema=Answer)

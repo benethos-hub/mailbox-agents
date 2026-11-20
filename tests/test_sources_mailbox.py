@@ -16,10 +16,14 @@ from benethos_mailbox_agents.errors import (
     MailboxUnavailableError,
 )
 from benethos_mailbox_agents.records import MessageRef
-from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agents.sources.mailbox import Mailbox, _call, connect
 from fakes import ACCOUNT, FakeService, wire_message
 
 REF = MessageRef(account_id=ACCOUNT, message_id="m1")
+
+# Brackets nested deeper than any parser's stack holds: 20 000 raise a
+# RecursionError on Windows, not on Linux from Python 3.14.
+DEEP = 1_000_000
 
 
 @pytest.fixture
@@ -375,7 +379,7 @@ async def test_a_field_of_another_type_is_a_refusal_without_its_value(
 async def test_a_body_nested_too_deep_is_an_upstream_away() -> None:
     def handle(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
-            200, content=b"[" * 20000, headers={"content-type": "application/json"}
+            200, content=b"[" * DEEP, headers={"content-type": "application/json"}
         )
 
     async with connect(
@@ -385,3 +389,11 @@ async def test_a_body_nested_too_deep_is_an_upstream_away() -> None:
     ) as opened:
         with pytest.raises(MailboxUnavailableError):
             await opened.message(REF)
+
+
+async def test_a_recursion_error_of_the_client_is_an_upstream_away() -> None:
+    async def deep() -> None:
+        raise RecursionError
+
+    with pytest.raises(MailboxUnavailableError):
+        await _call(deep())
