@@ -302,3 +302,40 @@ def test_backoff_doubles_up_to_the_ceiling() -> None:
     found = settings(poll_seconds=60, backoff_ceiling_seconds=600)
 
     assert [backoff(found, n) for n in range(5)] == [60, 120, 240, 480, 600]
+
+
+async def test_an_answer_with_a_lone_surrogate_is_refused_and_counted(
+    world: Wired,
+) -> None:
+    world.fake_gateway.answer('{"label": "match", "quote": "Your invoice \\ud800"}')
+
+    assert await runner(world).process(REF) == "pending"
+
+    assert _state(world) == ("pending", 1)
+    model = world.store.step(REF, "model", "p1", "alias")
+    assert model is not None
+    assert model.result == {"refused": "schema"}
+
+
+async def test_a_lone_surrogate_in_the_reported_model_is_stored_replaced(
+    world: Wired,
+) -> None:
+    body = {
+        "choices": [{"message": {"content": json.dumps(MATCH)}}],
+        "model": "local\ud800",
+    }
+    world.fake_gateway.answer(
+        httpx.Response(
+            200,
+            content=json.dumps(body).encode("ascii"),
+            headers={"content-type": "application/json"},
+        )
+    )
+
+    found = await runner(world, Echo(settings(prompt_retention_days=3))).process(REF)
+
+    assert found == "done"
+    model = world.store.step(REF, "model", "p1", "alias")
+    assert model is not None
+    assert model.model == "local?"
+    assert world.store.count_calls() == 1

@@ -607,8 +607,10 @@ class Store:
             "VALUES (?, ?, ?, ?, ?)",
             ref.account_id,
             ref.message_id,
-            json.dumps(request, ensure_ascii=False),
-            json.dumps(answer, ensure_ascii=False),
+            # Escaped, so a lone surrogate in what the gateway answered
+            # cannot end the write.
+            json.dumps(request),
+            json.dumps(answer),
             _text(now),
         )
 

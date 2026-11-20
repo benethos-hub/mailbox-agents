@@ -155,9 +155,12 @@ class Gateway:
             ) from None
         value = _value(answer, schema)
         usage = answer.get("usage")
+        # The name the gateway reports is stored: a lone surrogate in it
+        # becomes "?".
+        model = str(answer.get("model") or self.model)
         return Reply(
             value=value,
-            model=str(answer.get("model") or self.model),
+            model=model.encode("utf-8", "replace").decode("utf-8"),
             tokens_in=_tokens(usage, "prompt_tokens"),
             tokens_out=_tokens(usage, "completion_tokens"),
             duration_ms=duration_ms,
@@ -222,10 +225,16 @@ def _loopback(host: str) -> bool:
 
 
 def _value(answer: Any, schema: type[T]) -> T:
-    """The content of the first choice, validated against ``schema``."""
+    """The content of the first choice, validated against ``schema``.
+
+    The JSON escape of a lone surrogate passes ``json.loads`` and the
+    schema, but cannot be stored as UTF-8: such an answer is refused, so it
+    is stored, counted and tried again like any other."""
     try:
         content = answer["choices"][0]["message"]["content"]
-        return schema.model_validate(json.loads(content))
+        parsed = json.loads(content)
+        json.dumps(parsed, ensure_ascii=False).encode("utf-8")
+        return schema.model_validate(parsed)
     except (KeyError, IndexError, TypeError, ValueError, ValidationError):
         raise AnswerRefusedError(
             "the answer does not fit the schema", reason="schema"

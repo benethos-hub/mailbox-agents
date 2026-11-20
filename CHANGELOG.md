@@ -28,6 +28,13 @@ commit that makes the change. Design decisions live in
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.
 
+### Fixed
+
+- An answer of the model whose quote holds the JSON escape of a lone
+  surrogate is refused and tried again like any other answer outside the
+  schema. Before, storing it ended the worker after the paid call, and the
+  message ended it again after each restart.
+
 ## [0.1.0] - 2026-11-19
 
 The first release. Nothing was released before it, so each entry says

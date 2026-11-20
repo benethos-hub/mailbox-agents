@@ -253,3 +253,16 @@ def test_a_ca_of_the_settings_is_what_the_gateway_trusts(
     Gateway("https://g.example.test", "k", "m", timeout=1.0)
     assert "verify" not in given
     assert given["trust_env"] is False
+
+
+async def test_an_answer_with_a_lone_surrogate_is_refused(
+    fake: FakeGateway, gateway: Gateway
+) -> None:
+    # The JSON escape of a lone surrogate passes json.loads and the schema,
+    # but cannot be stored as UTF-8.
+    fake.answer('{"label": "invoice", "quote": "R-1 \\ud800", "supplier": null}')
+
+    with pytest.raises(AnswerRefusedError) as found:
+        await gateway.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"
