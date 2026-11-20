@@ -27,7 +27,10 @@ umask 077
 
 here=$(cd "$(dirname "$0")" && pwd)
 secrets="$here/secrets"
-compose="docker compose -f $here/compose.yaml"
+# The compose file by the environment, not by -f: a path with a space
+# would split the command where $compose is used unquoted below.
+export COMPOSE_FILE="$here/compose.yaml"
+compose="docker compose"
 
 say() { printf 'setup: %s\n' "$1" >&2; }
 
@@ -127,7 +130,6 @@ GATEWAY_URL=http://127.0.0.1:38400/v1 \
 GATEWAY_MASTER_KEY="$gateway_key" \
 GATEWAY_MODEL="$model" \
 SECRETS="$secrets" \
-COMPOSE="$compose" \
     python3 "$here/provision.py"
 
 say "done: containers/live/secrets/agent.env holds the settings for the agents"

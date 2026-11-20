@@ -37,7 +37,8 @@ import mail
 STALWART = os.environ["STALWART_URL"]
 SERVICE = os.environ["SERVICE_URL"]
 SECRETS = Path(os.environ["SECRETS"])
-COMPOSE = os.environ["COMPOSE"].split()
+# The compose file comes from COMPOSE_FILE, which setup.sh exports.
+COMPOSE = ["docker", "compose"]
 DOMAIN = "agents.test"
 HOST = "mail.agents.test"
 ADDRESS = f"agents@{DOMAIN}"
