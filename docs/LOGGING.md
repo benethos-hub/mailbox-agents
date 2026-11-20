@@ -171,6 +171,6 @@ operator's filters. It writes under the logger
 | `messages.answer_refused` | WARNING | the model's answer failed its schema, or the gateway refused the request |
 | `messages.quote_missing` | INFO | a quote the model gave for a field is not in the mail |
 | `actions.done` | INFO | an action was carried out on a message |
-| `actions.recorded` | INFO | an action was recorded, and the stage did not allow it to be carried out |
+| `actions.recorded` | INFO | an action was recorded and not carried out: the stage did not allow it, the agent held it, or a folder or move before it was recorded only |
 | `actions.kept` | INFO | a move of a message the agent moved once before was not taken: the folder the owner chose since stands |
 | `actions.refused` | WARNING | the executor or the mailbox service refused an action |
