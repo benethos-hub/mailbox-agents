@@ -101,6 +101,9 @@ commit that makes the change. Design decisions live in
   ends `worker`, `run` and `backfill` with exit code 2 as one outside the
   tested lines, and `status` says it names none. Before, each pass failed
   as a refusal while the worker looked healthy.
+- A data folder that is a file, or one without the right to write, ends
+  the command with exit code 1 in one line naming the state file. Before,
+  it ended with a traceback.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

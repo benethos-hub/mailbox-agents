@@ -13,17 +13,19 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from types import TracebackType
-from typing import IO, Any
+from typing import IO, Any, TypeVar
 
 from ..errors import ConfigError, StateFileError
 from ..records import KEYWORD_REMOVED, MessageRef, OpenItem, Step, StepResult
 from .migrations import MIGRATIONS, SCHEMA_VERSION
+
+T = TypeVar("T")
 
 __all__ = [
     "STATES",
@@ -56,7 +58,7 @@ class Migrated:
 def _lock(path: Path) -> IO[bytes]:
     """An exclusive lock on ``<path>.lock``, held while the handle is open:
     one writer per state file. Another writer is refused at once."""
-    handle = path.with_name(path.name + ".lock").open("a+b")
+    handle = _made(path, lambda: path.with_name(path.name + ".lock").open("a+b"))
     try:
         if sys.platform == "win32":
             import msvcrt
@@ -73,6 +75,19 @@ def _lock(path: Path) -> IO[bytes]:
             f"{path.stem} is already running: one writer per state file"
         ) from None
     return handle
+
+
+def _made(path: Path, make: Callable[[], T]) -> T:
+    """What ``make`` answers, the folder of the state file or its lock. A
+    folder that is a file or a volume without the right to write is a
+    :class:`StateFileError` naming the file and the kind of error."""
+    try:
+        return make()
+    except OSError as exc:
+        raise StateFileError(
+            f"the state file {path.name}: its folder or lock cannot be made "
+            f"({type(exc).__name__})"
+        ) from None
 
 
 def _unlock(handle: IO[bytes]) -> None:
@@ -163,7 +178,7 @@ class Store:
                 )
             lock = None
         else:
-            path.parent.mkdir(parents=True, exist_ok=True)
+            _made(path, lambda: path.parent.mkdir(parents=True, exist_ok=True))
             lock = _lock(path)
             try:
                 with _sqlite(path.name):

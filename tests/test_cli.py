@@ -135,6 +135,23 @@ def test_a_broken_state_file_is_named_and_the_others_still_listed(
     assert "Traceback" not in captured.err
 
 
+def test_a_data_folder_that_is_a_file_ends_run_in_one_line(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    Path("data").write_text("not a folder", encoding="utf-8")
+
+    assert main(["run", "--agent", "counting"]) == 1
+
+    err = capsys.readouterr().err
+    assert err.splitlines() == [
+        f"{PROG}: the state file counting.db: its folder or lock cannot be made "
+        "(FileExistsError)"
+    ]
+
+
 def test_a_state_file_of_a_newer_schema_is_named_and_unhealthy(
     service: FakeService,
     monkeypatch: pytest.MonkeyPatch,

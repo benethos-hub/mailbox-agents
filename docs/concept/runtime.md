@@ -43,7 +43,7 @@ inbox, and the executor finds what is done there already (2026-11-20). The
 worker keeps this in memory: after a restart in between, the message is
 asked as any other. A state file that
 cannot be read or written, one that is no SQLite file or a full disk,
-ends the worker with a `StateFileError` and exit code 1: no pass goes on
+or whose folder or lock cannot be made, ends the worker with a `StateFileError` and exit code 1: no pass goes on
 without it (2026-11-19). A mailbox service outside the tested lines ends
 it with a `ServiceVersionError` and exit code 2, as it ends `run` and
 `backfill`.
