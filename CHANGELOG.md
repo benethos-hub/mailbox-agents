@@ -114,6 +114,9 @@ commit that makes the change. Design decisions live in
 - A sorting list in another encoding than UTF-8 is refused as one that
   cannot be read, and `status` names it. Before, it ended `status` and the
   worker with a traceback.
+- The sorting list, the patterns of `inquiries` and a gold file that an
+  editor started with the mark of UTF-8 are read without it. Before, each
+  was refused as no JSON.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

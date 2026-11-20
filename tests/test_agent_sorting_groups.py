@@ -300,6 +300,14 @@ def test_a_list_that_cannot_be_read_is_refused(tmp_path: Path) -> None:
         load_groups(tmp_path / "missing.json")
 
 
+def test_a_list_with_the_mark_of_utf8_is_read(tmp_path: Path) -> None:
+    path = tmp_path / "sorting.json"
+    entry = {"name": "Bank", "folder": "Bank", "senders": ["*@bank-one.example"]}
+    path.write_text(json.dumps({"groups": [entry]}), encoding="utf-8-sig")
+
+    assert [g.name for g in load_groups(path).groups] == ["Bank"]
+
+
 def test_a_list_in_another_encoding_than_utf8_is_refused(tmp_path: Path) -> None:
     path = tmp_path / "sorting.json"
     entry = {"name": "Bäckerei", "folder": "Bäckerei", "senders": ["*@b.example"]}

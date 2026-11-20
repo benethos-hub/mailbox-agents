@@ -91,7 +91,9 @@ def load_patterns(path: Path | None) -> Patterns:
     if path is None:
         return Patterns()
     try:
-        return Patterns.model_validate(json.loads(path.read_text(encoding="utf-8")))
+        # utf-8-sig: an editor may start the file with the mark of UTF-8.
+        text = path.read_text(encoding="utf-8-sig")
+        return Patterns.model_validate(json.loads(text))
     except OSError as exc:
         raise ConfigError(
             f"the patterns {path.name} cannot be read ({type(exc).__name__})"

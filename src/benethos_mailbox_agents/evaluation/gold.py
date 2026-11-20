@@ -51,7 +51,9 @@ def load_gold(path: Path) -> list[GoldItem]:
         raise ConfigError(f"no gold file {path.name}")
     items: list[GoldItem] = []
     seen: set[MessageRef] = set()
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    # utf-8-sig: an editor may start the file with the mark of UTF-8.
+    lines = path.read_text(encoding="utf-8-sig").splitlines()
+    for number, line in enumerate(lines, 1):
         text = line.strip()
         if not text or text.startswith("#"):
             continue
