@@ -41,13 +41,13 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
     "sources": frozenset({"errors", "records"}),
     # The model gateway, behind one module, and the evidence check.
     "llm": frozenset({"errors", "records"}),
-    # An agent sees the contract and the records, never the client, the
-    # gateway, the state file or the runtime that holds them.
     # The runtime holds every piece below it and hands an agent its context.
     "runtime": frozenset(
         {"errors", "logbook", "settings", "records", "contract", "store", "llm"}
     ),
-    # settings for PREFIX alone, which an agent's messages name settings by.
+    # An agent sees the contract and the records, never the client, the
+    # gateway, the state file or the runtime that holds them. settings for
+    # PREFIX alone, which an agent's messages name settings by.
     "agents": frozenset({"errors", "records", "settings", "contract"}),
     # Scores an agent the way the runtime runs it, on a state file of its own.
     "evaluation": frozenset({"errors", "records", "contract", "store", "runtime"}),
@@ -89,6 +89,15 @@ CONFINED: dict[str, frozenset[str]] = {
     "httpx": frozenset({"sources/mailbox.py", "llm/gateway.py"}),
     "prometheus_client": frozenset({"runtime/metrics.py"}),
     "pydantic_settings": frozenset({"settings/__init__.py"}),
+    # The TLS context of the own CA: read in the settings, used by the two
+    # modules that talk to an upstream.
+    "ssl": frozenset({"settings/__init__.py", "sources/mailbox.py", "llm/gateway.py"}),
+    # Nothing starts a process or opens a socket of its own, and no mail is
+    # read or sent but through the mailbox service: no IMAP, no SMTP.
+    "subprocess": frozenset(),
+    "socket": frozenset(),
+    "smtplib": frozenset(),
+    "imaplib": frozenset(),
 }
 
 # contract/registry.py is the one module that reaches into the package by
@@ -371,6 +380,16 @@ def test_a_test_module_imports_no_other(path: Path) -> None:
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 assert not alias.name.startswith("test_"), f"imports {alias.name}"
+
+
+@pytest.mark.parametrize("path", sorted(TESTS.glob("test_*.py")), ids=lambda p: p.name)
+def test_a_test_module_takes_root_from_the_helpers(path: Path) -> None:
+    """The root of the repository is ``helpers.ROOT``, found once."""
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names = [t.id for t in targets if isinstance(t, ast.Name)]
+            assert "ROOT" not in names
 
 
 def _module(path: Path) -> str:

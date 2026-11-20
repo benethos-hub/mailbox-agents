@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import re
-from pathlib import Path
 
 import pytest
 
@@ -19,9 +18,7 @@ from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.sources import mailbox as source
 from benethos_mailbox_agents.sources.mailbox import TESTED, is_tested, line_names
 from fakes import ACCOUNT, FakeService, wire_message
-from helpers import Wired, configure, worker
-
-ROOT = Path(__file__).resolve().parents[1]
+from helpers import ROOT, Wired, configure, worker
 
 
 def _numbers(version: str) -> tuple[int, int, int]:
@@ -101,6 +98,10 @@ async def test_a_service_in_a_tested_line_is_answered_with_its_version(
 ) -> None:
     assert await world.mailbox.ensure_tested() == world.service.version
     assert is_tested(world.service.version)
+
+
+def test_the_fake_service_runs_the_newest_tested_line() -> None:
+    assert FakeService().version == ".".join(map(str, TESTED[-1]))
 
 
 async def test_a_service_outside_the_lines_is_refused_by_name(world: Wired) -> None:
@@ -386,3 +387,29 @@ def test_the_compatibility_table_names_this_release_on_top() -> None:
     assert agents in (version.group(1), f"{version.group(1)} (not released yet)")
     assert service == line_names()
     assert client == f"`{pin.group(1)}`"
+
+
+def _version() -> str:
+    """The version of the package, as pyproject.toml names it."""
+    project = (ROOT / "pyproject.toml").read_text("utf-8")
+    found = re.search(r'^version = "([^"]+)"', project, re.MULTILINE)
+    assert found is not None
+    return found.group(1)
+
+
+def test_the_production_example_pulls_this_release() -> None:
+    example = ROOT / "containers" / "production" / ".env.example"
+
+    assert f"MAILBOX_AGENTS_VERSION={_version()}\n" in example.read_text("utf-8")
+
+
+def test_the_changelog_names_this_release_and_links_it() -> None:
+    changelog = (ROOT / "CHANGELOG.md").read_text("utf-8")
+    version = _version()
+    released = re.findall(r"^## \[(\d[^\]]*)\]", changelog, re.MULTILINE)
+    unreleased = re.search(r"^\[Unreleased\]: (\S+)$", changelog, re.MULTILINE)
+
+    assert released[0] == version
+    assert unreleased is not None
+    assert unreleased.group(1).endswith(f"/compare/v{version}...HEAD")
+    assert re.search(rf"^\[{re.escape(version)}\]: \S+$", changelog, re.MULTILINE)

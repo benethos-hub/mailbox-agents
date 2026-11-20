@@ -25,13 +25,15 @@ The steps in order:
    [concept/testing.md](concept/testing.md).
 3. **The version.** Set `version` in `pyproject.toml`, as PEP 440 writes
    it, `0.2.0` or `0.2.0a1`, then `uv lock` and `uv sync`. Set it as well
-   as `MAILBOX_AGENTS_VERSION` in `containers/production/.env.example`.
+   as `MAILBOX_AGENTS_VERSION` in `containers/production/.env.example`,
+   which a test holds to it.
 4. **The changelog.** Close `[Unreleased]` in `CHANGELOG.md` as
    `[X.Y.Z] - <date>`, in the same commit as step 3, and open an empty
    `[Unreleased]` above it. The section names the lines of the mailbox
    service the release works against. At the foot of the file, set the
    link `[Unreleased]` to `compare/vX.Y.Z...HEAD` and add the link
-   `[X.Y.Z]`. In the same commit, the top row of
+   `[X.Y.Z]`. A test holds the first section and both links to
+   `pyproject.toml`. In the same commit, the top row of
    [COMPATIBILITY.md](COMPATIBILITY.md) names the version, its lines and
    the pin of the client, without the note "(not released yet)" a row
    carries before its release. A test holds the row to `pyproject.toml`
