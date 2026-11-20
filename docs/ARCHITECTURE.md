@@ -101,7 +101,9 @@ docs/             # CONCEPT.md, the overview, and concept/, a file per
                   # ROADMAP.md
 data/             # state files and the gold set, never versioned
 reports/          # evaluation reports, numbers only, versioned
-assets/           # brand/: icon.svg and the PNGs build.py renders from it
+assets/           # brand/: icon.svg and the PNGs build.py renders from it,
+                  # architecture/: the diagram of the README, a page
+                  # and its PNGs
 .github/          # workflows/: CI, CodeQL, freshness, publish, and
                   # dependabot.yml
 .githooks/        # pre-commit: refuses staged secrets, state files and

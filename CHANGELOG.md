@@ -11,6 +11,12 @@ commit that makes the change. Design decisions live in
 
 ## [Unreleased]
 
+### Added
+
+- The README shows the architecture as a diagram, light and dark: the
+  mailbox service, the four steps of a message in an agent, and the model
+  gateway. `assets/build.py --diagram` renders it from its page.
+
 ### Changed
 
 - The package page on PyPI links the repository, the README, the issues

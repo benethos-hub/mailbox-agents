@@ -1,14 +1,17 @@
-"""Make the PNG files of ``brand/`` from ``brand/icon.svg``.
+"""Make the PNG files of ``brand/`` from ``brand/icon.svg``, and those of
+``architecture/`` from ``architecture/architecture.html``.
 
-    uv run python assets/build.py           both
-    uv run python assets/build.py --icon    brand/icon.png, 512 by 512
-    uv run python assets/build.py --social  brand/social-preview.png
+    uv run python assets/build.py            all of them
+    uv run python assets/build.py --icon     brand/icon.png, 512 by 512
+    uv run python assets/build.py --social   brand/social-preview.png
+    uv run python assets/build.py --diagram  architecture/architecture.png
+                                             and architecture-dark.png
 
-Both are rendered with a headless Chromium browser (Chrome, Edge or
-Chromium). Export them again whenever ``icon.svg`` changes and commit
-them with it. The social preview goes up by hand as well, under
-Settings, General, Social preview, as GitHub does not read it from the
-repository.
+All are rendered with a headless Chromium browser (Chrome, Edge or
+Chromium). Export them again whenever ``icon.svg`` changes, and the
+diagram whenever its page changes as well, and commit them with it. The
+social preview goes up by hand as well, under Settings, General, Social
+preview, as GitHub does not read it from the repository.
 """
 
 from __future__ import annotations
@@ -31,6 +34,15 @@ SOCIAL = ASSETS / "brand/social-preview.png"
 # GitHub's size. It may crop the edges, so the content keeps 96 pixels
 # away from them.
 SOCIAL_SIZE = (1280, 640)
+DIAGRAM_SOURCE = ASSETS / "architecture/architecture.html"
+# The size of the page in CSS pixels, drawn at twice that.
+DIAGRAM_SIZE = (1430, 776)
+DIAGRAM_SCALE = 2
+# Each image and the fragment that picks its colours on the page.
+DIAGRAMS = {
+    ASSETS / "architecture/architecture.png": "",
+    ASSETS / "architecture/architecture-dark.png": "#dark",
+}
 
 _ROOT_SIZE = re.compile(r'^(<svg [^>]*?)width="([\d.]+)" height="([\d.]+)"')
 
@@ -219,16 +231,19 @@ def _browser() -> str:
     raise RuntimeError("no Chromium browser found: Chrome, Edge or Chromium")
 
 
-def _screenshot(
-    page: str, name: str, target: Path, size: tuple[int, int], transparent: bool
+def _capture(
+    address: str,
+    target: Path,
+    size: tuple[int, int],
+    transparent: bool = False,
+    scale: int = 1,
 ) -> None:
-    """Render a page as a PNG with a headless browser. A transparent page
-    keeps its alpha channel instead of the browser's white."""
+    """Render the page at an address as a PNG with a headless browser, of
+    ``scale`` pixels for each of its own. A transparent page keeps its
+    alpha channel instead of the browser's white."""
     width, height = size
     background = ["--default-background-color=00000000"] if transparent else []
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
-        source = Path(folder) / name
-        source.write_text(page, "utf-8")
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as profile:
         subprocess.run(
             [
                 _browser(),
@@ -236,16 +251,26 @@ def _screenshot(
                 "--disable-gpu",
                 "--hide-scrollbars",
                 *background,
-                "--force-device-scale-factor=1",
-                f"--user-data-dir={Path(folder) / 'profile'}",
+                f"--force-device-scale-factor={scale}",
+                f"--user-data-dir={profile}",
                 f"--window-size={width},{height}",
                 f"--screenshot={target}",
-                source.as_uri(),
+                address,
             ],
             check=True,
             capture_output=True,
             timeout=120,
         )
+
+
+def _screenshot(
+    page: str, name: str, target: Path, size: tuple[int, int], transparent: bool
+) -> None:
+    """Render a page given as text, from a file of that name."""
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+        source = Path(folder) / name
+        source.write_text(page, "utf-8")
+        _capture(source.as_uri(), target, size, transparent)
 
 
 def stamped(png: bytes, svg: str) -> bytes:
@@ -297,14 +322,28 @@ def render_social() -> None:
     SOCIAL.write_bytes(stamped(SOCIAL.read_bytes(), svg))
 
 
+def render_diagram() -> None:
+    """The architecture diagram, light and dark. The page stays where it
+    is, as it takes the icon from beside it."""
+    for target, fragment in DIAGRAMS.items():
+        _capture(
+            DIAGRAM_SOURCE.as_uri() + fragment,
+            target,
+            DIAGRAM_SIZE,
+            scale=DIAGRAM_SCALE,
+        )
+
+
 def main(arguments: list[str]) -> int:
-    if arguments not in ([], ["--icon"], ["--social"]):
-        print("usage: build.py [--icon | --social]", file=sys.stderr)
+    if arguments not in ([], ["--icon"], ["--social"], ["--diagram"]):
+        print("usage: build.py [--icon | --social | --diagram]", file=sys.stderr)
         return 2
-    if arguments != ["--social"]:
+    if arguments in ([], ["--icon"]):
         render_icon()
-    if arguments != ["--icon"]:
+    if arguments in ([], ["--social"]):
         render_social()
+    if arguments in ([], ["--diagram"]):
+        render_diagram()
     return 0
 
 
