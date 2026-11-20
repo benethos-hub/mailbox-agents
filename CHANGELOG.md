@@ -45,6 +45,8 @@ commit that makes the change. Design decisions live in
   `RecursionError` ended the worker.
 - A token count of the gateway beyond what SQLite stores is capped.
   Before, storing the step ended the worker after the paid call.
+- A body of the gateway that cannot be decoded, such as one that says
+  gzip and is none, is a refused answer. Before, it ended the worker.
 
 ## [0.1.0] - 2026-11-19
 

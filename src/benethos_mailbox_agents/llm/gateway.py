@@ -145,6 +145,11 @@ class Gateway:
             raise GatewayUnavailableError(
                 f"the gateway is away ({type(exc).__name__})"
             ) from None
+        except httpx.HTTPError:
+            # Such as a DecodingError: a body that says gzip and is none.
+            raise AnswerRefusedError(
+                "the gateway answered a body that cannot be read", reason="schema"
+            ) from None
         duration_ms = int((time.monotonic() - started) * 1000)
         _check(response)
         try:

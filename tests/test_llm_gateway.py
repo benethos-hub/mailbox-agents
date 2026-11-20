@@ -310,3 +310,24 @@ async def test_a_token_count_beyond_sqlite_is_capped(
     reply = await gateway.ask(system="s", content="mail", schema=Answer)
 
     assert (reply.tokens_in, reply.tokens_out) == (2**63 - 1, 2**63 - 1)
+
+
+async def test_a_body_that_cannot_be_decoded_is_refused() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-encoding": "gzip"},
+            stream=httpx.ByteStream(b"no gzip"),
+        )
+
+    async with Gateway(
+        "https://gateway.example.test/v1/",
+        "gateway-key",
+        "classifier",
+        timeout=120.0,
+        transport=httpx.MockTransport(handle),
+    ) as opened:
+        with pytest.raises(AnswerRefusedError) as found:
+            await opened.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"
