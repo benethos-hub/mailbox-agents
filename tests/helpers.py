@@ -1,6 +1,7 @@
-"""What the runtime and agent tests share: an agent for the tests, a clock,
-the pieces wired over the fakes of ``fakes.py``, and a look at what became
-of a message."""
+"""What the tests share: the root of the repository and ``load_script``
+for a script outside the package, an agent for the tests, a clock, the
+pieces wired over the fakes of ``fakes.py``, ``configure`` for the
+command line, and a look at what became of a message."""
 
 from __future__ import annotations
 
