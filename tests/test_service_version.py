@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import re
-from pathlib import Path
 
 import pytest
 
@@ -19,9 +18,7 @@ from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.sources import mailbox as source
 from benethos_mailbox_agents.sources.mailbox import TESTED, is_tested, line_names
 from fakes import ACCOUNT, FakeService, wire_message
-from helpers import Wired, configure, worker
-
-ROOT = Path(__file__).resolve().parents[1]
+from helpers import ROOT, Wired, configure, worker
 
 
 def _numbers(version: str) -> tuple[int, int, int]:
