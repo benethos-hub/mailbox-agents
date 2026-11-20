@@ -26,9 +26,27 @@ up only the messages that ask a model: each stays `pending` with no
 attempt counted, the gateway is not asked again in that pass, and the
 messages that need no model run on. Either way the cursor moves, and the
 next pass waits twice as long as the last, up to
-`BACKOFF_CEILING_SECONDS`. A state file that
+`BACKOFF_CEILING_SECONDS`. A mailbox service that answers its version but
+fails for one message alone would end every pass at that message. So the
+worker counts the passes that end at the same message in a row, and at
+`MAX_ATTEMPTS` of them the message counts an attempt, or its update is
+left as a refused one is, with a line `messages.step_failed`, and the
+pass goes on with the next (decided 2026-11-20). A pass that ends
+otherwise starts the count again. A service away as a whole, its version
+too, leaves every message as it is. A pass that fails with an error of
+the agent's own, such as a key the gateway refuses, waits as after an
+upstream away, logged as `worker.pass_failed` with its wait (decided
+2026-11-20).
+
+An upstream away in the middle of a message's actions may leave some of
+them taken: `sorting` has moved the message out of the inbox, and setting
+its keyword failed. When the worker runs that message again, it goes on to
+its effect without asking `admit`, which would refuse it outside the
+inbox, and the executor finds what is done there already (2026-11-20). The
+worker keeps this in memory: after a restart in between, the message is
+asked as any other. A state file that
 cannot be read or written, one that is no SQLite file or a full disk,
-ends the worker with a `StateFileError` and exit code 1: no pass goes on
+or whose folder or lock cannot be made, ends the worker with a `StateFileError` and exit code 1: no pass goes on
 without it (2026-11-19). A mailbox service outside the tested lines ends
 it with a `ServiceVersionError` and exit code 2, as it ends `run` and
 `backfill`.
@@ -95,8 +113,8 @@ changed until the evaluation was run again.
 `--env-file` names the settings file for every command. An error to
 correct ends with exit code 2, a mailbox service outside the tested lines
 among them, an upstream that is away or an unreadable state file with 1. `status` and `paths` start no agent and change
-nothing. `status` names a state file it cannot read and goes on with the
-next agent.
+nothing. `status` names a state file it cannot read, or one of a newer
+schema, and goes on with the next agent. `health` answers 1 for both.
 
 ## Report
 

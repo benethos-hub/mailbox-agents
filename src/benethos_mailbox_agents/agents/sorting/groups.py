@@ -272,8 +272,10 @@ def load_groups(path: Path) -> Groups:
             f"the sorting list {path.name} is no {', '.join(sorted(READERS))} file"
         )
     try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+        # utf-8-sig: an editor may start the file with the mark of UTF-8.
+        text = path.read_text(encoding="utf-8-sig")
+    except (OSError, ValueError) as exc:
+        # A ValueError: a file in another encoding than UTF-8.
         raise ConfigError(
             f"the sorting list {path.name} cannot be read ({type(exc).__name__})"
         ) from None

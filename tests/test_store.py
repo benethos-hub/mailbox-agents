@@ -106,6 +106,25 @@ def test_a_reader_needs_the_file(tmp_path: Path) -> None:
         Store.open(tmp_path / "none.db", read_only=True)
 
 
+def test_a_data_folder_that_is_a_file_is_a_state_file_error(tmp_path: Path) -> None:
+    (tmp_path / "data").write_text("not a folder", encoding="utf-8")
+
+    with pytest.raises(StateFileError) as raised:
+        Store.open(path_for(tmp_path / "data", "invoices"))
+
+    assert raised.value.message == (
+        "the state file invoices.db: its folder or lock cannot be made "
+        "(FileExistsError)"
+    )
+
+
+def test_a_lock_that_cannot_be_made_is_a_state_file_error(tmp_path: Path) -> None:
+    (tmp_path / "invoices.db.lock").mkdir()
+
+    with pytest.raises(StateFileError, match="its folder or lock cannot be made"):
+        Store.open(path_for(tmp_path, "invoices"))
+
+
 def test_a_reader_refuses_a_newer_schema(path: Path, store: Store) -> None:
     with closing(sqlite3.connect(path)) as db:
         db.execute(f"PRAGMA user_version = {SCHEMA_VERSION + 1}")

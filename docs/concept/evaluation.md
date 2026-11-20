@@ -29,7 +29,10 @@ agent runs over it and the scoring counts where it agrees.
   set holds only mail that `admit` lets through (decided 2026-11-18).
 - **A run is manual.** `benethos-mailbox-agents eval --agent <name> --gold <file>` needs a
   mailbox service and a model, which a public CI has not. It is a live
-  check, outside `testpaths`, and never a gate.
+  check, outside `testpaths`, and never a gate. It asks the service for
+  its version first and refuses one outside the tested lines with exit
+  code 2, as a pass does, since it reads mail and writes a report that is
+  kept (decided 2026-11-20).
 - **A report is versioned.** Each run writes one file,
   `reports/<agent>/<date>-v<agent version>-<prompt version>-<model alias>.json`,
   naming the agent version, prompt version, model alias, the models the

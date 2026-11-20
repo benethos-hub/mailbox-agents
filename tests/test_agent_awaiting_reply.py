@@ -275,7 +275,11 @@ async def test_a_reply_to_a_sent_message_deleted_since_blocks_nothing(
     await world.run()
 
     found = world.w.store.message(ref("r1"))
-    assert found is not None and found.state == "skipped"
+    assert found is not None and found.state == "done"
+    assert (world.item("s1").is_open, world.item("s1").reason) == (
+        False,
+        "message_gone",
+    )
     assert world.w.store.cursor() == world.w.service.state
 
 
@@ -668,3 +672,77 @@ def test_a_long_subject_cannot_blow_up_the_call() -> None:
 
     assert len(render(message)) < MAX_TEXT + MAX_SUBJECT + 200
     assert parts(message)[1:] == ["S" * MAX_SUBJECT, "T" * MAX_TEXT]
+
+
+async def test_a_keyword_whose_removal_failed_is_taken_off_on_the_tick(
+    world: World,
+) -> None:
+    await _due(world)
+    assert world.keywords("s1") == ["agent-awaiting-reply"]
+    world.w.service.write_refusal = (503, "unavailable")
+    world.add(received("r1", date="2026-11-20T10:00:00+00:00"))
+    await world.run()
+    world.w.service.write_refusal = None
+
+    for _ in range(2):
+        world.clock.advance(days=1)
+        await world.run()
+
+    assert (world.item("s1").is_open, world.item("s1").reason) == (False, "replied")
+    assert world.keywords("s1") == []
+    assert not world.item("s1").keyword_set
+
+
+async def test_an_item_closed_as_its_keyword_was_taken_off_asks_nothing(
+    world: World,
+) -> None:
+    await _due(world)
+    world.w.service.messages[(ACCOUNT, "s1")]["keywords"] = []
+    world.w.service.change("message.updated", "s1")
+    await world.run()
+    assert world.item("s1").reason == "keyword_removed"
+    asked = len(world.w.service.requests)
+
+    world.clock.advance(days=1)
+    await world.run()
+
+    patches = [r for r in world.w.service.requests[asked:] if r.method == "PATCH"]
+    assert patches == []
+
+
+async def test_an_earlier_item_whose_message_is_gone_blocks_no_new_one(
+    world: World,
+) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    assert world.item("s1").is_open
+    del world.w.service.messages[(ACCOUNT, "s1")]
+
+    world.add(sent("s2", ASK, date="2026-11-17T09:00:00+00:00"), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+
+    assert world.w.store.message(ref("s2")).state == "done"
+    assert world.item("s2").is_open
+    assert (world.item("s1").is_open, world.item("s1").reason) == (
+        False,
+        "message_gone",
+    )
+
+
+async def test_an_item_whose_message_went_to_the_trash_closes(world: World) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    world.w.service.messages[(ACCOUNT, "s1")]["folder_ids"] = ["trash"]
+    world.w.service.change("message.updated", "s1")
+    await world.run()
+
+    assert (world.item("s1").is_open, world.item("s1").reason) == (False, "discarded")
+
+    asked = len(world.w.service.requests)
+    world.clock.advance(days=4)
+    await world.run()
+    patches = [r for r in world.w.service.requests[asked:] if r.method == "PATCH"]
+    assert patches == []

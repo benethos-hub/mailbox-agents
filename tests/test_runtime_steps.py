@@ -304,6 +304,12 @@ def test_backoff_doubles_up_to_the_ceiling() -> None:
     assert [backoff(found, n) for n in range(5)] == [60, 120, 240, 480, 600]
 
 
+def test_backoff_after_weeks_of_tries_is_the_ceiling() -> None:
+    found = settings(poll_seconds=60, backoff_ceiling_seconds=3600)
+
+    assert backoff(found, 5000) == 3600
+
+
 async def test_an_answer_with_a_lone_surrogate_is_refused_and_counted(
     world: Wired,
 ) -> None:
@@ -368,3 +374,14 @@ async def test_a_token_count_beyond_sqlite_still_stores_the_step(
     )
 
     assert await runner(world).process(REF) == "done"
+
+
+async def test_a_redirect_of_the_gateway_leaves_the_message_pending(
+    world: Wired,
+) -> None:
+    world.fake_gateway.answer(httpx.Response(307))
+
+    with pytest.raises(ConfigError):
+        await runner(world).process(REF)
+
+    assert _state(world) == ("pending", 0)

@@ -108,6 +108,23 @@ def test_an_empty_secret_lets_its_file_be_read(
     assert found.missing(("gateway_key",)) == ["MAILBOX_AGENTS_GATEWAY_KEY"]
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "keyword",
+        "ca_file",
+        "sorting_file",
+        "inquiries_patterns_file",
+        "service_token_file",
+        "gateway_key_file",
+    ],
+)
+def test_an_empty_line_is_not_set(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    monkeypatch.setenv(f"{PREFIX}{name.upper()}", "")
+
+    assert getattr(load_settings(), name) is None
+
+
 def test_an_unreadable_secret_file_is_a_config_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -115,6 +132,53 @@ def test_an_unreadable_secret_file_is_a_config_error(
 
     with pytest.raises(errors.ConfigError, match="GATEWAY_KEY_FILE"):
         load_settings()
+
+
+def test_a_secret_file_with_the_mark_of_utf8_is_read_without_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    secret = tmp_path / "token"
+    secret.write_text("﻿service-token-value\r\n", encoding="utf-8")
+    monkeypatch.setenv("MAILBOX_AGENTS_SERVICE_TOKEN_FILE", str(secret))
+
+    assert load_settings().secret("service_token") == "service-token-value"
+
+
+@pytest.mark.parametrize("value", ["tokén-value", "token\x07value"])
+@pytest.mark.parametrize("from_file", [False, True])
+def test_a_secret_that_is_not_printable_ascii_is_refused_by_name(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, value: str, from_file: bool
+) -> None:
+    if from_file:
+        secret = tmp_path / "key"
+        secret.write_text(value, encoding="utf-8")
+        monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY_FILE", str(secret))
+    else:
+        monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY", value)
+
+    with pytest.raises(errors.ConfigError) as raised:
+        load_settings()
+
+    named = "GATEWAY_KEY_FILE" if from_file else "GATEWAY_KEY holds"
+    assert named in raised.value.message
+    assert "not printable ASCII" in raised.value.message
+    assert "value" not in raised.value.message
+
+
+def test_a_secret_file_that_is_no_utf8_is_refused_by_name(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    secret = tmp_path / "key"
+    secret.write_bytes(b"key-\xe9-value")
+    monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY_FILE", str(secret))
+
+    with pytest.raises(errors.ConfigError) as raised:
+        load_settings()
+
+    assert "GATEWAY_KEY_FILE cannot be read (UnicodeDecodeError)" in (
+        raised.value.message
+    )
+    assert "value" not in raised.value.message
 
 
 def test_a_missing_secret_is_named() -> None:
@@ -134,7 +198,7 @@ def test_a_wrong_value_is_named_never_quoted(monkeypatch: pytest.MonkeyPatch) ->
 
 @pytest.mark.parametrize(
     "keyword",
-    ["", "two words", "(x)", 'q"', "$Junk", "Agent-X", "a" + chr(1) + "b", "-x"],
+    ["two words", "(x)", 'q"', "$Junk", "Agent-X", "a" + chr(1) + "b", "-x"],
 )
 def test_a_keyword_is_lower_case_letters_digits_and_dashes(keyword: str) -> None:
     with pytest.raises(errors.ConfigError, match="KEYWORD") as raised:

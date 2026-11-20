@@ -194,6 +194,13 @@ def _tokens(usage: object, name: str) -> int:
 
 def _check(response: httpx.Response) -> None:
     status = response.status_code
+    if 300 <= status < 400:
+        # Redirects are not followed: the URL is the one to correct, such
+        # as http where the gateway answers https.
+        raise ConfigError(
+            f"the gateway answered a redirect ({status}): check "
+            "MAILBOX_AGENTS_GATEWAY_URL"
+        )
     if status < 400:
         return
     if status >= 500 or status in (408, 429):

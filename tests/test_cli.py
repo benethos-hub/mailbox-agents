@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sqlite3
 import stat
 import sys
 from importlib.metadata import version
@@ -129,9 +130,51 @@ def test_a_broken_state_file_is_named_and_the_others_still_listed(
     assert "last progress: 20" in out
 
     assert main(["health", "--agent", "awaiting_reply"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out.startswith("awaiting_reply: unhealthy, the state file")
+    assert "Traceback" not in captured.err
+
+
+def test_a_data_folder_that_is_a_file_ends_run_in_one_line(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    Path("data").write_text("not a folder", encoding="utf-8")
+
+    assert main(["run", "--agent", "counting"]) == 1
+
     err = capsys.readouterr().err
-    assert "awaiting_reply.db" in err
-    assert "Traceback" not in err
+    assert err.splitlines() == [
+        f"{PROG}: the state file counting.db: its folder or lock cannot be made "
+        "(FileExistsError)"
+    ]
+
+
+def test_a_state_file_of_a_newer_schema_is_named_and_unhealthy(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    assert main(["run", "--agent", "counting"]) == 0
+    capsys.readouterr()
+    with sqlite3.connect(Path("data", "counting.db")) as db:
+        db.execute("PRAGMA user_version = 99")
+    db.close()
+
+    assert main(["status"]) == 0
+    out = capsys.readouterr().out
+    assert "state file unreadable: the state file is at schema version 99" in out
+    starts = [line.split(" ")[0] for line in out.splitlines()]
+    for name in ("awaiting_reply", "counting", "inquiries", "invoices", "sorting"):
+        assert name in starts
+
+    assert main(["health", "--agent", "counting"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out.startswith("counting: unhealthy, the state file is at")
+    assert captured.err == ""
 
 
 def test_backfill_takes_recent_messages_up(
@@ -480,7 +523,7 @@ def test_the_error_line_writes_a_control_character_escaped(
     code = "".join(map(chr, (0x1B, 0x5D, 0x30, 0x3B, 0x6F, 0x07, 0x1B))) + "[2J"
 
     def refuse(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/health":
+        if request.url.path != "/health":
             return httpx.Response(
                 403, json={"error": {"code": code, "message": "refused"}}
             )

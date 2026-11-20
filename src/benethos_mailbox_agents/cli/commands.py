@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Any
 
 from ..contract import Agent, discover, load
-from ..errors import ConfigError, MailboxAgentError, StateFileError
+from ..errors import (
+    ConfigError,
+    MailboxAgentError,
+    ServiceVersionError,
+    StateFileError,
+)
 from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
@@ -144,6 +149,11 @@ def _service(settings: Settings) -> str | None:
         return None
     try:
         found = asyncio.run(_version(settings))
+    except ServiceVersionError:
+        return (
+            "mailbox service names no version: not tested, no agent starts "
+            f"(tested: {line_names()})"
+        )
     except MailboxAgentError as exc:
         return f"mailbox service not asked: {exc.message}"
     if is_tested(found):
@@ -193,7 +203,7 @@ def status(args: argparse.Namespace, settings: Settings) -> int:
                 with Store.open(path, read_only=True) as store:
                     last = store.progress()
                     counts = _counts(store)
-            except StateFileError as exc:
+            except (StateFileError, ConfigError) as exc:
                 _say(f"  state file unreadable: {exc.message}")
                 continue
             _say(f"  {counts}")
@@ -243,14 +253,19 @@ def report(args: argparse.Namespace, settings: Settings) -> int:
 
 def health(args: argparse.Namespace, settings: Settings) -> int:
     """0 while the agent's loop makes progress, 1 when it does not, a
-    state file not there yet included: Docker keeps 2 for itself."""
+    state file not there yet or one that cannot be read included: Docker
+    keeps 2 for itself."""
     name = load(args.agent).name
     path = path_for(settings.data_dir, name)
     if not path.is_file():
         print(f"{name}: unhealthy, no progress yet")
         return 1
-    with Store.open(path, read_only=True) as store:
-        found = check(store, settings, now())
+    try:
+        with Store.open(path, read_only=True) as store:
+            found = check(store, settings, now())
+    except (StateFileError, ConfigError) as exc:
+        print(f"{name}: unhealthy, {exc.message}")
+        return 1
     print(f"{name}: {'healthy' if found.healthy else 'unhealthy'}, {found.reason}")
     return 0 if found.healthy else 1
 
@@ -274,6 +289,9 @@ async def _evaluate(
 ) -> dict[str, Any]:
     agent = start(cls, settings)
     async with upstreams(agent, settings) as (mailbox, gateway):
+        # It reads mail and writes a report that is kept: only from a
+        # service in a tested line, as a pass.
+        await mailbox.ensure_tested()
         with tempfile.TemporaryDirectory() as folder:
             with Store.open(Path(folder) / "evaluation.db") as store:
                 outcomes = await run_evaluation(

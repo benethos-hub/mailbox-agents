@@ -108,6 +108,13 @@ def test_the_patterns_file(tmp_path: Path) -> None:
         load_patterns(tmp_path / "none.json")
 
 
+def test_a_patterns_file_with_the_mark_of_utf8_is_read(tmp_path: Path) -> None:
+    listed = tmp_path / "p.json"
+    listed.write_text('{"domains": ["staffing.example"]}', encoding="utf-8-sig")
+
+    assert load_patterns(listed).sender_known(Address(email="jana@staffing.example"))
+
+
 def test_a_phrase_is_found_in_decomposed_text(tmp_path: Path) -> None:
     listed = tmp_path / "p.json"
     listed.write_text('{"phrases": ["Rahmenvertrag für"]}', encoding="utf-8")

@@ -159,7 +159,7 @@ operator's filters. It writes under the logger
 | `process.migrated` | INFO | the state file was made or migrated, with the notes of its steps |
 | `process.metrics_serving` | INFO | the metrics are served on a port |
 | `worker.pass_done` | DEBUG | a pass ended, with its duration and the messages pending |
-| `worker.pass_failed` | ERROR | a pass failed with an error of the agent's own |
+| `worker.pass_failed` | ERROR | a pass failed with an error of the agent's own, and the loop waits as after an upstream away |
 | `worker.upstream_away` | WARNING | the mailbox service or the gateway is away, and the loop waits |
 | `worker.tick_done` | INFO | a tick ended, with the actions it asked for |
 | `feed.read` | INFO | the changes read from the feed, and how many the agent selected |

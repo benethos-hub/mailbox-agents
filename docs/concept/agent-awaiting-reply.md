@@ -28,7 +28,11 @@ A sent message that expects a reply becomes an open item. It closes when:
   the earlier item starts again from the new message,
 - the sent message is not there any more when the tick would set its
   keyword: the item closes as `message_gone`, so the tick does not ask
-  for the keyword every round.
+  for the keyword every round. So does an item whose sent message a later
+  message of its thread no longer finds, and the later message goes on
+  (2026-11-20),
+- the sent message is moved to the trash, junk or spam: the item closes as
+  `discarded`, as no keyword is set there (decided 2026-11-20).
 
 A sent message whose thread already holds a later answer from someone
 else opens no item. So a reply taken up before the message it answers,
@@ -43,6 +47,13 @@ that does not allow the keyword records it once, and a later stage that
 does sets it. A keyword the service refused is offered again on the next
 tick. The deadline counts from the date of the sent message, and a
 date on a weekend counts from the Monday after.
+
+An item closed as `replied` or `followed_up` takes the keyword off with
+the step that closes it. When that write fails, the step run again finds
+no open item. So the tick also takes the keyword off every such item that
+still counts it as set, and the item counts it as gone once the keyword
+is off the message (2026-11-20). An item closed as `keyword_removed` or
+`message_gone` is never asked about.
 
 The model is given the recipients, the subject and the text the sender
 wrote, without what it quotes, the last 4000 characters of it. The

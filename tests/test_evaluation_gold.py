@@ -41,6 +41,16 @@ def test_comments_and_blank_lines_are_skipped(tmp_path: Path) -> None:
     assert [item.label for item in load_gold(path)] == ["other"]
 
 
+def test_a_gold_file_with_the_mark_of_utf8_is_read(tmp_path: Path) -> None:
+    path = tmp_path / "gold.jsonl"
+    path.write_text(
+        '{"account_id": "a", "message_id": "m", "label": "other"}\n',
+        encoding="utf-8-sig",
+    )
+
+    assert [item.label for item in load_gold(path)] == ["other"]
+
+
 @pytest.mark.parametrize(
     ("lines", "said"),
     [

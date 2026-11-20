@@ -38,7 +38,14 @@ def _numbers(version: str) -> tuple[int, int, int]:
         ("0.7.5", True),
         ("0.7.6", True),
         ("0.7.12", True),
-        ("0.7.5rc1", True),
+        ("0.7.5+local", True),
+        ("0.7.6+build.1", True),
+        ("0.7.5rc1", False),
+        ("0.7.6.dev3", False),
+        ("0.7.5a1", False),
+        ("0.7.5-beta", False),
+        ("0.7.5+", False),
+        ("0.7.5 ", False),
         ("0.7.4", False),
         ("0.6.9", False),
         ("0.8.0", False),
@@ -176,6 +183,35 @@ async def test_another_line_ends_the_loop(world: Wired) -> None:
     assert world.service.health_asked == 1
 
 
+@pytest.mark.parametrize("health", ["no version", "refused"])
+async def test_a_service_that_names_no_version_is_outside_the_lines(
+    world: Wired, health: str
+) -> None:
+    if health == "no version":
+        world.service.version = None
+    else:
+        world.service.health_status = 404
+
+    with pytest.raises(ServiceVersionError) as raised:
+        await world.mailbox.ensure_tested()
+
+    assert raised.value.message.startswith(
+        "the mailbox service names no version at /health"
+    )
+    assert line_names() in raised.value.message
+
+
+async def test_a_service_that_names_no_version_ends_the_loop(world: Wired) -> None:
+    world.service.version = None
+    run = worker(world, poll_seconds=0.01)
+
+    with pytest.raises(ServiceVersionError):
+        await asyncio.wait_for(run.run(asyncio.Event()), timeout=5)
+
+    assert world.service.health_asked == 1
+    assert world.service.requests == []
+
+
 async def test_a_service_away_is_away_and_not_another_line(world: Wired) -> None:
     world.service.down = True
 
@@ -199,6 +235,39 @@ def test_run_against_another_line_is_an_error_to_correct(
     last = capsys.readouterr().err.splitlines()[-1]
     assert last.startswith(f"{PROG}: the mailbox service runs '0.99.0'")
     assert service.requests == []
+
+
+def test_run_against_a_service_that_names_no_version_is_an_error_to_correct(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    service.version = None
+
+    assert main(["run", "--agent", "counting"]) == 2
+
+    last = capsys.readouterr().err.splitlines()[-1]
+    assert last.startswith(f"{PROG}: the mailbox service names no version")
+    assert service.requests == []
+
+
+def test_status_names_a_service_that_names_no_version(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    service.version = None
+
+    assert main(["status"]) == 0
+
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0] == (
+        "mailbox service names no version: not tested, no agent starts "
+        f"(tested: {line_names()})"
+    )
+    assert any(line.startswith("counting ") for line in lines)
 
 
 def test_backfill_against_another_line_is_an_error_to_correct(

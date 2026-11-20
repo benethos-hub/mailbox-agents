@@ -196,6 +196,29 @@ def test_eval_on_the_command_line(
     assert "no-prompt-no-model" in written[0].name
 
 
+def test_eval_against_another_line_is_an_error_to_correct(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    configure(monkeypatch)
+    service.add(wire_message("m1"), change=None)
+    service.version = "0.99.0"
+    path = tmp_path / "gold.jsonl"
+    path.write_text(
+        '{"account_id": "acc1", "message_id": "m1", "label": "counted"}\n',
+        encoding="utf-8",
+    )
+
+    assert main(["eval", "--agent", "counting", "--gold", str(path)]) == 2
+
+    assert "the mailbox service runs '0.99.0'" in capsys.readouterr().err
+    assert service.health_asked == 1
+    assert service.requests == []
+    assert not (tmp_path / "reports").exists()
+
+
 def test_eval_needs_a_gold_file(
     service: FakeService,
     monkeypatch: pytest.MonkeyPatch,

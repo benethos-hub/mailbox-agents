@@ -26,11 +26,16 @@ class PassDone(Activity):
 
 @dataclass(frozen=True, kw_only=True)
 class PassFailed(Failure):
+    """A pass failed with an error of the agent's own. The loop waits
+    ``wait`` seconds and tries again, as after an upstream away."""
+
     name: ClassVar[str] = "pass_failed"
     level: ClassVar[int] = logging.ERROR
 
+    wait: float
+
     def says(self) -> str:
-        return "failed a pass"
+        return f"failed a pass and waits {self.wait:.0f}s"
 
 
 @dataclass(frozen=True, kw_only=True)

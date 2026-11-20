@@ -77,6 +77,10 @@ class Items(Protocol):
     async def close(self, ref: MessageRef, reason: str) -> None:
         """Close the item of a message, saying why."""
 
+    async def marked_closed(self, reasons: Sequence[str]) -> list[OpenItem]:
+        """The closed items, closed for one of ``reasons``, whose keyword
+        the agent set and has not seen taken off since."""
+
 
 @dataclass(frozen=True)
 class Context:

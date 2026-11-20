@@ -11,6 +11,7 @@ import pytest
 
 from benethos_mailbox_agents.agents.sorting.agent import Sorting
 from benethos_mailbox_agents.contract import Action
+from benethos_mailbox_agents.errors import MailboxUnavailableError
 from benethos_mailbox_agents.records import MessageRef
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.readiness import readiness
@@ -421,3 +422,40 @@ async def test_the_report_ends_with_the_groups(world: Wired, tmp_path: Path) -> 
         "senders in no group, candidates for the list:",
         "  someone@elsewhere.example (1 message)",
     ]
+
+
+async def test_a_keyword_the_service_failed_after_the_move_is_set_again(
+    world: Wired, tmp_path: Path
+) -> None:
+    world.service.keyword_failures = 1
+    sorter = worker(world, agent(tmp_path))
+    hosting = MessageRef(account_id=ACCOUNT, message_id="hosting")
+    world.store.enqueue(hosting, world.clock())
+
+    with pytest.raises(MailboxUnavailableError):
+        await sorter.process_due()
+    assert mail(world, "hosting")["folder_ids"] == ["inv-hosting"]
+
+    await sorter.process_due()
+
+    row = world.store.message(hosting)
+    assert row is not None
+    assert row.state == "done"
+
+    assert mail(world, "hosting")["keywords"] == ["agent-sorted"]
+    assert mail(world, "hosting")["folder_ids"] == ["inv-hosting"]
+
+
+async def test_a_sorted_message_put_back_is_not_moved_again_by_a_backfill(
+    world: Wired, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    assert await run(world, "hosting", agent(tmp_path)) == "done"
+    mail(world, "hosting")["folder_ids"] = ["inbox"]
+    mail(world, "hosting")["keywords"] = []
+    caplog.set_level("INFO")
+
+    assert await run(world, "hosting", agent(tmp_path), again=True) == "done"
+
+    assert mail(world, "hosting")["folder_ids"] == ["inbox"]
+    names = [r.name.rsplit(".", 1)[-1] for r in caplog.records if ".actions." in r.name]
+    assert "kept" in names

@@ -151,7 +151,11 @@ only against the lines they were tested against (decided 2026-11-19).
 
 - **A line** is the minor version while the major is 0, such as 0.7, and
   the major version from 1 on. It starts at the lowest release that was
-  tested, and every later release of it counts as tested.
+  tested, and every later release of it counts as tested. A release is
+  three numbers with at most a local part after a `+`, such as
+  `0.8.0+local`. A pre-release such as `0.8.0rc1` or `0.8.1.dev3` is in
+  no line, also one of a later patch, since a line counts releases
+  (decided 2026-11-20).
 - **The lines** are `TESTED` in `sources/mailbox.py`, the newest last.
   Today there is one: 0.8 from 0.8.0. The newest line is also the pin of
   `benethos-mailbox-client` in `pyproject.toml` and the line of the image
@@ -161,7 +165,8 @@ only against the lines they were tested against (decided 2026-11-19).
   of the release. Tests hold all five equal.
 - **The check.** The worker asks the service for its version before every
   pass and every backfill. A service outside the lines, or one that names
-  no version, ends the command with a `ServiceVersionError` and exit code
+  no version or refuses `/health`, ends the command with a
+  `ServiceVersionError` and exit code
   2, before the feed is read: nothing is read, decided or changed. It is
   asked in every pass and not only at the start, since a service can be
   replaced by another release between two passes without one request
@@ -170,8 +175,11 @@ only against the lines they were tested against (decided 2026-11-19).
   refused as well: what it records would be read from a service nobody
   measured. A warning alone would go unread in a process that runs for
   weeks.
+- **`eval`** asks too, before it reads the gold set's mail, and is
+  refused the same way (decided 2026-11-20).
 - **`status`** names the version of the service and whether it is tested,
-  and starts no agent.
+  or that it names none, and starts no agent. `status` and `report` read
+  only for showing and are not refused.
 - **The client is not compared with the service.** Within a line the
   installed client may be older or newer than the service, and the agents
   run: a patch release of the service is taken to change no interface.

@@ -39,3 +39,6 @@ request stays visible, storable and mockable.
   twice as long, and after `MAX_ATTEMPTS` it is `failed`.
 - **A key or an alias the gateway refuses** (401, 403, 404) is a
   configuration error. The pass stops and nothing is decided.
+- **A redirect** (3xx), such as for http where the gateway answers
+  https, is a configuration error as well: redirects are not followed,
+  and `MAILBOX_AGENTS_GATEWAY_URL` is the one to correct (2026-11-20).

@@ -25,6 +25,7 @@ from ..errors import (
     MailboxAgentError,
     MailboxRefusedError,
     MessageGoneError,
+    UnavailableError,
 )
 from ..llm.evidence import check
 from ..llm.gateway import Reply
@@ -53,10 +54,12 @@ Effects = Callable[[list[ActionRequest]], Awaitable[object]]
 
 def backoff(settings: Settings, attempts: int) -> float:
     """Seconds to wait after ``attempts`` failed tries: twice as long each
-    time, from the poll interval up to the ceiling."""
+    time, from the poll interval up to the ceiling. The exponent stops at
+    32, where any ceiling is reached, so a count of tries that grew over
+    weeks stays a number a float holds."""
     return float(
         min(
-            settings.poll_seconds * 2 ** max(attempts, 0),
+            settings.poll_seconds * 2 ** min(max(attempts, 0), 32),
             settings.backoff_ceiling_seconds,
         )
     )
@@ -156,6 +159,10 @@ class StepRunner:
         self.items = StoredItems(store, now, agent.settings.stage)
         # Set by the loop when the gateway was found away in this pass.
         self.gateway_away: GatewayUnavailableError | None = None
+        # The messages whose effect an upstream away cut off: a move may
+        # have taken one out of what admit lets in, so it goes on to its
+        # effect when it is run again.
+        self._cut_off: set[MessageRef] = set()
 
     @property
     def model_alias(self) -> str:
@@ -212,7 +219,9 @@ class StepRunner:
         )
         self.metrics.step_failed(exc.code)
 
-    def _retry(self, ref: MessageRef, attempts: int) -> str:
+    def retry(self, ref: MessageRef, attempts: int) -> str:
+        """Count an attempt: the message waits by the backoff, or fails
+        once it has had as many as it may."""
         tried = attempts + 1
         if tried >= self.settings.max_attempts:
             return self._state(ref, "failed", attempts=tried)
@@ -231,7 +240,9 @@ class StepRunner:
             message = await self._reader.message(ref)
         except MailboxRefusedError as exc:
             return self._refused(ref, attempts, exc, "fetch")
-        if not self.agent.admit(message) or self._marked_before(message):
+        if ref not in self._cut_off and (
+            not self.agent.admit(message) or self._marked_before(message)
+        ):
             return self._state(ref, "skipped")
         self._baseline(message)
         calls = self.calls(ref)
@@ -245,7 +256,7 @@ class StepRunner:
                     reason=exc.reason,
                 )
             )
-            return self._retry(ref, attempts)
+            return self.retry(ref, attempts)
         except LimitReachedError as exc:
             self._failed(ref, "model", exc)
             if not exc.per_day:
@@ -254,7 +265,7 @@ class StepRunner:
             return self._state(ref, "pending", next_attempt=tomorrow)
         except MailboxRefusedError as exc:
             self._failed(ref, "decide", exc)
-            return self._retry(ref, attempts)
+            return self.retry(ref, attempts)
         if not decision.actionable:
             self.metrics.answer_refused(decision.refused or "")
             return self._state(ref, "decided")
@@ -288,7 +299,7 @@ class StepRunner:
         self._failed(ref, step, exc)
         if isinstance(exc, MessageGoneError):
             return self._state(ref, "skipped")
-        return self._retry(ref, attempts)
+        return self.retry(ref, attempts)
 
     async def _act(
         self, decision: Decision, message: MailMessage, calls: Calls, attempts: int
@@ -301,8 +312,15 @@ class StepRunner:
         try:
             requests = await self.agent.effect(decision, message, self.context(calls))
             await self._effects(requests)
+        except UnavailableError:
+            # Some of its actions may be taken: the effect is asked again,
+            # and finds what is done there already.
+            self._cut_off.add(ref)
+            raise
         except MailboxRefusedError as exc:
+            self._cut_off.discard(ref)
             return self._refused(ref, attempts, exc, "effect")
+        self._cut_off.discard(ref)
         return self._state(ref, "done")
 
     def _baseline_version(self) -> str:

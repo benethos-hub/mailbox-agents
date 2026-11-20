@@ -30,9 +30,25 @@ commit that makes the change. Design decisions live in
 - The contract refuses an agent whose `default_keyword` is not lower
   case letters, digits and dashes, the form `MAILBOX_AGENTS_KEYWORD` must
   have. Before, it checked a shorter list of characters only.
+- A message for which the mailbox service fails again and again, while
+  it answers otherwise, no longer holds up the agent: after
+  `MAX_ATTEMPTS` passes that ended at it in a row, it counts an attempt,
+  or its update is left, and the pass goes on with the next.
+- `awaiting_reply` closes the item of a sent message moved to the trash,
+  junk or spam as `discarded`. Before, the item stayed open and each tick
+  logged a refused keyword.
 - `counting` needs `mail.read` alone in the mailbox service, as the
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.
+- A pre-release of the mailbox service, such as `0.8.0rc1`, is outside
+  the tested lines, also one of a later patch. Before, the three numbers
+  at the start counted, and a pre-release of 0.8.0 was taken as tested.
+- A failed pass logs one line, `worker.pass_failed`, which names the wait
+  before the next. Before, a second line `worker.upstream_away` followed
+  it, also when no upstream was away.
+- `eval` refuses a mailbox service outside the tested lines with exit
+  code 2 before it reads any mail, as `run` does. Before, it read the gold
+  set's mail and wrote its report from any service.
 
 ### Fixed
 
@@ -59,6 +75,63 @@ commit that makes the change. Design decisions live in
 - The error line a command ends with writes a control or direction
   character escaped, as `status` and `report` do. Before, a code the
   mailbox service answered reached the terminal raw.
+- `awaiting_reply` takes its keyword off a message whose item a reply or
+  a new message closed, also when the first write failed: the tick asks
+  again until the keyword is off. Before, it stayed on the message.
+- A message an agent moved once and its owner moved on stays where it
+  is, logged as `actions.kept`, also where the agent's target folder is
+  missing there. Before, each update logged a refused move and counted a
+  failure.
+- A message whose actions an upstream away cut off goes on to its effect
+  when it is run again. Before, `sorting` skipped a message it had moved
+  out of the inbox when setting its keyword failed, and it kept no
+  keyword.
+- `awaiting_reply` closes the item of a sent message deleted since as
+  `message_gone` when a later message of its thread comes, and works the
+  later message. Before, the later message ended `skipped` after its model
+  call, and its reply was not awaited.
+- A redirect of the gateway is a configuration to correct that names
+  `MAILBOX_AGENTS_GATEWAY_URL`. Before, each message counted it as an
+  answer outside the schema and failed after `MAX_ATTEMPTS`.
+- A worker whose upstream stays away for weeks keeps waiting the ceiling
+  between tries. Before, the wait after about a thousand tries was too
+  large to compute and ended the worker.
+- `status` names a state file of a newer schema as unreadable and lists
+  the other agents, and `health` answers 1 for it, writing its reason as
+  for any other state file it cannot read. Before, `status` stopped at it
+  and both ended with exit code 2.
+- A mailbox service that names no version at `/health`, or refuses it,
+  ends `worker`, `run` and `backfill` with exit code 2 as one outside the
+  tested lines, and `status` says it names none. Before, each pass failed
+  as a refusal while the worker looked healthy.
+- A data folder that is a file, or one without the right to write, ends
+  the command with exit code 1 in one line naming the state file. Before,
+  it ended with a traceback.
+- A metrics port another process holds ends `worker` with exit code 2 in
+  one line naming `MAILBOX_AGENTS_METRICS_PORT`. Before, it ended with a
+  traceback.
+- A file of the service token or the gateway key that an editor started
+  with the mark of UTF-8 is read without it. A secret that is not
+  printable ASCII stops the start, naming its setting. Before, it ended
+  the command with a traceback when the request was built.
+- A sorting list in another encoding than UTF-8 is refused as one that
+  cannot be read, and `status` names it. Before, it ended `status` and the
+  worker with a traceback.
+- The sorting list, the patterns of `inquiries` and a gold file that an
+  editor started with the mark of UTF-8 are read without it. Before, each
+  was refused as no JSON.
+- An empty line for `MAILBOX_AGENTS_KEYWORD`, `SORTING_FILE`,
+  `INQUIRIES_PATTERNS_FILE`, `SERVICE_TOKEN_FILE` or `GATEWAY_KEY_FILE`
+  counts as not set, as it did for `CA_FILE` and the secrets. Before, the
+  keyword was refused, a file became the folder `.`, and an empty
+  patterns file held up `inquiries`.
+- A pass with many updates to observe writes progress after each, and
+  finds a message among them at once. Before, thousands of updates took
+  seconds to collect, and the health check saw a loop that stood while
+  it worked them.
+- A quote of `awaiting_reply` that starts with the `To:` of its frame is
+  looked up without it, as one with `From:` or `Subject:`. Before, it was
+  not found.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

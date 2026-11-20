@@ -86,7 +86,9 @@ once.
 The `context` is all an agent reaches while it works: the model, as one call
 with a schema that the runtime counts, records and keeps the content of for
 the evidence check, the mailbox read-only, its open items, and `now`, the
-clock of the runtime. Its settings an agent has as `self.settings`, not in
+clock of the runtime. The items are opened, started again, read, by
+message, by thread or when due, closed with a reason, and found closed
+with their keyword still counted as set (`marked_closed`, 2026-11-20). Its settings an agent has as `self.settings`, not in
 the context (2026-11-19). An agent never holds the mailbox client, the
 gateway client or the state file.
 

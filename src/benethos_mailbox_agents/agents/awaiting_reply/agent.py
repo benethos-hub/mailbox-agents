@@ -28,9 +28,12 @@ from ...contract import (
     Trigger,
 )
 from ...contract.prompts import load_prompt
+from ...errors import MessageGoneError
 from ...records import (
+    DISCARD_ROLES,
     KEYWORD_REMOVED,
     LABEL,
+    MESSAGE_GONE,
     Decision,
     Event,
     Evidence,
@@ -43,6 +46,15 @@ from .text import add_working_days, asks, automatic
 __all__ = ["AwaitingReply"]
 
 EXPECTS, NO_REPLY, INCOMING = "expects_reply", "no_reply", "incoming"
+
+# Why an item closes when a later message of its thread comes: a reply of
+# another sender, or a new message of its own sender.
+REPLIED, FOLLOWED_UP = "replied", "followed_up"
+# Why an item closes when its message went to the trash, junk or spam.
+DISCARDED = "discarded"
+# The items the tick takes the keyword off while it is still noted as set.
+# One closed as keyword_removed or message_gone is never asked about.
+CLOSED_WITH_KEYWORD = (REPLIED, FOLLOWED_UP)
 
 
 def _sent(message: MailMessage) -> bool:
@@ -135,7 +147,13 @@ class AwaitingReply(Agent):
         for item in items:
             if item.ref == message.ref:
                 continue
-            sent = await context.reader.message(item.ref)
+            try:
+                sent = await context.reader.message(item.ref)
+            except MessageGoneError:
+                # Deleted since: no reply can be awaited for it any more,
+                # and it holds up no other message of its thread.
+                await context.items.close(item.ref, MESSAGE_GONE)
+                continue
             if _when(sent, now) <= _when(message, now):
                 found.append((item, sent))
         return found
@@ -162,7 +180,7 @@ class AwaitingReply(Agent):
             owner = _address(sent)
             if sender and sender == owner:
                 continue
-            await context.items.close(item.ref, "replied")
+            await context.items.close(item.ref, REPLIED)
             requests += self._take_off(item)
         return requests
 
@@ -178,7 +196,7 @@ class AwaitingReply(Agent):
         for item, _ in await self._earlier(message, context):
             requests += self._take_off(item)
             if expects:
-                await context.items.close(item.ref, "followed_up")
+                await context.items.close(item.ref, FOLLOWED_UP)
             else:
                 await context.items.restart(item.ref, due)
         if expects and not await self._answered(message, context):
@@ -210,20 +228,24 @@ class AwaitingReply(Agent):
     async def observe(
         self, message: MailMessage, context: Context
     ) -> list[ActionRequest]:
-        """A keyword a person took off closes the item."""
+        """A message moved to the trash, junk or spam closes its item: no
+        keyword is set there, and the owner discarded it. A keyword a person
+        took off closes the item as well."""
         item = await context.items.get(message.ref)
-        if (
-            item is not None
-            and item.is_open
-            and item.keyword_set
-            and not message.has_keyword(self.keyword)
-        ):
+        if item is None or not item.is_open:
+            return []
+        if any(folder.role in DISCARD_ROLES for folder in message.folders):
+            await context.items.close(message.ref, DISCARDED)
+        elif item.keyword_set and not message.has_keyword(self.keyword):
             await context.items.close(message.ref, KEYWORD_REMOVED)
         return []
 
     async def tick(self, now: datetime, context: Context) -> list[ActionRequest]:
         """The items past their deadline get the keyword. The runtime notes
-        on the item whether it was set."""
+        on the item whether it was set. An item closed by a reply or a new
+        message whose keyword is still noted as set has it taken off: its
+        removal in the step may have failed, and a step run again finds no
+        open item to take it off from."""
         requests = []
         for item in await context.items.due(now):
             requests.append(
@@ -231,4 +253,6 @@ class AwaitingReply(Agent):
                     Action.ADD_KEYWORD, item.ref, keyword=self.keyword, why="due"
                 )
             )
+        for item in await context.items.marked_closed(CLOSED_WITH_KEYWORD):
+            requests += self._take_off(item)
         return requests
