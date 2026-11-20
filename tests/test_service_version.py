@@ -390,3 +390,29 @@ def test_the_compatibility_table_names_this_release_on_top() -> None:
     assert agents in (version.group(1), f"{version.group(1)} (not released yet)")
     assert service == line_names()
     assert client == f"`{pin.group(1)}`"
+
+
+def _version() -> str:
+    """The version of the package, as pyproject.toml names it."""
+    project = (ROOT / "pyproject.toml").read_text("utf-8")
+    found = re.search(r'^version = "([^"]+)"', project, re.MULTILINE)
+    assert found is not None
+    return found.group(1)
+
+
+def test_the_production_example_pulls_this_release() -> None:
+    example = ROOT / "containers" / "production" / ".env.example"
+
+    assert f"MAILBOX_AGENTS_VERSION={_version()}\n" in example.read_text("utf-8")
+
+
+def test_the_changelog_names_this_release_and_links_it() -> None:
+    changelog = (ROOT / "CHANGELOG.md").read_text("utf-8")
+    version = _version()
+    released = re.findall(r"^## \[(\d[^\]]*)\]", changelog, re.MULTILINE)
+    unreleased = re.search(r"^\[Unreleased\]: (\S+)$", changelog, re.MULTILINE)
+
+    assert released[0] == version
+    assert unreleased is not None
+    assert unreleased.group(1).endswith(f"/compare/v{version}...HEAD")
+    assert re.search(rf"^\[{re.escape(version)}\]: \S+$", changelog, re.MULTILINE)
