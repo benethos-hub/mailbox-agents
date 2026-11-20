@@ -40,6 +40,9 @@ commit that makes the change. Design decisions live in
 - `counting` needs `mail.read` alone in the mailbox service, as the
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.
+- A pre-release of the mailbox service, such as `0.8.0rc1`, is outside
+  the tested lines, also one of a later patch. Before, the three numbers
+  at the start counted, and a pre-release of 0.8.0 was taken as tested.
 
 ### Fixed
 

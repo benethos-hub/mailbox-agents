@@ -67,7 +67,10 @@ _PAGE = 200
 # its own, see docs/concept/mailbox-service.md.
 TESTED: tuple[tuple[int, int, int], ...] = ((0, 8, 0),)
 
-_VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
+# A release: three numbers and at most a local part after a "+". A
+# pre-release such as 0.8.0rc1 or 0.8.1.dev3 is none, also of a later
+# patch: a line counts releases.
+_VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)(?:\+[0-9A-Za-z.-]+)?")
 
 # How each refusal of a service outside the lines ends.
 _RUN_TESTED = ": run a release of the agents that is tested against that service"
@@ -82,9 +85,9 @@ def _within(found: tuple[int, int, int], floor: tuple[int, int, int]) -> bool:
 
 def is_tested(version: str) -> bool:
     """Whether ``version`` of the service is in a line of :data:`TESTED`.
-    The three numbers at its start count, so a version that starts with
-    none is in no line."""
-    match = _VERSION.match(version)
+    It is a release, three numbers with at most a local part after them,
+    or in no line."""
+    match = _VERSION.fullmatch(version)
     if match is None:
         return False
     major, minor, patch = (int(part) for part in match.groups())

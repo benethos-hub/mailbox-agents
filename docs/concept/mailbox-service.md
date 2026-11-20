@@ -151,7 +151,11 @@ only against the lines they were tested against (decided 2026-11-19).
 
 - **A line** is the minor version while the major is 0, such as 0.7, and
   the major version from 1 on. It starts at the lowest release that was
-  tested, and every later release of it counts as tested.
+  tested, and every later release of it counts as tested. A release is
+  three numbers with at most a local part after a `+`, such as
+  `0.8.0+local`. A pre-release such as `0.8.0rc1` or `0.8.1.dev3` is in
+  no line, also one of a later patch, since a line counts releases
+  (decided 2026-11-20).
 - **The lines** are `TESTED` in `sources/mailbox.py`, the newest last.
   Today there is one: 0.8 from 0.8.0. The newest line is also the pin of
   `benethos-mailbox-client` in `pyproject.toml` and the line of the image
