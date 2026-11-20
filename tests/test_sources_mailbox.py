@@ -352,3 +352,21 @@ async def test_a_string_without_a_surrogate_stays_as_it_is(
     found = await mailbox.message(REF)
 
     assert found.subject == "Grüße \u00e9 \U0001f600"
+
+
+@pytest.mark.parametrize(
+    "field", ["subject", "text_body", "thread_id"], ids=["subject", "text", "thread"]
+)
+async def test_a_field_of_another_type_is_a_refusal_without_its_value(
+    service: FakeService, mailbox: Mailbox, field: str
+) -> None:
+    message = wire_message("m1")
+    message[field] = ["Geheimer Betreff"]
+    service.add(message)
+
+    with pytest.raises(MailboxRefusedError) as found:
+        await mailbox.message(REF)
+
+    assert found.value.reason == "unexpected_response"
+    assert "Geheimer" not in str(found.value)
+    assert found.value.__cause__ is None

@@ -339,3 +339,16 @@ async def test_a_lone_surrogate_in_the_reported_model_is_stored_replaced(
     assert model is not None
     assert model.model == "local?"
     assert world.store.count_calls() == 1
+
+
+async def test_a_message_the_service_answers_garbled_is_tried_again(
+    world: Wired,
+) -> None:
+    garbled = wire_message("m2", subject="Your invoice")
+    garbled["subject"] = ["Your invoice"]
+    world.service.add(garbled)
+    ref = MessageRef(account_id=ACCOUNT, message_id="m2")
+    world.store.enqueue(ref, world.clock())
+
+    assert await runner(world).process(ref) == "pending"
+    assert _state(world, ref) == ("pending", 1)

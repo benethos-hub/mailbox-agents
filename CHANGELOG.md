@@ -37,6 +37,9 @@ commit that makes the change. Design decisions live in
 - A lone surrogate in what the mailbox service answers, in a subject, a
   text, a name, an address, a file name or a folder, becomes U+FFFD.
   Before, it ended the worker when the message was sent to the gateway.
+- A message whose subject, text or thread the mailbox service answers as
+  another type is refused and tried again. Before, the worker ended with a
+  traceback that quoted the value.
 
 ## [0.1.0] - 2026-11-19
 
