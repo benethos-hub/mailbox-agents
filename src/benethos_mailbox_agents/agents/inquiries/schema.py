@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict, model_validator
 
 from ...records import MailMessage
 
 __all__ = [
     "FIELDS",
+    "MAX_ANSWER_TOTAL",
     "MAX_NAME",
     "MAX_SUBJECT",
     "MAX_TEXT",
@@ -55,6 +56,11 @@ MAX_ADDRESS = 320
 # not fitting the schema, so an answer cannot copy the mail into the state
 # file. Checked after parsing, the schema sent to the model is unchanged.
 MAX_ANSWER_TEXT = 300
+
+# The most text a whole answer may hold, all its quotes and values
+# together: 29 strings of 300 characters would hold more than the model
+# was given (decided 2026-11-20). Checked after parsing as well.
+MAX_ANSWER_TOTAL = 2000
 
 
 def _short(value: str) -> str:
@@ -103,6 +109,22 @@ class Inquiry(Label):
     required_skills: Quoted | None
     desired_skills: Quoted | None
     deadline: Quoted | None
+
+    @model_validator(mode="after")
+    def _within_its_total(self) -> Inquiry:
+        total = sum(len(text) for text in _texts(self.model_dump()))
+        if total > MAX_ANSWER_TOTAL:
+            raise ValueError(f"more than {MAX_ANSWER_TOTAL} characters in all")
+        return self
+
+
+def _texts(value: object) -> list[str]:
+    """Every string in ``value``, nested ones among them."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in _texts(item)]
+    return []
 
 
 def render(message: MailMessage) -> str:

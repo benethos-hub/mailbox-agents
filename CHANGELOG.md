@@ -24,6 +24,9 @@ commit that makes the change. Design decisions live in
   `MIT` with its licence file, and its description, keywords and
   classifiers say what it is: self-hosted agents for a mailbox, typed and
   asyncio.
+- An answer of `inquiries` holds at most 2000 characters in all its
+  quotes and values, beside the 300 of each. A longer one is refused as
+  not fitting the schema.
 - `counting` needs `mail.read` alone in the mailbox service, as the
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.
