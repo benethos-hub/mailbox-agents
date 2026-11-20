@@ -84,12 +84,14 @@ services:
 
   # The gateway's database: its keys and what each spent, for its web
   # interface. No prompt and no answer, litellm.yaml says so. Reached by
-  # the gateway alone, on a network with no way out. From Postgres 18 the
-  # volume sits at /var/lib/postgresql, the data in a folder per major
-  # version below it. A volume of Postgres 17 is not read: remove it and
-  # the gateway sets its tables up anew, as setup.sh does.
+  # the gateway alone, on a network with no way out. The volume sits at
+  # /var/lib/postgresql, the data in a folder per major version below it,
+  # so a new major starts with an empty database and leaves the folder of
+  # the old one unread. After a change of major, run setup.sh: it removes
+  # the volume, the gateway sets its tables up anew, and the agents get a
+  # new key.
   gateway-db:
-    image: postgres:18.7-alpine@sha256:ff64c9e3bdf8e2120107d3559de8db314e8305f7e38c5105903c6295876738ff
+    image: postgres:19.0-alpine@sha256:8b0ff4cdf221f0c53d7fcda681d3b461be725c492cd881c5ec9c0ad25023f188
     restart: unless-stopped
     env_file: ./secrets/gateway-db.env
     networks:
