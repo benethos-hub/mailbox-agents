@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -274,6 +274,38 @@ async def test_an_observed_event_is_handed_on_once_per_pass(world: Wired) -> Non
 
     assert agent.observed == ["m1"]
     assert world.store.message(ref("m1")) is None
+
+
+async def test_updates_are_observed_in_the_order_of_the_feed_with_progress(
+    world: Wired,
+) -> None:
+    progress: list[datetime | None] = []
+
+    class Slow(Ticking):
+        async def observe(
+            self, message: MailMessage, context: Context
+        ) -> list[ActionRequest]:
+            progress.append(world.store.progress())
+            world.clock.advance(minutes=10)
+            return await super().observe(message, context)
+
+    agent = Slow(settings(stage="full"))
+    agent.observed = []
+    run = worker(world, agent)
+    await run.run_pass()
+    for message_id in ("m2", "m1", "m3"):
+        world.service.add(wire_message(message_id), change=None)
+    for message_id in ("m2", "m1", "m2", "m3", "m1"):
+        world.service.change("message.updated", message_id)
+    started = world.clock()
+
+    await run.run_pass()
+
+    assert agent.observed == ["m2", "m1", "m3"]
+    assert progress[1:] == [
+        started + timedelta(minutes=10),
+        started + timedelta(minutes=20),
+    ]
 
 
 async def test_kept_calls_are_purged_after_their_days(world: Wired) -> None:

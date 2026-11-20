@@ -122,6 +122,10 @@ commit that makes the change. Design decisions live in
   counts as not set, as it did for `CA_FILE` and the secrets. Before, the
   keyword was refused, a file became the folder `.`, and an empty
   patterns file held up `inquiries`.
+- A pass with many updates to observe writes progress after each, and
+  finds a message among them at once. Before, thousands of updates took
+  seconds to collect, and the health check saw a loop that stood while
+  it worked them.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

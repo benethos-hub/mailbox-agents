@@ -165,6 +165,9 @@ class Worker:
         observe = self._record(events)
         for ref in observe:
             await self._observe(ref)
+            # A long feed of updates is progress: the health check must
+            # not see a loop that stands while it works them.
+            self.store.set_progress(self._now())
         away: UnavailableError | None = None
         try:
             await self.process_due()
@@ -205,9 +208,11 @@ class Worker:
         return fresh, events
 
     def _record(self, events: list[Event]) -> list[MessageRef]:
-        """Record what the agent decides on, answer what it observes."""
+        """Record what the agent decides on, answer what it observes, each
+        message once in the order of the feed."""
         now = self._now()
-        observe: list[MessageRef] = []
+        # A dict keeps the order and finds a message in constant time.
+        observe: dict[MessageRef, None] = {}
         selected = 0
         for event in events:
             route = self._route(event)
@@ -215,10 +220,10 @@ class Worker:
                 self.store.enqueue(event.ref, now)
                 selected += 1
             elif route is Route.OBSERVE and event.ref not in observe:
-                observe.append(event.ref)
+                observe[event.ref] = None
                 selected += 1
         record(feed.Read(agent=self.agent.name, changes=len(events), selected=selected))
-        return observe
+        return list(observe)
 
     def _route(self, event: Event) -> Route | None:
         """Where the agent wants ``event``: None for a type it does not
