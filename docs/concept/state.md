@@ -11,7 +11,7 @@ once released.
 | `passes` | when the loop last showed progress, after a message, a pass or a slice of a wait, for the health check |
 | `messages` | message id, account id, state, attempts, next attempt |
 | `steps` | message, step, prompt version, model alias and the model reported, result, tokens, duration. A baseline's prompt version is the agent version, with `/` and the prompt version after it when the agent has one, such as `5/v4` |
-| `actions` | message, action, what it was before, when, stage, whether it was carried out |
+| `actions` | message, action, its argument (the keyword or the path of the folder), what was there before, when, stage, whether it was carried out |
 | `open_items` | for agents that follow a message, `awaiting_reply` with a deadline and `invoices` without one: message, thread, due, whether the keyword is on the message, the stage its keyword was recorded in without being set, closed and why, for `awaiting_reply` `replied`, `followed_up`, `keyword_removed`, `message_gone` or `discarded`. The keyword counts as on the message until the runtime saw it taken off, also after the item closed |
 | `calls` | the full request and answer of a model call, only while `PROMPT_RETENTION_DAYS` keeps them |
 
@@ -31,8 +31,8 @@ the file logs it. A step that shipped in a release is never changed, down
 to a comment: `RELEASED` in `tests/test_store.py` holds the sha256 of each
 released step's module.
 
-What is stored: ids, decisions, evidence quotes, counts and times. What is
-not: the text of a mail, its subject, its sender or an attachment. A message
+What is stored: ids, decisions, evidence quotes, counts and times, and the
+paths of folders and the keywords an action names or found. What is not: the text of a mail, its subject, its sender or an attachment. A message
 is fetched again by its id when it is needed.
 
 One exception, off by default: `MAILBOX_AGENTS_PROMPT_RETENTION_DAYS` above
