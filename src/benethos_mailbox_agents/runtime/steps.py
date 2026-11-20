@@ -91,7 +91,6 @@ def make_calls(
 
 
 def make_context(
-    agent: Agent,
     *,
     calls: Calls,
     reader: Reader,
@@ -184,7 +183,6 @@ class StepRunner:
 
     def context(self, calls: Calls) -> Context:
         return make_context(
-            self.agent,
             calls=calls,
             reader=self._reader,
             store=self._store,

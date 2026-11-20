@@ -50,7 +50,7 @@ async def evaluate(
             continue
         baseline = agent.baseline(message)
         calls = make_calls(agent, gateway=gateway, store=store, ref=item.ref, now=now)
-        context = make_context(agent, calls=calls, reader=reader, store=store, now=now)
+        context = make_context(calls=calls, reader=reader, store=store, now=now)
         failure = None
         try:
             decision = await decide_checked(agent, message, context, calls)
