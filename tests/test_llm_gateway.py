@@ -292,3 +292,21 @@ async def test_a_content_nested_too_deep_is_refused(
         await gateway.ask(system="s", content="mail", schema=Answer)
 
     assert found.value.reason == "schema"
+
+
+async def test_a_token_count_beyond_sqlite_is_capped(
+    fake: FakeGateway, gateway: Gateway
+) -> None:
+    fake.answer(
+        httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": OTHER}}],
+                "usage": {"prompt_tokens": 1e30, "completion_tokens": 10**40},
+            },
+        )
+    )
+
+    reply = await gateway.ask(system="s", content="mail", schema=Answer)
+
+    assert (reply.tokens_in, reply.tokens_out) == (2**63 - 1, 2**63 - 1)

@@ -170,14 +170,19 @@ class Gateway:
         )
 
 
+#: The largest whole number SQLite stores.
+MAX_TOKENS = 2**63 - 1
+
+
 def _tokens(usage: object, name: str) -> int:
     """A token count of the answer's usage, 0 where it is missing, no whole
-    number or below 0: the call is made and paid, and a count the gateway
-    garbled must not end the process before the step is stored."""
+    number or below 0, and at most what SQLite stores: the call is made and
+    paid, and a count the gateway garbled must not end the process before
+    the step is stored."""
     if not isinstance(usage, dict):
         return 0
     try:
-        return max(0, int(usage.get(name) or 0))
+        return min(max(0, int(usage.get(name) or 0)), MAX_TOKENS)
     except (TypeError, ValueError, OverflowError):
         return 0
 

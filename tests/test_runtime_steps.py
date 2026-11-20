@@ -352,3 +352,19 @@ async def test_a_message_the_service_answers_garbled_is_tried_again(
 
     assert await runner(world).process(ref) == "pending"
     assert _state(world, ref) == ("pending", 1)
+
+
+async def test_a_token_count_beyond_sqlite_still_stores_the_step(
+    world: Wired,
+) -> None:
+    world.fake_gateway.answer(
+        httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": json.dumps(MATCH)}}],
+                "usage": {"prompt_tokens": 1e30, "completion_tokens": 3},
+            },
+        )
+    )
+
+    assert await runner(world).process(REF) == "done"

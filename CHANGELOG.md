@@ -43,6 +43,8 @@ commit that makes the change. Design decisions live in
 - JSON nested too deep for the parser, from the gateway or the mailbox
   service, is a refused answer or an upstream away. Before, its
   `RecursionError` ended the worker.
+- A token count of the gateway beyond what SQLite stores is capped.
+  Before, storing the step ended the worker after the paid call.
 
 ## [0.1.0] - 2026-11-19
 
