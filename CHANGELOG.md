@@ -43,6 +43,9 @@ commit that makes the change. Design decisions live in
 - A pre-release of the mailbox service, such as `0.8.0rc1`, is outside
   the tested lines, also one of a later patch. Before, the three numbers
   at the start counted, and a pre-release of 0.8.0 was taken as tested.
+- A failed pass logs one line, `worker.pass_failed`, which names the wait
+  before the next. Before, a second line `worker.upstream_away` followed
+  it, also when no upstream was away.
 - `eval` refuses a mailbox service outside the tested lines with exit
   code 2 before it reads any mail, as `run` does. Before, it read the gold
   set's mail and wrote its report from any service.

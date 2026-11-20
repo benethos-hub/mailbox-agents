@@ -139,8 +139,8 @@ LINES: list[tuple[Activity, str]] = [
         "a finished a pass in 0.50s with 1 message pending",
     ),
     (
-        worker.PassFailed(agent="a", error=ERROR),
-        "a failed a pass: GatewayUnavailableError(gateway_unavailable)",
+        worker.PassFailed(agent="a", error=ERROR, wait=120),
+        "a failed a pass and waits 120s: GatewayUnavailableError(gateway_unavailable)",
     ),
     (
         worker.UpstreamAway(agent="a", error=ERROR, wait=30),

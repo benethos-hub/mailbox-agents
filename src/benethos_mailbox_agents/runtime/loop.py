@@ -393,12 +393,18 @@ class Worker:
         days = self.settings.prompt_retention_days
         self.store.purge_calls(now - timedelta(days=days))
 
-    def _wait_after(self, error: MailboxAgentError) -> float:
-        self._away += 1
-        self.metrics.step_failed(error.code)
-        wait = backoff(self.settings, self._away)
+    def _wait_after(self, error: UnavailableError) -> float:
+        """The wait after an upstream that is away, logged as such."""
+        wait = self._back_off(error)
         record(worker.UpstreamAway(agent=self.agent.name, error=error, wait=wait))
         return wait
+
+    def _back_off(self, error: MailboxAgentError) -> float:
+        """Count a failed pass and answer how long to wait before the
+        next, longer each time in a row."""
+        self._away += 1
+        self.metrics.step_failed(error.code)
+        return backoff(self.settings, self._away)
 
     # -- backfill ---------------------------------------------------------------
 
@@ -456,8 +462,8 @@ class Worker:
                 # fail the same way, forever.
                 raise
             except MailboxAgentError as exc:
-                record(worker.PassFailed(agent=self.agent.name, error=exc))
-                wait = self._wait_after(exc)
+                wait = self._back_off(exc)
+                record(worker.PassFailed(agent=self.agent.name, error=exc, wait=wait))
             await self._sleep(wait, stop)
 
     async def _sleep(self, wait: float, stop: asyncio.Event) -> None:

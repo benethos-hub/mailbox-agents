@@ -403,6 +403,39 @@ async def test_a_config_error_does_not_end_the_loop(world: Wired) -> None:
     await asyncio.wait_for(asyncio.gather(run.run(stop), stopper()), timeout=5)
 
 
+@pytest.mark.parametrize(
+    ("status", "line", "says"),
+    [
+        (401, "pass_failed", "failed a pass and waits 0s: ConfigError(config)"),
+        (503, "upstream_away", "found an upstream away and waits 0s"),
+    ],
+)
+async def test_a_failed_pass_logs_one_line_with_its_wait(
+    world: Wired,
+    caplog: pytest.LogCaptureFixture,
+    status: int,
+    line: str,
+    says: str,
+) -> None:
+    run = worker(world, poll_seconds=0.01, backoff_ceiling_seconds=0.02)
+    await run.run_pass()
+    world.service.add(wire_message("m1", subject="Your invoice"))
+    world.fake_gateway.answer(httpx.Response(status))
+    caplog.set_level("WARNING")
+    stop = asyncio.Event()
+
+    async def stopper() -> None:
+        while not any(".worker." in r.name for r in caplog.records):
+            await asyncio.sleep(0.005)
+        stop.set()
+
+    await asyncio.wait_for(asyncio.gather(run.run(stop), stopper()), timeout=5)
+
+    lines = [r for r in caplog.records if ".worker." in r.name]
+    assert [r.name.rsplit(".", 1)[1] for r in lines] == [line]
+    assert says in lines[0].getMessage()
+
+
 async def test_a_message_the_service_never_answers_holds_up_no_other(
     world: Wired,
 ) -> None:

@@ -33,7 +33,10 @@ worker counts the passes that end at the same message in a row, and at
 left as a refused one is, with a line `messages.step_failed`, and the
 pass goes on with the next (decided 2026-11-20). A pass that ends
 otherwise starts the count again. A service away as a whole, its version
-too, leaves every message as it is.
+too, leaves every message as it is. A pass that fails with an error of
+the agent's own, such as a key the gateway refuses, waits as after an
+upstream away, logged as `worker.pass_failed` with its wait (decided
+2026-11-20).
 
 An upstream away in the middle of a message's actions may leave some of
 them taken: `sorting` has moved the message out of the inbox, and setting
