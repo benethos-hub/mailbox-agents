@@ -104,6 +104,9 @@ commit that makes the change. Design decisions live in
 - A data folder that is a file, or one without the right to write, ends
   the command with exit code 1 in one line naming the state file. Before,
   it ended with a traceback.
+- A metrics port another process holds ends `worker` with exit code 2 in
+  one line naming `MAILBOX_AGENTS_METRICS_PORT`. Before, it ended with a
+  traceback.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

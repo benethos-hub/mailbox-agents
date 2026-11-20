@@ -36,7 +36,8 @@ Part of the [concept](../CONCEPT.md).
   evidence), `mailbox_agents_model_calls_total`,
   `mailbox_agents_model_tokens_total` by direction,
   `mailbox_agents_model_call_seconds` and `mailbox_agents_actions_total` by
-  action and whether it was carried out.
+  action and whether it was carried out. A port another process holds
+  ends `worker` with exit code 2, naming `METRICS_PORT`.
 - **Cost:** read at the gateway, per key.
 - **Logs:** stderr, through `logbook/` only. [docs/LOGGING.md](../LOGGING.md)
   holds the levels, the shape of a line, what never goes into one and the

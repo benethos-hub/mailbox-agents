@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import socket
+import sys
 import urllib.request
 from datetime import timedelta
 
@@ -11,6 +12,7 @@ import httpx
 import pytest
 
 from benethos_mailbox_agents.cli import main
+from benethos_mailbox_agents.errors import ConfigError
 from benethos_mailbox_agents.runtime.health import check, window
 from benethos_mailbox_agents.runtime.loop import Worker
 from benethos_mailbox_agents.runtime.metrics import Metrics
@@ -126,6 +128,25 @@ def test_the_metrics_are_served() -> None:
     assert b'mailbox_agents_info{agent="echo"' in body
     with pytest.raises(OSError):
         urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics", timeout=1)
+
+
+def test_a_port_taken_is_a_configuration_to_correct() -> None:
+    with socket.socket() as taken:
+        # The server of the metrics binds with SO_REUSEADDR, which on
+        # Windows shares a port with another socket that did the same.
+        if sys.platform == "win32":
+            taken.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        taken.bind(("127.0.0.1", 0))
+        taken.listen()
+        port: int = taken.getsockname()[1]
+        with pytest.raises(ConfigError) as raised:
+            with Metrics("echo", "1", "shadow").serving(port, addr="127.0.0.1"):
+                pass
+
+    assert raised.value.message.startswith(
+        f"the metrics cannot be served on port {port} ("
+    )
+    assert raised.value.message.endswith("MAILBOX_AGENTS_METRICS_PORT")
 
 
 def test_health_on_the_command_line(

@@ -24,6 +24,7 @@ from prometheus_client import (
     start_http_server,
 )
 
+from ..errors import ConfigError
 from ..store import Store
 
 __all__ = ["Metrics"]
@@ -122,8 +123,17 @@ class Metrics:
     @contextmanager
     def serving(self, port: int, addr: str = "0.0.0.0") -> Iterator[None]:
         """Serve the metrics on ``port`` in a thread of their own while the
-        block runs, and stop serving after it."""
-        server, thread = start_http_server(port, addr=addr, registry=self.registry)
+        block runs, and stop serving after it. A port taken by another
+        process, or one this process may not bind, is a
+        :class:`ConfigError` naming the setting."""
+        try:
+            server, thread = start_http_server(port, addr=addr, registry=self.registry)
+        except OSError as exc:
+            raise ConfigError(
+                f"the metrics cannot be served on port {port} "
+                f"({type(exc).__name__}): choose another "
+                "MAILBOX_AGENTS_METRICS_PORT"
+            ) from None
         try:
             yield
         finally:
