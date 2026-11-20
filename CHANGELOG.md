@@ -84,6 +84,9 @@ commit that makes the change. Design decisions live in
 - A redirect of the gateway is a configuration to correct that names
   `MAILBOX_AGENTS_GATEWAY_URL`. Before, each message counted it as an
   answer outside the schema and failed after `MAX_ATTEMPTS`.
+- A worker whose upstream stays away for weeks keeps waiting the ceiling
+  between tries. Before, the wait after about a thousand tries was too
+  large to compute and ended the worker.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.
