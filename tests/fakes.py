@@ -120,6 +120,8 @@ class FakeService:
         # Message ids whose get_message answers 500, as for a mail the
         # service cannot parse.
         self.broken: set[str] = set()
+        # How many of the next writes that add a keyword answer 503.
+        self.keyword_failures = 0
         # Status and code every write is refused with while set.
         self.write_refusal: tuple[int, str] | None = None
         self.requests: list[httpx.Request] = []
@@ -332,6 +334,9 @@ class FakeService:
         if found is None:
             return _error(404, "not_found", "no such message")
         body = json.loads(request.content)
+        if self.keyword_failures and body.get("add_keywords"):
+            self.keyword_failures -= 1
+            return _error(503, "unavailable")
         known = {
             name
             for f in self.folders.get(parts[1], [])

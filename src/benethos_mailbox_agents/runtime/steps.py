@@ -25,6 +25,7 @@ from ..errors import (
     MailboxAgentError,
     MailboxRefusedError,
     MessageGoneError,
+    UnavailableError,
 )
 from ..llm.evidence import check
 from ..llm.gateway import Reply
@@ -156,6 +157,10 @@ class StepRunner:
         self.items = StoredItems(store, now, agent.settings.stage)
         # Set by the loop when the gateway was found away in this pass.
         self.gateway_away: GatewayUnavailableError | None = None
+        # The messages whose effect an upstream away cut off: a move may
+        # have taken one out of what admit lets in, so it goes on to its
+        # effect when it is run again.
+        self._cut_off: set[MessageRef] = set()
 
     @property
     def model_alias(self) -> str:
@@ -233,7 +238,9 @@ class StepRunner:
             message = await self._reader.message(ref)
         except MailboxRefusedError as exc:
             return self._refused(ref, attempts, exc, "fetch")
-        if not self.agent.admit(message) or self._marked_before(message):
+        if ref not in self._cut_off and (
+            not self.agent.admit(message) or self._marked_before(message)
+        ):
             return self._state(ref, "skipped")
         self._baseline(message)
         calls = self.calls(ref)
@@ -303,8 +310,15 @@ class StepRunner:
         try:
             requests = await self.agent.effect(decision, message, self.context(calls))
             await self._effects(requests)
+        except UnavailableError:
+            # Some of its actions may be taken: the effect is asked again,
+            # and finds what is done there already.
+            self._cut_off.add(ref)
+            raise
         except MailboxRefusedError as exc:
+            self._cut_off.discard(ref)
             return self._refused(ref, attempts, exc, "effect")
+        self._cut_off.discard(ref)
         return self._state(ref, "done")
 
     def _baseline_version(self) -> str:

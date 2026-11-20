@@ -70,6 +70,10 @@ commit that makes the change. Design decisions live in
   is, logged as `actions.kept`, also where the agent's target folder is
   missing there. Before, each update logged a refused move and counted a
   failure.
+- A message whose actions an upstream away cut off goes on to its effect
+  when it is run again. Before, `sorting` skipped a message it had moved
+  out of the inbox when setting its keyword failed, and it kept no
+  keyword.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

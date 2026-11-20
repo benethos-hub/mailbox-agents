@@ -33,7 +33,15 @@ worker counts the passes that end at the same message in a row, and at
 left as a refused one is, with a line `messages.step_failed`, and the
 pass goes on with the next (decided 2026-11-20). A pass that ends
 otherwise starts the count again. A service away as a whole, its version
-too, leaves every message as it is. A state file that
+too, leaves every message as it is.
+
+An upstream away in the middle of a message's actions may leave some of
+them taken: `sorting` has moved the message out of the inbox, and setting
+its keyword failed. When the worker runs that message again, it goes on to
+its effect without asking `admit`, which would refuse it outside the
+inbox, and the executor finds what is done there already (2026-11-20). The
+worker keeps this in memory: after a restart in between, the message is
+asked as any other. A state file that
 cannot be read or written, one that is no SQLite file or a full disk,
 ends the worker with a `StateFileError` and exit code 1: no pass goes on
 without it (2026-11-19). A mailbox service outside the tested lines ends
