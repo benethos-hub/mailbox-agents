@@ -41,13 +41,13 @@ MAY_IMPORT: dict[str, frozenset[str]] = {
     "sources": frozenset({"errors", "records"}),
     # The model gateway, behind one module, and the evidence check.
     "llm": frozenset({"errors", "records"}),
-    # An agent sees the contract and the records, never the client, the
-    # gateway, the state file or the runtime that holds them.
     # The runtime holds every piece below it and hands an agent its context.
     "runtime": frozenset(
         {"errors", "logbook", "settings", "records", "contract", "store", "llm"}
     ),
-    # settings for PREFIX alone, which an agent's messages name settings by.
+    # An agent sees the contract and the records, never the client, the
+    # gateway, the state file or the runtime that holds them. settings for
+    # PREFIX alone, which an agent's messages name settings by.
     "agents": frozenset({"errors", "records", "settings", "contract"}),
     # Scores an agent the way the runtime runs it, on a state file of its own.
     "evaluation": frozenset({"errors", "records", "contract", "store", "runtime"}),
