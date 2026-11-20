@@ -26,7 +26,14 @@ up only the messages that ask a model: each stays `pending` with no
 attempt counted, the gateway is not asked again in that pass, and the
 messages that need no model run on. Either way the cursor moves, and the
 next pass waits twice as long as the last, up to
-`BACKOFF_CEILING_SECONDS`. A state file that
+`BACKOFF_CEILING_SECONDS`. A mailbox service that answers its version but
+fails for one message alone would end every pass at that message. So the
+worker counts the passes that end at the same message in a row, and at
+`MAX_ATTEMPTS` of them the message counts an attempt, or its update is
+left as a refused one is, with a line `messages.step_failed`, and the
+pass goes on with the next (decided 2026-11-20). A pass that ends
+otherwise starts the count again. A service away as a whole, its version
+too, leaves every message as it is. A state file that
 cannot be read or written, one that is no SQLite file or a full disk,
 ends the worker with a `StateFileError` and exit code 1: no pass goes on
 without it (2026-11-19). A mailbox service outside the tested lines ends

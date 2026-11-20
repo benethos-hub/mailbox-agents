@@ -30,6 +30,10 @@ commit that makes the change. Design decisions live in
 - The contract refuses an agent whose `default_keyword` is not lower
   case letters, digits and dashes, the form `MAILBOX_AGENTS_KEYWORD` must
   have. Before, it checked a shorter list of characters only.
+- A message for which the mailbox service fails again and again, while
+  it answers otherwise, no longer holds up the agent: after
+  `MAX_ATTEMPTS` passes that ended at it in a row, it counts an attempt,
+  or its update is left, and the pass goes on with the next.
 - `counting` needs `mail.read` alone in the mailbox service, as the
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.

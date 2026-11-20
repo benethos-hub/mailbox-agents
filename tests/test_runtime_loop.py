@@ -369,3 +369,73 @@ async def test_a_config_error_does_not_end_the_loop(world: Wired) -> None:
         stop.set()
 
     await asyncio.wait_for(asyncio.gather(run.run(stop), stopper()), timeout=5)
+
+
+async def test_a_message_the_service_never_answers_holds_up_no_other(
+    world: Wired,
+) -> None:
+    run = worker(world, max_attempts=2)
+    await run.run_pass()
+    for message_id in ("m1", "m2", "m3"):
+        world.service.add(wire_message(message_id, subject="Your invoice"))
+    world.service.broken = {"m1"}
+    world.fake_gateway.answer(MATCH, MATCH)
+
+    for _ in range(2):
+        await run.run_pass()
+
+    assert (_state(world, "m2"), _state(world, "m3")) == ("done", "done")
+    row = world.store.message(ref("m1"))
+    assert row is not None
+    assert (row.state, row.attempts) == ("pending", 1)
+
+    world.clock.advance(days=1)
+    for _ in range(2):
+        await run.run_pass()
+
+    assert _state(world, "m1") == "failed"
+
+
+async def test_a_service_that_answers_no_message_leaves_all_pending(
+    world: Wired,
+) -> None:
+    run = worker(world, max_attempts=2)
+    await run.run_pass()
+    for message_id in ("m1", "m2", "m3"):
+        world.service.add(wire_message(message_id, subject="Your invoice"))
+    world.service.broken = {"m1", "m2", "m3"}
+
+    for _ in range(6):
+        await run.run_pass()
+
+    assert {_state(world, m) for m in ("m1", "m2", "m3")} == {"pending"}
+
+
+async def test_an_update_the_service_never_answers_lets_the_cursor_move(
+    world: Wired,
+) -> None:
+    class Watcher(Echo):
+        triggers = Trigger(events=frozenset({"message.updated"}))
+
+        def select(self, event: Event) -> Route | None:
+            return Route.OBSERVE
+
+        async def observe(
+            self, message: MailMessage, context: Context
+        ) -> list[ActionRequest]:
+            return []
+
+    run = worker(world, Watcher(settings(stage="full", max_attempts=2)))
+    await run.run_pass()
+    world.service.add(wire_message("m1"), change=None)
+    world.service.change("message.updated", "m1")
+    world.service.broken = {"m1"}
+    cursor = world.store.cursor()
+
+    with pytest.raises(MailboxUnavailableError):
+        await run.run_pass()
+    assert world.store.cursor() == cursor
+
+    await run.run_pass()
+
+    assert world.store.cursor() != cursor

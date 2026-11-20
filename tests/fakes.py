@@ -117,6 +117,9 @@ class FakeService:
         self.health_asked = 0
         # Status and code every request is refused with while set.
         self.refusal: tuple[int, str] | None = None
+        # Message ids whose get_message answers 500, as for a mail the
+        # service cannot parse.
+        self.broken: set[str] = set()
         # Status and code every write is refused with while set.
         self.write_refusal: tuple[int, str] | None = None
         self.requests: list[httpx.Request] = []
@@ -288,6 +291,8 @@ class FakeService:
         return httpx.Response(201, json=made)
 
     def _message(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
+        if parts[3] in self.broken:
+            return _error(500, "internal", "the message cannot be read")
         found = self.messages.get((parts[1], parts[3]))
         if found is None:
             return _error(404, "not_found", "no such message")

@@ -212,7 +212,9 @@ class StepRunner:
         )
         self.metrics.step_failed(exc.code)
 
-    def _retry(self, ref: MessageRef, attempts: int) -> str:
+    def retry(self, ref: MessageRef, attempts: int) -> str:
+        """Count an attempt: the message waits by the backoff, or fails
+        once it has had as many as it may."""
         tried = attempts + 1
         if tried >= self.settings.max_attempts:
             return self._state(ref, "failed", attempts=tried)
@@ -245,7 +247,7 @@ class StepRunner:
                     reason=exc.reason,
                 )
             )
-            return self._retry(ref, attempts)
+            return self.retry(ref, attempts)
         except LimitReachedError as exc:
             self._failed(ref, "model", exc)
             if not exc.per_day:
@@ -254,7 +256,7 @@ class StepRunner:
             return self._state(ref, "pending", next_attempt=tomorrow)
         except MailboxRefusedError as exc:
             self._failed(ref, "decide", exc)
-            return self._retry(ref, attempts)
+            return self.retry(ref, attempts)
         if not decision.actionable:
             self.metrics.answer_refused(decision.refused or "")
             return self._state(ref, "decided")
@@ -288,7 +290,7 @@ class StepRunner:
         self._failed(ref, step, exc)
         if isinstance(exc, MessageGoneError):
             return self._state(ref, "skipped")
-        return self._retry(ref, attempts)
+        return self.retry(ref, attempts)
 
     async def _act(
         self, decision: Decision, message: MailMessage, calls: Calls, attempts: int

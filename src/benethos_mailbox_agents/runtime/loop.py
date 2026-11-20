@@ -24,6 +24,7 @@ from ..errors import (
     GatewayUnavailableError,
     MailboxAgentError,
     MailboxRefusedError,
+    MailboxUnavailableError,
     MessageGoneError,
     ServiceVersionError,
     StateFileError,
@@ -112,6 +113,11 @@ class Worker:
         self._away = 0
         self._last_tick: datetime | None = None
         self._waiting: set[MessageRef] = set()
+        # The message at which passes ended with the mailbox service away,
+        # how many in a row, and whether this pass ended at one.
+        self._stuck: MessageRef | None = None
+        self._stuck_passes = 0
+        self._ended_at_message = False
 
     @property
     def away(self) -> bool:
@@ -145,6 +151,15 @@ class Worker:
         service can be replaced by another release between two passes
         without one request failing."""
         started = time.monotonic()
+        self._ended_at_message = False
+        try:
+            return await self._pass(started)
+        finally:
+            # A pass that ends otherwise starts the count again.
+            if not self._ended_at_message:
+                self._stuck, self._stuck_passes = None, 0
+
+    async def _pass(self, started: float) -> float:
         await self._mailbox.ensure_tested()
         state, events = await self._read_feed()
         observe = self._record(events)
@@ -221,6 +236,18 @@ class Worker:
             message = await self._mailbox.message(ref)
             await self.executor(await self.agent.observe(message, self.context()))
             self._look_again(message)
+        except MailboxUnavailableError as exc:
+            if not self._stuck_at(ref):
+                raise
+            # The update is left, as a refused one is.
+            record(
+                messages.StepFailed(
+                    agent=self.agent.name,
+                    message_id=ref.message_id,
+                    step="observe",
+                    error=exc,
+                )
+            )
         except MailboxRefusedError as exc:
             record(
                 messages.StepFailed(
@@ -264,8 +291,36 @@ class Worker:
             except GatewayUnavailableError as exc:
                 self.runner.gateway_away = exc
                 self._waiting.add(row.ref)
+            except MailboxUnavailableError as exc:
+                if not self._stuck_at(row.ref):
+                    raise
+                self.runner.retry(row.ref, row.attempts)
+                record(
+                    messages.StepFailed(
+                        agent=self.agent.name,
+                        message_id=row.ref.message_id,
+                        step="fetch",
+                        error=exc,
+                    )
+                )
             self.store.set_progress(self._now())
         return len(rows)
+
+    def _stuck_at(self, ref: MessageRef) -> bool:
+        """Count a pass that the mailbox service, away, ended at ``ref``.
+        Answers whether that happened ``max_attempts`` times in a row: then
+        the message counts an attempt or its update is left, and the pass
+        goes on. Each pass asked the service for its version first, so the
+        service answered, only not for this message (decided 2026-11-20)."""
+        if ref == self._stuck:
+            self._stuck_passes += 1
+        else:
+            self._stuck, self._stuck_passes = ref, 1
+        if self._stuck_passes >= self.settings.max_attempts:
+            self._stuck, self._stuck_passes = None, 0
+            return True
+        self._ended_at_message = True
+        return False
 
     async def drain(self) -> int:
         """Run the steps of the pending messages until none is due, as
