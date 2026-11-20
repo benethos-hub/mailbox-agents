@@ -124,6 +124,12 @@ Rights. Each agent has a user of its own in the service:
 | `awaiting_reply` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
 | `inquiries` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
 | `sorting` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
+| `counting` | `mail.read` | `mail.write`, `drafts`, send, `mail.delete` |
+
+`counting` changes nothing, so `mail.read` is all it needs. Measured
+2026-11-20 against 0.8.0 on the test account: `status`, `backfill`, `run`
+and `report` of `counting` under a user with `mail.read` alone, and no
+call refused.
 
 `mail.write` also allows moving a message to the trash and creating a
 folder. The service cannot refuse those to an agent that may move mail, so
