@@ -28,9 +28,11 @@ from ...contract import (
     Trigger,
 )
 from ...contract.prompts import load_prompt
+from ...errors import MessageGoneError
 from ...records import (
     KEYWORD_REMOVED,
     LABEL,
+    MESSAGE_GONE,
     Decision,
     Event,
     Evidence,
@@ -142,7 +144,13 @@ class AwaitingReply(Agent):
         for item in items:
             if item.ref == message.ref:
                 continue
-            sent = await context.reader.message(item.ref)
+            try:
+                sent = await context.reader.message(item.ref)
+            except MessageGoneError:
+                # Deleted since: no reply can be awaited for it any more,
+                # and it holds up no other message of its thread.
+                await context.items.close(item.ref, MESSAGE_GONE)
+                continue
             if _when(sent, now) <= _when(message, now):
                 found.append((item, sent))
         return found

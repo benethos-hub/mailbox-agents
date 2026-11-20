@@ -275,7 +275,11 @@ async def test_a_reply_to_a_sent_message_deleted_since_blocks_nothing(
     await world.run()
 
     found = world.w.store.message(ref("r1"))
-    assert found is not None and found.state == "skipped"
+    assert found is not None and found.state == "done"
+    assert (world.item("s1").is_open, world.item("s1").reason) == (
+        False,
+        "message_gone",
+    )
     assert world.w.store.cursor() == world.w.service.state
 
 
@@ -704,3 +708,24 @@ async def test_an_item_closed_as_its_keyword_was_taken_off_asks_nothing(
 
     patches = [r for r in world.w.service.requests[asked:] if r.method == "PATCH"]
     assert patches == []
+
+
+async def test_an_earlier_item_whose_message_is_gone_blocks_no_new_one(
+    world: World,
+) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    assert world.item("s1").is_open
+    del world.w.service.messages[(ACCOUNT, "s1")]
+
+    world.add(sent("s2", ASK, date="2026-11-17T09:00:00+00:00"), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+
+    assert world.w.store.message(ref("s2")).state == "done"
+    assert world.item("s2").is_open
+    assert (world.item("s1").is_open, world.item("s1").reason) == (
+        False,
+        "message_gone",
+    )

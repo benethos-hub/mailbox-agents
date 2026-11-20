@@ -74,6 +74,10 @@ commit that makes the change. Design decisions live in
   when it is run again. Before, `sorting` skipped a message it had moved
   out of the inbox when setting its keyword failed, and it kept no
   keyword.
+- `awaiting_reply` closes the item of a sent message deleted since as
+  `message_gone` when a later message of its thread comes, and works the
+  later message. Before, the later message ended `skipped` after its model
+  call, and its reply was not awaited.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.
