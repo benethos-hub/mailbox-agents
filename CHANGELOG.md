@@ -34,6 +34,9 @@ commit that makes the change. Design decisions live in
   it answers otherwise, no longer holds up the agent: after
   `MAX_ATTEMPTS` passes that ended at it in a row, it counts an attempt,
   or its update is left, and the pass goes on with the next.
+- `awaiting_reply` closes the item of a sent message moved to the trash,
+  junk or spam as `discarded`. Before, the item stayed open and each tick
+  logged a refused keyword.
 - `counting` needs `mail.read` alone in the mailbox service, as the
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.

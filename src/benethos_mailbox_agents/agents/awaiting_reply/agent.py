@@ -30,6 +30,7 @@ from ...contract import (
 from ...contract.prompts import load_prompt
 from ...errors import MessageGoneError
 from ...records import (
+    DISCARD_ROLES,
     KEYWORD_REMOVED,
     LABEL,
     MESSAGE_GONE,
@@ -49,6 +50,8 @@ EXPECTS, NO_REPLY, INCOMING = "expects_reply", "no_reply", "incoming"
 # Why an item closes when a later message of its thread comes: a reply of
 # another sender, or a new message of its own sender.
 REPLIED, FOLLOWED_UP = "replied", "followed_up"
+# Why an item closes when its message went to the trash, junk or spam.
+DISCARDED = "discarded"
 # The items the tick takes the keyword off while it is still noted as set.
 # One closed as keyword_removed or message_gone is never asked about.
 CLOSED_WITH_KEYWORD = (REPLIED, FOLLOWED_UP)
@@ -225,14 +228,15 @@ class AwaitingReply(Agent):
     async def observe(
         self, message: MailMessage, context: Context
     ) -> list[ActionRequest]:
-        """A keyword a person took off closes the item."""
+        """A message moved to the trash, junk or spam closes its item: no
+        keyword is set there, and the owner discarded it. A keyword a person
+        took off closes the item as well."""
         item = await context.items.get(message.ref)
-        if (
-            item is not None
-            and item.is_open
-            and item.keyword_set
-            and not message.has_keyword(self.keyword)
-        ):
+        if item is None or not item.is_open:
+            return []
+        if any(folder.role in DISCARD_ROLES for folder in message.folders):
+            await context.items.close(message.ref, DISCARDED)
+        elif item.keyword_set and not message.has_keyword(self.keyword):
             await context.items.close(message.ref, KEYWORD_REMOVED)
         return []
 

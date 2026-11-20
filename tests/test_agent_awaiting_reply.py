@@ -729,3 +729,20 @@ async def test_an_earlier_item_whose_message_is_gone_blocks_no_new_one(
         False,
         "message_gone",
     )
+
+
+async def test_an_item_whose_message_went_to_the_trash_closes(world: World) -> None:
+    world.add(sent("s1", ASK), "message.sent")
+    world.w.fake_gateway.answer(expects(QUESTION))
+    await world.run()
+    world.w.service.messages[(ACCOUNT, "s1")]["folder_ids"] = ["trash"]
+    world.w.service.change("message.updated", "s1")
+    await world.run()
+
+    assert (world.item("s1").is_open, world.item("s1").reason) == (False, "discarded")
+
+    asked = len(world.w.service.requests)
+    world.clock.advance(days=4)
+    await world.run()
+    patches = [r for r in world.w.service.requests[asked:] if r.method == "PATCH"]
+    assert patches == []

@@ -30,7 +30,9 @@ A sent message that expects a reply becomes an open item. It closes when:
   keyword: the item closes as `message_gone`, so the tick does not ask
   for the keyword every round. So does an item whose sent message a later
   message of its thread no longer finds, and the later message goes on
-  (2026-11-20).
+  (2026-11-20),
+- the sent message is moved to the trash, junk or spam: the item closes as
+  `discarded`, as no keyword is set there (decided 2026-11-20).
 
 A sent message whose thread already holds a later answer from someone
 else opens no item. So a reply taken up before the message it answers,
