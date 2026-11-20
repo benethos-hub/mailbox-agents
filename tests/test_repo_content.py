@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from helpers import ROOT
+from helpers import CREDENTIAL_LINES, NO_CREDENTIAL_LINES, ROOT
 
 ALLOW = "pragma: allowlist secret"
 
@@ -80,7 +80,8 @@ NAMED = re.compile(
     re.IGNORECASE,
 )
 # CREDENTIAL and NAMED follow the patterns of .githooks/pre-commit. A
-# change to one changes the other.
+# change to one changes the other: CREDENTIAL_LINES and NO_CREDENTIAL_LINES
+# of helpers.py hold both to the same answers.
 
 
 def _reserved(domain: str) -> bool:
@@ -227,31 +228,12 @@ def test_an_id_of_the_service_is_found() -> None:
     assert problems("account acc1, message m1") == []
 
 
-@pytest.mark.parametrize(
-    "line",
-    [
-        "token = " + "mbx" + "_" + "A1b2C3d4E5f6G7h8I9",
-        "key " + "sk-ant-" + "api03-abcdefghijklmnop",
-        "-----" + "BEGIN " + "OPENSSH PRIVATE KEY-----",
-        "Authorization: " + "Bearer " + "abcdefghijklmnopqrstu",
-        "POSTGRES_PASSWORD" + "=hunter2hunter2hunter2",
-        "MAILBOX_AGENTS_SERVICE_TOKEN" + "=abcdefghijklmnop",
-        "GATEWAY_KEY_FILE" + "=Zq7xW2pL9mN4vB8k",
-        "pass" + 'word: "Sup3rS3cretValue99"',
-    ],
-)
+@pytest.mark.parametrize("line", CREDENTIAL_LINES)
 def test_a_credential_is_found(line: str) -> None:
     assert problems(line)
 
 
-@pytest.mark.parametrize(
-    "line",
-    [
-        'REMOVE_KEYWORD = "remove_keyword"',
-        "MAILBOX_AGENTS_GATEWAY_KEY_FILE=/run/secrets/gateway_key",
-        "token = base64.b64encode(raw)",
-    ],
-)
+@pytest.mark.parametrize("line", NO_CREDENTIAL_LINES)
 def test_a_name_that_is_no_credential_passes(line: str) -> None:
     assert problems(line) == []
 

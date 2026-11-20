@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from helpers import ROOT
+from helpers import CREDENTIAL_LINES, NO_CREDENTIAL_LINES, ROOT
 
 HOOK = ROOT / ".githooks" / "pre-commit"
 
@@ -83,44 +83,8 @@ def test_lets_the_rest_pass(repo: Path, name: str) -> None:
     assert _hook(repo).returncode == 0
 
 
-def test_refuses_a_line_that_looks_like_a_credential(repo: Path) -> None:
-    # Split, so this file does not look like a credential to the hook.
-    line = "MAILBOX_AGENTS_GATEWAY_KEY=" + "abcdefghijklmnop1234\n"
-    _stage(repo, "notes.txt", line)
-
-    answer = _hook(repo)
-
-    assert answer.returncode == 1
-    assert "credential" in answer.stderr
-
-
-# Each split, so this file does not look like a credential to the hook.
-@pytest.mark.parametrize(
-    "line",
-    [
-        '{"token": "' + "mbx_" + 'abcdefghijklmnop1234"}',
-        "Authorization: " + "Bearer " + "abcdefghijklmnop1234",
-        "GATEWAY_KEY: " + "sk-" + "live-abcdefghijklmnop1234",
-        "MAILBOX_AGENTS_GATEWAY_KEY = " + '"' + "abcdefghijklmnop1234" + '"',
-        "SERVICE_TOKEN: " + "'" + "abcdefghijklmnop1234" + "'",
-        '{"password": "' + 'Tr0ub4dor3xyzabc"}',
-        "token: " + "abcdefghijklmnopq",
-        "Gateway_Key = " + "abcdefghijklmnopq",
-        "GATEWAY_KEY=" + "Zq7xW2pL9mN4vB8k",
-    ],
-    ids=[
-        "json-token",
-        "bearer",
-        "sk-with-dash",
-        "spaced-quoted",
-        "yaml-quoted",
-        "json-lower-case",
-        "yaml-lower-case",
-        "mixed-case",
-        "bare-key",
-    ],
-)
-def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
+@pytest.mark.parametrize("line", CREDENTIAL_LINES)
+def test_refuses_a_credential(repo: Path, line: str) -> None:
     _stage(repo, "notes.txt", line + "\n")
 
     answer = _hook(repo)
@@ -129,21 +93,7 @@ def test_refuses_a_credential_in_another_form(repo: Path, line: str) -> None:
     assert "credential" in answer.stderr
 
 
-@pytest.mark.parametrize(
-    "line",
-    [
-        "MAILBOX_AGENTS_GATEWAY_KEY_FILE: /run/secrets/gateway_key",
-        "GATEWAY_KEY: ${GATEWAY_KEY}",
-        'headers={"Authorization": f"Bearer {key}"}',
-        "api_key: os.environ/ANTHROPIC_API_KEY",
-        "token = base64.b64encode(raw).decode()",
-        "tokens_in=calls.tokens_in",
-        'default_keyword = "agent-awaiting-reply"',
-        '"secret": mailbox_password}',
-        'ADD_KEYWORD = "add_keyword_long_value"',
-        'REMOVE_KEYWORD = "remove_keyword"',
-    ],
-)
+@pytest.mark.parametrize("line", NO_CREDENTIAL_LINES)
 def test_a_reference_to_a_secret_passes(repo: Path, line: str) -> None:
     _stage(repo, "notes.txt", line + "\n")
 
