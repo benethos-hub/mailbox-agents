@@ -6,13 +6,21 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import inspect
+import re
 from typing import Any
 
 import pytest
 from pydantic import BaseModel, ValidationError
 
 from benethos_mailbox_agents.contract import discover
+from benethos_mailbox_agents.llm import evidence
 from benethos_mailbox_agents.llm.gateway import strict_schema
+from benethos_mailbox_agents.records import (
+    Address,
+    Attachment,
+    MailMessage,
+    MessageRef,
+)
 from benethos_mailbox_agents.runtime.readiness import uses_model
 
 # The Claude API compiles a schema of structured output with at most this
@@ -94,6 +102,39 @@ def test_every_agent_that_asks_a_model_has_a_schema() -> None:
 def test_each_schema_fits_the_claude_api(name: str, schema: type[BaseModel]) -> None:
     found = strict_schema(schema)
     assert _unions(found, found.get("$defs", {})) <= UNION_PARAMETERS
+
+
+SAMPLE = MailMessage(
+    ref=MessageRef(account_id="acc1", message_id="m1"),
+    subject="Angebot fuer das Projekt",
+    sender=Address(email="office@client.example", name="Office"),
+    to=(Address(email="partner@partner.example"),),
+    cc=(Address(email="office@client.example"),),
+    text="Hello,\nplease find the offer attached.\n",
+    attachments=(
+        Attachment(filename="offer.pdf", content_type="application/pdf", size=1),
+    ),
+)
+
+
+@pytest.mark.parametrize("name", ASKING)
+def test_each_word_of_the_frame_render_writes_is_known_to_the_evidence_check(
+    name: str,
+) -> None:
+    header = _schema_modules()[name].render(SAMPLE).split("\n\n", 1)[0]
+    words = [re.match(r"(\w+):", line) for line in header.splitlines()]
+
+    assert all(words)
+    for word in words:
+        assert word is not None
+        assert evidence._FRAME.match(word.group(0)), word.group(1)
+
+
+def test_a_quote_with_the_word_of_its_frame_is_found() -> None:
+    to = "partner@partner.example, office@client.example"
+
+    assert evidence.contains(to, f"To: {to}")
+    assert evidence.contains("Angebot fuer das Projekt", "Subject: Angebot fuer das")
 
 
 @pytest.mark.parametrize("name", ASKING)

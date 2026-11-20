@@ -129,6 +129,9 @@ commit that makes the change. Design decisions live in
   finds a message among them at once. Before, thousands of updates took
   seconds to collect, and the health check saw a loop that stood while
   it worked them.
+- A quote of `awaiting_reply` that starts with the `To:` of its frame is
+  looked up without it, as one with `From:` or `Subject:`. Before, it was
+  not found.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

@@ -34,8 +34,9 @@ Further rules:
 - **A value needs evidence.** A label and every extracted field carry a
   quote. The code looks for the quote in the parts of the mail the model
   was given, each on its own: sender, subject, attachment names, text.
-  The frame the code writes around them, such as `Subject:`, is no part,
-  and a quote that starts with one is looked up without it. Both sides are
+  The frame the code writes around them, `From:`, `To:`, `Subject:` and
+  `Attachments:`, is no part, and a quote that starts with one is looked
+  up without it. A test holds the words each agent writes to that list. Both sides are
   brought to Unicode NFC and compared word for word: case, punctuation,
   typographic quotes and dashes, and the whitespace between words do not
   count, the words and their order do. A changed or missing word is not

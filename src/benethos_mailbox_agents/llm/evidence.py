@@ -32,7 +32,7 @@ _SPACE = re.compile(r"\s+", flags=re.UNICODE)
 # Everything between two words: whitespace, punctuation, quotes, dashes.
 _BETWEEN = re.compile(r"[\W_]+", flags=re.UNICODE)
 # The words of the frame render() writes before a part of the mail.
-_FRAME = re.compile(r"^\s*(?:from|subject|attachments)\s*:", flags=re.IGNORECASE)
+_FRAME = re.compile(r"^\s*(?:from|to|subject|attachments)\s*:", flags=re.IGNORECASE)
 
 
 def normalize(text: str) -> str:
