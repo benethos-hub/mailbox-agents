@@ -49,5 +49,9 @@ nvidia-ctk cdi list >&2
 
 if command -v docker >/dev/null 2>&1; then
     say "a container with the card"
-    docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
+    # Pinned by the digest of its multi-platform index, as every image of
+    # the repository is.
+    docker run --rm --device nvidia.com/gpu=all \
+        ubuntu:24.04@sha256:9c7f200c07e3d4a03e7249d2c16bf66a51120fb876aa2242cf31451412543289 \
+        nvidia-smi -L
 fi
