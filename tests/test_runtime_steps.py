@@ -368,3 +368,14 @@ async def test_a_token_count_beyond_sqlite_still_stores_the_step(
     )
 
     assert await runner(world).process(REF) == "done"
+
+
+async def test_a_redirect_of_the_gateway_leaves_the_message_pending(
+    world: Wired,
+) -> None:
+    world.fake_gateway.answer(httpx.Response(307))
+
+    with pytest.raises(ConfigError):
+        await runner(world).process(REF)
+
+    assert _state(world) == ("pending", 0)

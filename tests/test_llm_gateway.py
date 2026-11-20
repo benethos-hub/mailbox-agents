@@ -335,3 +335,14 @@ async def test_a_body_that_cannot_be_decoded_is_refused() -> None:
             await opened.ask(system="s", content="mail", schema=Answer)
 
     assert found.value.reason == "schema"
+
+
+async def test_a_redirect_is_a_configuration_to_correct(
+    fake: FakeGateway, gateway: Gateway
+) -> None:
+    fake.answer(
+        httpx.Response(307, headers={"location": "https://gateway.example.test/"})
+    )
+
+    with pytest.raises(ConfigError, match="MAILBOX_AGENTS_GATEWAY_URL"):
+        await gateway.ask(system="s", content="mail", schema=Answer)
