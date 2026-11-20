@@ -17,8 +17,9 @@ reversible action: a keyword, or a move to a folder. The first ones sort
 invoices, track sent mail that still waits for a reply, recognise project
 inquiries and file the mail of listed senders into folders.
 
-> **Status: alpha.** Built, and run on a test account of invented mail
-> only. Names, settings and the state file may still change from one
+> **Status: alpha.** Built, and run on a test account of invented mail. On
+> a real mailbox only an early version of `invoices` ran, in the stage
+> `shadow`, and changed nothing. Names, settings and the state file may still change from one
 > version to the next. The design is written down in
 > [docs/CONCEPT.md](https://github.com/benethos-hub/mailbox-agents/blob/main/docs/CONCEPT.md),
 > and no agent acts on a real mailbox yet. Do not point it at a mailbox you
