@@ -68,7 +68,8 @@ src/benethos_mailbox_agents/
                   # calls of one message, open items over the state file,
                   # the read-only mailbox, action executor, readiness,
                   # health, metrics
-  evaluation/     # the gold format, scoring per label and per field, report
+  evaluation/     # the gold format, the run, scoring per label and per
+                  # field, the report
   agents/
     <name>/       # one package per agent
       agent.py    # one Agent subclass, no side effects at import, always
