@@ -132,36 +132,44 @@ MAILBOX_AGENTS_MODEL=claude/haiku-5-5 uv run benethos-mailbox-agents \
     --reports containers/live/secrets/reports
 ```
 
-The local models were measured with llama.cpp build 12464, an RTX 4070
-with 12 GB and a 12th generation Core i9 with 24 threads: `invoices` and
-`awaiting_reply` on 2026-11-17, `inquiries` with its prompt `v3` on
-2026-11-18. Claude was measured on 2026-11-18 through the Claude API, its
-seconds include the way over the internet. The labels agreed with the
-gold set, out of 11 messages for `invoices` and `inquiries` and 3 for
-`awaiting_reply`. The fields are the right values of `invoices` against
-all it should have filled or did fill. The `invoices` column and the
-fields are of its prompt `v1`, which still asked for the supplier. Prompt
-`v4` was measured on 2026-11-18 with `mail-classifier` and
-`mail-classifier-gpu` alone, 11 of 11 each, see
-[docs/concept/agent-invoices.md](../../docs/concept/agent-invoices.md). The
-test account has had a twelfth message for `invoices` and `inquiries`
-since, a receipt that carries its invoice. The seconds are per message,
-the first message of a run waiting for a local model to load:
+Measured on 2026-11-20 with llama.cpp build 12464 behind LiteLLM 1.110.2,
+an RTX 4070 with 12 GB and a 12th generation Core i9 with 24 threads, and
+Claude through the Claude API, its seconds including the way over the
+internet. Each agent ran with the prompt it has today: `invoices`
+version 5 with its prompt `v4`, `inquiries` with `v3`, `awaiting_reply`
+with `v1`. The labels agreed with the gold set, out of the 12 invented
+messages for `invoices` and `inquiries` and 3 for `awaiting_reply`. An
+answer the evidence check refused counts as not agreed. The fields are
+the near miss `invoices` names for a message that is no invoice, such as
+a reminder or a payment receipt: the right values against all it should
+have filled or did fill. Every model named the 4 right ones, the rest is
+a near miss named where the gold set has none. The seconds are per
+message, the first message of a run waiting for a local model to load.
+The aliases of the agents, `mail-classifier`, `mail-classifier-gpu` and
+`mail-classifier-cpu`, gave the numbers of their models with the agents'
+own key:
 
 | Model | Size | invoices | inquiries | awaiting_reply | Fields | Seconds, invoices / inquiries |
 |---|---|---|---|---|---|---|
-| `cpu/qwen3-4b-2507` | 2.5 GB | 10 | 11 | 3 | 5 of 9 | 4.0 / 8.9 |
-| `cpu/qwen3.5-4b` | 2.7 GB | 11 | 11 | 3 | 6 of 9 | 4.5 / 11.8 |
-| `cpu/gemma-4-e4b` | 5.0 GB | 11 | 11 | 3 | 6 of 9 | 4.9 / 13.5 |
-| `cpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 10 | 3 | 6 of 7 | 4.7 / 22.6 |
-| `gpu/ministral-3-8b` | 5.2 GB | 11 | 2 | 3 | 6 of 7 | 0.8 / 3.9 |
-| `gpu/qwen3.5-9b` | 5.7 GB | 11 | 11 | 3 | 6 of 8 | 1.0 / 4.2 |
-| `gpu/gemma-4-12b` | 7.0 GB | 11 | 11 | 3 | 6 of 7 | 1.4 / 6.0 |
-| `gpu/qwen3.6-35b-a3b` | 22.1 GB | 11 | 10 | 3 | 6 of 7 | 1.7 / 11.0 |
-| `claude/haiku-5-5` | hosted | 11 | 11 | 3 | 6 of 7 | 1.1 / 2.4 |
-| `claude/opus-5-5` | hosted | 11 | 11 | 3 | 6 of 7 | 1.8 / 2.3 |
+| `cpu/qwen3-4b-2507` | 2.5 GB | 12 | 12 | 3 | 4 of 8 | 4.0 / 7.6 |
+| `cpu/qwen3.5-4b` | 2.7 GB | 12 | 12 | 3 | 4 of 6 | 4.0 / 10.3 |
+| `cpu/gemma-4-e4b` | 5.0 GB | 12 | 12 | 3 | 4 of 6 | 5.4 / 11.2 |
+| `cpu/qwen3.6-35b-a3b` | 22.1 GB | 12 | 11 | 3 | 4 of 5 | 9.6 / 10.6 |
+| `gpu/ministral-3-8b` | 5.2 GB | 9 | 2 | 3 | 4 of 5 | 2.7 / 2.1 |
+| `gpu/qwen3.5-9b` | 5.7 GB | 12 | 12 | 3 | 4 of 6 | 3.1 / 2.4 |
+| `gpu/gemma-4-12b` | 7.0 GB | 12 | 12 | 3 | 4 of 5 | 4.0 / 3.5 |
+| `gpu/qwen3.6-35b-a3b` | 22.1 GB | 12 | 12 | 3 | 4 of 5 | 9.5 / 3.7 |
+| `claude/haiku-5-5` | hosted | 12 | 12 | 3 | 4 of 5 | 1.4 / 1.8 |
+| `claude/opus-5-5` | hosted | 12 | 12 | 3 | 4 of 4 | 1.9 / 2.3 |
 
-What decided:
+The seconds of `invoices` with a local model are higher than in the run
+of 2026-11-17 with its prompt `v1`. Why was not looked into.
+
+What decided, measured on 2026-11-17 and 2026-11-18 with 11 messages and
+prompt `v1` of `invoices`. The run of 2026-11-20 bears the choices out.
+Two things differed in it: the 35B model's quote the mail does not hold
+came on the CPU only, and Haiku named one near miss that Opus left
+empty.
 
 - `ministral-3-8b` words its quotes anew, so the evidence check refuses
   nine answers of `inquiries` out of eleven.
