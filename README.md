@@ -26,6 +26,11 @@ inquiries and file the mail of listed senders into folders.
 
 ## How it works
 
+<picture>
+  <source srcset="https://raw.githubusercontent.com/benethos-hub/mailbox-agents/main/assets/architecture/architecture-dark.png" media="(prefers-color-scheme: dark)">
+  <img src="https://raw.githubusercontent.com/benethos-hub/mailbox-agents/main/assets/architecture/architecture.png" alt="The mailbox service hands the change feed and a message to Mailbox Agents and takes a keyword or a move back. Each agent takes a message through four steps: trigger, selection, decision and effect. For a decision it asks a model once through an OpenAI-compatible gateway, without tools. The mailbox service stands on the mail accounts, the gateway on local or hosted model backends.">
+</picture>
+
 - Mail is reached only through the REST API of the
   [mailbox service](https://github.com/benethos-hub/mailbox), with its
   Python client `benethos-mailbox-client`. An agent works only against a
