@@ -18,7 +18,7 @@ from typing import ClassVar
 
 from ..errors import ContractError
 from ..records import EVENTS, Decision, Event, FolderRef, MailMessage, MessageRef
-from ..settings import KEYWORD_FORBIDDEN, Settings
+from ..settings import KEYWORD_FORM, Settings
 from .context import Context
 
 __all__ = [
@@ -293,5 +293,8 @@ def _check_declarations(cls: type[Agent]) -> None:
     if wrong:
         raise ContractError(f"{cls.name}: requires unknown settings {wrong}")
     keyword = cls.default_keyword
-    if not keyword or KEYWORD_FORBIDDEN & set(keyword):
-        raise ContractError(f"{cls.name}: the default keyword is not one word")
+    if not KEYWORD_FORM.fullmatch(keyword or ""):
+        raise ContractError(
+            f"{cls.name}: the default keyword is not one word of lower case "
+            "letters, digits and dashes"
+        )

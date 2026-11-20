@@ -52,6 +52,11 @@ __all__ = ["NONE", "READERS", "Group", "Groups", "Kind", "Match", "load_groups"]
 # group is named so, case aside, as its messages would be counted as none.
 NONE = "none"
 
+# An address longer than this matches no rule: 64 characters before the
+# @, 255 after it, as much as the mail standards allow. A pattern of
+# several * takes time in the square of the length it is matched with.
+MAX_ADDRESS = 320
+
 _NAME = r"[^\s@*]+"
 # One name of a domain, and a domain of two names at least, none empty.
 _LABEL = r"[^\s@*.]+"
@@ -231,6 +236,8 @@ class Groups(BaseModel):
         if not address:
             return None
         found = address.strip().lower()
+        if len(found) > MAX_ADDRESS:
+            return None
         hits = [
             (group, _kind(rule))
             for group in self.groups

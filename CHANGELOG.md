@@ -24,9 +24,44 @@ commit that makes the change. Design decisions live in
   `MIT` with its licence file, and its description, keywords and
   classifiers say what it is: self-hosted agents for a mailbox, typed and
   asyncio.
+- An answer of `inquiries` holds at most 2000 characters in all its
+  quotes and values, beside the 300 of each. A longer one is refused as
+  not fitting the schema.
+- The contract refuses an agent whose `default_keyword` is not lower
+  case letters, digits and dashes, the form `MAILBOX_AGENTS_KEYWORD` must
+  have. Before, it checked a shorter list of characters only.
 - `counting` needs `mail.read` alone in the mailbox service, as the
   production README and the rights table now say. It was named with
   `mail.write` like the other agents before.
+
+### Fixed
+
+- An answer of the model whose quote holds the JSON escape of a lone
+  surrogate is refused and tried again like any other answer outside the
+  schema. Before, storing it ended the worker after the paid call, and the
+  message ended it again after each restart.
+- A lone surrogate in what the mailbox service answers, in a subject, a
+  text, a name, an address, a file name or a folder, becomes U+FFFD.
+  Before, it ended the worker when the message was sent to the gateway.
+- A message whose subject, text or thread the mailbox service answers as
+  another type is refused and tried again. Before, the worker ended with a
+  traceback that quoted the value.
+- JSON nested too deep for the parser, from the gateway or the mailbox
+  service, is a refused answer or an upstream away. Before, its
+  `RecursionError` ended the worker.
+- A token count of the gateway beyond what SQLite stores is capped.
+  Before, storing the step ended the worker after the paid call.
+- A body of the gateway that cannot be decoded, such as one that says
+  gzip and is none, is a refused answer. Before, it ended the worker.
+- `invoices` and `inquiries` cut the sender's address at 320 characters
+  for the model, as they cut the name. `sorting` matches no rule against
+  a longer address, where a pattern of several `*` held up the worker.
+- The error line a command ends with writes a control or direction
+  character escaped, as `status` and `report` do. Before, a code the
+  mailbox service answered reached the terminal raw.
+- A lone surrogate in a line of the log, of `status` or of `report` is
+  written as its escape. Before, writing it to a terminal raised an
+  error.
 
 ## [0.1.0] - 2026-11-19
 

@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import re
 import ssl
-from collections.abc import AsyncIterator, Awaitable, Iterable
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator, Awaitable, Iterable, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from datetime import date
 from types import TracebackType
 from typing import TypeVar
@@ -30,6 +30,7 @@ from benethos_mailbox_client import (
     ServiceUnavailableError,
 )
 from benethos_mailbox_client import models as wire
+from pydantic import ValidationError
 
 from ..errors import (
     ChangesExpiredError,
@@ -124,14 +125,51 @@ async def _call(pending: Awaitable[T]) -> T:
         raise MailboxUnavailableError(
             f"the mailbox service failed ({type(exc).__name__})"
         ) from None
+    except RecursionError:
+        # The client reads JSON nested too deep for the parser, and catches
+        # only a ValueError of it.
+        raise MailboxUnavailableError(
+            "the mailbox service answered JSON nested too deep"
+        ) from None
+
+
+def _sound(value: str) -> str:
+    """``value`` with each lone surrogate replaced by U+FFFD. One comes from
+    the JSON escape of half a pair, and it cannot be encoded as UTF-8: a
+    request to the gateway or a write to the state file would raise
+    outside every error of this package."""
+    return "".join("\ufffd" if 0xD800 <= ord(c) <= 0xDFFF else c for c in value)
+
+
+def _sound_or_none(value: str | None) -> str | None:
+    return None if value is None else _sound(value)
+
+
+@contextmanager
+def _as_described() -> Iterator[None]:
+    """Build a record of what the service answered. The client passes the
+    fields of a message on unchecked, so a value of another type raises
+    while the record is built. That is a refusal, as for an answer the
+    client finds unexpected: the message counts an attempt. Its text never
+    holds the value, which may be a part of a mail."""
+    try:
+        yield
+    except (ValidationError, TypeError):
+        raise MailboxRefusedError(
+            "the answer is not what the API describes", reason="unexpected_response"
+        ) from None
 
 
 def _address(found: wire.Address | None) -> Address | None:
-    return Address(email=found.email, name=found.name) if found else None
+    if not found:
+        return None
+    return Address(email=_sound(found.email), name=_sound_or_none(found.name))
 
 
 def _addresses(found: Iterable[wire.Address]) -> tuple[Address, ...]:
-    return tuple(Address(email=a.email, name=a.name) for a in found)
+    return tuple(
+        Address(email=_sound(a.email), name=_sound_or_none(a.name)) for a in found
+    )
 
 
 class Mailbox:
@@ -304,50 +342,52 @@ class Mailbox:
 
     async def message(self, ref: MessageRef) -> MailMessage:
         found = await _call(self._client.get_message(ref.account_id, ref.message_id))
-        return MailMessage(
-            ref=ref,
-            thread_id=found.thread_id,
-            folders=await self._refs(ref.account_id, found.folder_ids),
-            subject=found.subject,
-            sender=_address(found.sender),
-            to=_addresses(found.to),
-            cc=_addresses(found.cc),
-            date=found.date,
-            received=found.received,
-            keywords=tuple(found.keywords),
-            text=found.text_body or "",
-            attachments=tuple(
-                Attachment(
-                    filename=a.filename,
-                    content_type=a.content_type,
-                    size=a.size,
-                    inline=a.inline,
-                )
-                for a in found.attachments
-            ),
-            message_id_header=found.message_id_header,
-            in_reply_to=found.in_reply_to,
-        )
+        with _as_described():
+            return MailMessage(
+                ref=ref,
+                thread_id=found.thread_id,
+                folders=await self._refs(ref.account_id, found.folder_ids),
+                subject=_sound_or_none(found.subject),
+                sender=_address(found.sender),
+                to=_addresses(found.to),
+                cc=_addresses(found.cc),
+                date=found.date,
+                received=found.received,
+                keywords=tuple(found.keywords),
+                text=_sound(found.text_body or ""),
+                attachments=tuple(
+                    Attachment(
+                        filename=_sound_or_none(a.filename),
+                        content_type=a.content_type,
+                        size=a.size,
+                        inline=a.inline,
+                    )
+                    for a in found.attachments
+                ),
+                message_id_header=found.message_id_header,
+                in_reply_to=found.in_reply_to,
+            )
 
     async def thread(self, account_id: str, thread_id: str) -> Thread:
         """A thread, its messages oldest first, each without its text."""
         found = await _call(self._client.get_thread(account_id, thread_id))
-        messages = []
-        for item in found.messages:
-            messages.append(
-                MailMessage(
-                    ref=MessageRef(account_id=account_id, message_id=item.id),
-                    thread_id=item.thread_id,
-                    folders=await self._refs(account_id, item.folder_ids),
-                    subject=item.subject,
-                    sender=_address(item.sender),
-                    to=_addresses(item.to),
-                    date=item.date,
-                    received=item.received,
-                    keywords=tuple(item.keywords),
+        with _as_described():
+            messages = []
+            for item in found.messages:
+                messages.append(
+                    MailMessage(
+                        ref=MessageRef(account_id=account_id, message_id=item.id),
+                        thread_id=item.thread_id,
+                        folders=await self._refs(account_id, item.folder_ids),
+                        subject=_sound_or_none(item.subject),
+                        sender=_address(item.sender),
+                        to=_addresses(item.to),
+                        date=item.date,
+                        received=item.received,
+                        keywords=tuple(item.keywords),
+                    )
                 )
-            )
-        return Thread(id=found.id, messages=tuple(messages))
+            return Thread(id=found.id, messages=tuple(messages))
 
     # -- the actions -------------------------------------------------------------------
 
@@ -369,7 +409,7 @@ class Mailbox:
         known = await self.folders(account_id, fresh=True)
         if made.id in known:
             return known[made.id]
-        return FolderRef(id=made.id, name=made.name, role=made.role, path=path)
+        return FolderRef(id=made.id, name=_sound(made.name), role=made.role, path=path)
 
     async def add_keyword(self, ref: MessageRef, keyword: str) -> None:
         await _call(
@@ -398,18 +438,21 @@ def _with_paths(found: list[wire.Folder]) -> dict[str, FolderRef]:
     by_id = {folder.id: folder for folder in found}
 
     def path(folder: wire.Folder) -> str:
-        names = [folder.name]
+        names = [_sound(folder.name)]
         seen = {folder.id}
         parent = by_id.get(folder.parent_id) if folder.parent_id else None
         while parent is not None and parent.id not in seen:
-            names.append(parent.name)
+            names.append(_sound(parent.name))
             seen.add(parent.id)
             parent = by_id.get(parent.parent_id) if parent.parent_id else None
         return "/".join(reversed(names))
 
     return {
         folder.id: FolderRef(
-            id=folder.id, name=folder.name, role=folder.role, path=path(folder)
+            id=folder.id,
+            name=_sound(folder.name),
+            role=folder.role,
+            path=path(folder),
         )
         for folder in found
     }

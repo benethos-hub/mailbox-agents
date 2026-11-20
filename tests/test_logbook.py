@@ -417,3 +417,11 @@ def test_no_other_module_imports_logging() -> None:
 
 def test_a_failure_is_a_warning_by_default() -> None:
     assert Failure.level == logging.WARNING
+
+
+def test_a_lone_surrogate_is_written_as_its_escape() -> None:
+    found = escaped("x" + chr(0xD800))
+
+    assert not any(0xD800 <= ord(c) <= 0xDFFF for c in found)
+    found.encode("utf-8")
+    assert found.startswith("x")

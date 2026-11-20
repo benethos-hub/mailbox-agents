@@ -91,6 +91,16 @@ def _error(status: int, code: str, message: str = "refused") -> httpx.Response:
     return httpx.Response(status, json={"error": {"code": code, "message": message}})
 
 
+def _escaped(status: int, body: Any) -> httpx.Response:
+    """JSON with every character beyond ASCII escaped, as a service may send
+    it: so a lone surrogate reaches the client as the escape it would be."""
+    return httpx.Response(
+        status,
+        content=json.dumps(body).encode("ascii"),
+        headers={"content-type": "application/json"},
+    )
+
+
 class FakeService:
     """The mailbox service, as far as this package uses it."""
 
@@ -208,9 +218,9 @@ class FakeService:
         limit = int(request.url.params.get("limit", "200"))
         chunk = self.feed[start : start + limit]
         end = start + len(chunk)
-        return httpx.Response(
+        return _escaped(
             200,
-            json={"changes": chunk, "state": str(end), "more": end < len(self.feed)},
+            {"changes": chunk, "state": str(end), "more": end < len(self.feed)},
         )
 
     def _list(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
@@ -223,9 +233,9 @@ class FakeService:
         limit = int(request.url.params.get("limit", "200"))
         page = items[cursor : cursor + limit]
         more = cursor + limit < len(items)
-        return httpx.Response(
+        return _escaped(
             200,
-            json={
+            {
                 "items": page,
                 "next_cursor": str(cursor + limit) if more else None,
             },
@@ -245,7 +255,7 @@ class FakeService:
             ),
             key=lambda m: m["id"],
         )
-        return httpx.Response(200, json={"items": items, "next_cursor": None})
+        return _escaped(200, {"items": items, "next_cursor": None})
 
     def _in_role(self, message: dict[str, Any], role: str) -> bool:
         """As the service lists: by the role of a folder, the inbox when
@@ -256,7 +266,7 @@ class FakeService:
         return any(roles.get(i) == role for i in message["folder_ids"])
 
     def _folders(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
-        return httpx.Response(200, json=self.folders.get(parts[1], []))
+        return _escaped(200, self.folders.get(parts[1], []))
 
     def _create_folder(
         self, request: httpx.Request, parts: list[str]
@@ -281,7 +291,7 @@ class FakeService:
         found = self.messages.get((parts[1], parts[3]))
         if found is None:
             return _error(404, "not_found", "no such message")
-        return httpx.Response(200, json=found)
+        return _escaped(200, found)
 
     def _thread(self, request: httpx.Request, parts: list[str]) -> httpx.Response:
         account, thread = parts[1], parts[3]
@@ -295,9 +305,9 @@ class FakeService:
         )
         if not members:
             return _error(404, "not_found", "no such thread")
-        return httpx.Response(
+        return _escaped(
             200,
-            json={
+            {
                 "id": thread,
                 "account_id": account,
                 "subject": members[-1]["subject"],
@@ -335,7 +345,7 @@ class FakeService:
         found["keywords"] = keywords
         if "folder_ids" in body:
             found["folder_ids"] = list(body["folder_ids"])
-        return httpx.Response(200, json=found)
+        return _escaped(200, found)
 
 
 def _parts(request: httpx.Request) -> list[str]:
@@ -397,9 +407,9 @@ class FakeGateway:
         if isinstance(found, httpx.Response):
             return found
         content = found if isinstance(found, str) else json.dumps(found)
-        return httpx.Response(
+        return _escaped(
             200,
-            json={
+            {
                 "id": "chatcmpl-1",
                 "model": self.model,
                 "choices": [

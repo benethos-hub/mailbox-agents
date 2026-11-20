@@ -99,6 +99,9 @@ async def test_the_defaults_of_the_optional_methods() -> None:
         ({"limits": Limits(model_calls_per_message=-1)}, "negative"),
         ({"requires": Requires(settings=("no_such",))}, "unknown settings"),
         ({"default_keyword": "two words"}, "one word"),
+        ({"default_keyword": "$Junk"}, "one word"),
+        ({"default_keyword": "Agent-X"}, "one word"),
+        ({"default_keyword": "a" + chr(1) + "b"}, "one word"),
     ],
 )
 def test_a_wrong_declaration_is_refused(

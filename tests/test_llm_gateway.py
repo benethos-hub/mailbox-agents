@@ -21,6 +21,10 @@ from fakes import FakeGateway
 
 OTHER = '{"label": "other", "quote": "q", "supplier": null}'
 
+# Brackets nested deeper than any parser's stack holds: 20 000 raise a
+# RecursionError on Windows, not on Linux from Python 3.14.
+DEEP = 1_000_000
+
 
 class Inner(BaseModel):
     value: str | None
@@ -253,3 +257,81 @@ def test_a_ca_of_the_settings_is_what_the_gateway_trusts(
     Gateway("https://g.example.test", "k", "m", timeout=1.0)
     assert "verify" not in given
     assert given["trust_env"] is False
+
+
+async def test_an_answer_with_a_lone_surrogate_is_refused(
+    fake: FakeGateway, gateway: Gateway
+) -> None:
+    # The JSON escape of a lone surrogate passes json.loads and the schema,
+    # but cannot be stored as UTF-8.
+    fake.answer('{"label": "invoice", "quote": "R-1 \\ud800", "supplier": null}')
+
+    with pytest.raises(AnswerRefusedError) as found:
+        await gateway.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"
+
+
+async def test_a_body_nested_too_deep_is_refused() -> None:
+    deep = httpx.Response(200, content=b"[" * DEEP)
+    async with Gateway(
+        "https://gateway.example.test/v1/",
+        "gateway-key",
+        "classifier",
+        timeout=120.0,
+        transport=httpx.MockTransport(lambda request: deep),
+    ) as opened:
+        with pytest.raises(AnswerRefusedError) as found:
+            await opened.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"
+
+
+async def test_a_content_nested_too_deep_is_refused(
+    fake: FakeGateway, gateway: Gateway
+) -> None:
+    fake.answer("[" * DEEP)
+
+    with pytest.raises(AnswerRefusedError) as found:
+        await gateway.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"
+
+
+async def test_a_token_count_beyond_sqlite_is_capped(
+    fake: FakeGateway, gateway: Gateway
+) -> None:
+    fake.answer(
+        httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": OTHER}}],
+                "usage": {"prompt_tokens": 1e30, "completion_tokens": 10**40},
+            },
+        )
+    )
+
+    reply = await gateway.ask(system="s", content="mail", schema=Answer)
+
+    assert (reply.tokens_in, reply.tokens_out) == (2**63 - 1, 2**63 - 1)
+
+
+async def test_a_body_that_cannot_be_decoded_is_refused() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-encoding": "gzip"},
+            stream=httpx.ByteStream(b"no gzip"),
+        )
+
+    async with Gateway(
+        "https://gateway.example.test/v1/",
+        "gateway-key",
+        "classifier",
+        timeout=120.0,
+        transport=httpx.MockTransport(handle),
+    ) as opened:
+        with pytest.raises(AnswerRefusedError) as found:
+            await opened.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"

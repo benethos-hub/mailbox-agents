@@ -145,19 +145,28 @@ class Gateway:
             raise GatewayUnavailableError(
                 f"the gateway is away ({type(exc).__name__})"
             ) from None
+        except httpx.HTTPError:
+            # Such as a DecodingError: a body that says gzip and is none.
+            raise AnswerRefusedError(
+                "the gateway answered a body that cannot be read", reason="schema"
+            ) from None
         duration_ms = int((time.monotonic() - started) * 1000)
         _check(response)
         try:
             answer = response.json()
-        except ValueError:
+        except (ValueError, RecursionError):
+            # RecursionError: JSON nested too deep for the parser.
             raise AnswerRefusedError(
                 "the gateway answered no JSON", reason="schema"
             ) from None
         value = _value(answer, schema)
         usage = answer.get("usage")
+        # The name the gateway reports is stored: a lone surrogate in it
+        # becomes "?".
+        model = str(answer.get("model") or self.model)
         return Reply(
             value=value,
-            model=str(answer.get("model") or self.model),
+            model=model.encode("utf-8", "replace").decode("utf-8"),
             tokens_in=_tokens(usage, "prompt_tokens"),
             tokens_out=_tokens(usage, "completion_tokens"),
             duration_ms=duration_ms,
@@ -166,14 +175,19 @@ class Gateway:
         )
 
 
+#: The largest whole number SQLite stores.
+MAX_TOKENS = 2**63 - 1
+
+
 def _tokens(usage: object, name: str) -> int:
     """A token count of the answer's usage, 0 where it is missing, no whole
-    number or below 0: the call is made and paid, and a count the gateway
-    garbled must not end the process before the step is stored."""
+    number or below 0, and at most what SQLite stores: the call is made and
+    paid, and a count the gateway garbled must not end the process before
+    the step is stored."""
     if not isinstance(usage, dict):
         return 0
     try:
-        return max(0, int(usage.get(name) or 0))
+        return min(max(0, int(usage.get(name) or 0)), MAX_TOKENS)
     except (TypeError, ValueError, OverflowError):
         return 0
 
@@ -222,11 +236,24 @@ def _loopback(host: str) -> bool:
 
 
 def _value(answer: Any, schema: type[T]) -> T:
-    """The content of the first choice, validated against ``schema``."""
+    """The content of the first choice, validated against ``schema``.
+
+    The JSON escape of a lone surrogate passes ``json.loads`` and the
+    schema, but cannot be stored as UTF-8: such an answer is refused, so it
+    is stored, counted and tried again like any other."""
     try:
         content = answer["choices"][0]["message"]["content"]
-        return schema.model_validate(json.loads(content))
-    except (KeyError, IndexError, TypeError, ValueError, ValidationError):
+        parsed = json.loads(content)
+        json.dumps(parsed, ensure_ascii=False).encode("utf-8")
+        return schema.model_validate(parsed)
+    except (
+        KeyError,
+        IndexError,
+        TypeError,
+        ValueError,
+        RecursionError,
+        ValidationError,
+    ):
         raise AnswerRefusedError(
             "the answer does not fit the schema", reason="schema"
         ) from None

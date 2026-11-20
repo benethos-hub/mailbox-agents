@@ -29,13 +29,18 @@ null or a value with its quote, in the schema as
 whole, not its value and quote each: the Claude API compiles a schema with
 at most 16 parameters whose type is a union, and refused the 28 of `v2`.
 A test holds every agent's schema to that limit.
+A quote or a value holds at most 300 characters, and a whole answer at
+most 2000 in all its quotes and values (2026-11-20): 29 strings of 300
+would hold more than the model was given. A longer answer is refused as
+not fitting the schema, which is sent to the model unchanged.
 A message labelled `other` keeps none. The evaluation counts each field
 right, wrong, missing, invented or rightly empty.
 
 The model is given the sender, the subject and the first 8000 characters
 of the text. The sender's name and the subject, which a stranger chooses,
-are cut at 300 characters each (2026-11-19). The evidence check looks a
-quote up in the same cut text.
+are cut at 300 characters each (2026-11-19), the sender's address at 320
+(2026-11-20), as much as the mail standards allow. The evidence check
+looks a quote up in the same cut text.
 
 Recognising an inquiry seen before, and anything that writes a reply, come
 later ([roadmap](../ROADMAP.md)).

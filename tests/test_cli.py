@@ -469,3 +469,27 @@ def test_status_says_why_folders_were_not_checked(
     assert (
         "  folders not checked in acc1: the mailbox service" in capsys.readouterr().out
     )
+
+
+def test_the_error_line_writes_a_control_character_escaped(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    code = "".join(map(chr, (0x1B, 0x5D, 0x30, 0x3B, 0x6F, 0x07, 0x1B))) + "[2J"
+
+    def refuse(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/health":
+            return httpx.Response(
+                403, json={"error": {"code": code, "message": "refused"}}
+            )
+        return service.handle(request)
+
+    monkeypatch.setitem(session.TRANSPORTS, "service", httpx.MockTransport(refuse))
+
+    assert main(["run", "--agent", "counting"]) != 0
+    err = capsys.readouterr().err
+    assert err.splitlines()[-1].startswith(f"{PROG}: the mailbox service refused")
+    assert chr(0x1B) not in err
+    assert chr(0x07) not in err

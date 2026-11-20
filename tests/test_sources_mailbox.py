@@ -16,10 +16,14 @@ from benethos_mailbox_agents.errors import (
     MailboxUnavailableError,
 )
 from benethos_mailbox_agents.records import MessageRef
-from benethos_mailbox_agents.sources.mailbox import Mailbox, connect
+from benethos_mailbox_agents.sources.mailbox import Mailbox, _call, connect
 from fakes import ACCOUNT, FakeService, wire_message
 
 REF = MessageRef(account_id=ACCOUNT, message_id="m1")
+
+# Brackets nested deeper than any parser's stack holds: 20 000 raise a
+# RecursionError on Windows, not on Linux from Python 3.14.
+DEEP = 1_000_000
 
 
 @pytest.fixture
@@ -304,3 +308,92 @@ async def test_a_ca_of_the_settings_is_what_the_service_is_trusted_by(
         pass
 
     assert given == [context, True]
+
+
+async def test_a_lone_surrogate_from_the_service_becomes_a_replacement(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    odd = chr(0xDCFC)
+    service.folders[ACCOUNT].append(
+        {"id": "odd", "name": f"Ablage{odd}", "role": None, "parent_id": None}
+    )
+    service.add(
+        wire_message(
+            "m1",
+            folder_ids=["odd"],
+            subject=f"Rechnung{odd}",
+            sender_name=f"Name{odd}",
+            text=f"Text{odd}",
+            attachments=[
+                {"filename": f"R{odd}.pdf", "content_type": "application/pdf"}
+            ],
+        )
+    )
+
+    found = await mailbox.message(REF)
+
+    assert found.sender is not None
+    values = [
+        found.subject or "",
+        found.text,
+        found.sender.name or "",
+        found.sender.email,
+        found.attachments[0].filename or "",
+        found.folders[0].name,
+        found.folders[0].path,
+    ]
+    for value in values:
+        value.encode("utf-8")
+    assert found.subject == "Rechnung\ufffd"
+    assert found.folders[0].path == "Ablage\ufffd"
+
+
+async def test_a_string_without_a_surrogate_stays_as_it_is(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    service.add(wire_message("m1", subject="Grüße \u00e9 \U0001f600", text="Text"))
+
+    found = await mailbox.message(REF)
+
+    assert found.subject == "Grüße \u00e9 \U0001f600"
+
+
+@pytest.mark.parametrize(
+    "field", ["subject", "text_body", "thread_id"], ids=["subject", "text", "thread"]
+)
+async def test_a_field_of_another_type_is_a_refusal_without_its_value(
+    service: FakeService, mailbox: Mailbox, field: str
+) -> None:
+    message = wire_message("m1")
+    message[field] = ["Geheimer Betreff"]
+    service.add(message)
+
+    with pytest.raises(MailboxRefusedError) as found:
+        await mailbox.message(REF)
+
+    assert found.value.reason == "unexpected_response"
+    assert "Geheimer" not in str(found.value)
+    assert found.value.__cause__ is None
+
+
+async def test_a_body_nested_too_deep_is_an_upstream_away() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, content=b"[" * DEEP, headers={"content-type": "application/json"}
+        )
+
+    async with connect(
+        "https://mailbox.example.test",
+        "token-value",
+        transport=httpx.MockTransport(handle),
+    ) as opened:
+        with pytest.raises(MailboxUnavailableError):
+            await opened.message(REF)
+
+
+async def test_a_recursion_error_of_the_client_is_an_upstream_away() -> None:
+    async def deep() -> None:
+        raise RecursionError
+
+    with pytest.raises(MailboxUnavailableError):
+        await _call(deep())

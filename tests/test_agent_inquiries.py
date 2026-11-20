@@ -8,14 +8,18 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from benethos_mailbox_agents.agents.inquiries.agent import Inquiries
 from benethos_mailbox_agents.agents.inquiries.patterns import DATE, RATE, load_patterns
 from benethos_mailbox_agents.agents.inquiries.schema import (
     FIELDS,
+    MAX_ADDRESS,
+    MAX_ANSWER_TOTAL,
     MAX_NAME,
     MAX_SUBJECT,
     MAX_TEXT,
+    Inquiry,
     parts,
     render,
 )
@@ -326,3 +330,41 @@ def test_a_stranger_cannot_blow_up_the_call() -> None:
         "T" * MAX_TEXT,
     ]
     assert all(part in rendered for part in parts(message))
+
+
+def test_a_long_address_is_cut_for_the_model_and_the_check() -> None:
+    address = "a" * 100_000 + "@agency.example"
+    message = MailMessage(
+        ref=MessageRef(account_id=ACCOUNT, message_id="m1"),
+        sender=Address(email=address, name=None),
+        subject="Anfrage",
+        text="Text",
+    )
+
+    rendered = render(message)
+
+    assert len(rendered) < MAX_ADDRESS + 200
+    assert parts(message)[0] == address[:MAX_ADDRESS]
+    assert parts(message)[0] in rendered
+
+
+def _answer(text: str) -> dict[str, object]:
+    """An answer of inquiries with every field filled with ``text``."""
+    fields: dict[str, object] = {
+        name: {"value": text, "quote": text} for name in FIELDS
+    }
+    return {"label": "inquiry", "quote": text, **fields}
+
+
+def test_an_answer_longer_than_its_total_is_refused() -> None:
+    # 29 strings of 300 characters each: every one within its own limit.
+    assert 29 * 300 > MAX_ANSWER_TOTAL
+    with pytest.raises(ValidationError, match=f"more than {MAX_ANSWER_TOTAL}"):
+        Inquiry.model_validate(_answer("x" * 300))
+
+
+def test_an_answer_of_ordinary_length_is_taken() -> None:
+    found = Inquiry.model_validate(_answer("Senior Java Developer ab 01.12."))
+
+    assert found.role is not None
+    assert found.role.value == "Senior Java Developer ab 01.12."

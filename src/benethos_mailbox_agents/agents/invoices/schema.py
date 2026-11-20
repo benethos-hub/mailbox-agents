@@ -15,6 +15,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict
 from ...records import Attachment, MailMessage
 
 __all__ = [
+    "MAX_ADDRESS",
     "MAX_ANSWER_TEXT",
     "MAX_FILES",
     "MAX_FILES_TEXT",
@@ -35,6 +36,10 @@ MAX_TEXT = 6000
 # evidence check.
 MAX_SUBJECT = 300
 MAX_NAME = 300
+# The sender's address is cut here: 64 characters before the @, 255
+# after it, as much as the mail standards allow. A longer one is no
+# address a server delivers, and only blows up the call.
+MAX_ADDRESS = 320
 MAX_FILES = 20
 MAX_FILES_TEXT = 1000
 
@@ -89,7 +94,8 @@ def _named(message: MailMessage) -> str:
     if sender is None:
         return ""
     name = (sender.name or "")[:MAX_NAME]
-    return f"{name} <{sender.email}>" if name else sender.email
+    email = sender.email[:MAX_ADDRESS]
+    return f"{name} <{email}>" if name else email
 
 
 def _subject(message: MailMessage) -> str:
