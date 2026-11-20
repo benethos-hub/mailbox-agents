@@ -117,6 +117,11 @@ commit that makes the change. Design decisions live in
 - The sorting list, the patterns of `inquiries` and a gold file that an
   editor started with the mark of UTF-8 are read without it. Before, each
   was refused as no JSON.
+- An empty line for `MAILBOX_AGENTS_KEYWORD`, `SORTING_FILE`,
+  `INQUIRIES_PATTERNS_FILE`, `SERVICE_TOKEN_FILE` or `GATEWAY_KEY_FILE`
+  counts as not set, as it did for `CA_FILE` and the secrets. Before, the
+  keyword was refused, a file became the folder `.`, and an empty
+  patterns file held up `inquiries`.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

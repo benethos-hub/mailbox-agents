@@ -108,6 +108,23 @@ def test_an_empty_secret_lets_its_file_be_read(
     assert found.missing(("gateway_key",)) == ["MAILBOX_AGENTS_GATEWAY_KEY"]
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "keyword",
+        "ca_file",
+        "sorting_file",
+        "inquiries_patterns_file",
+        "service_token_file",
+        "gateway_key_file",
+    ],
+)
+def test_an_empty_line_is_not_set(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    monkeypatch.setenv(f"{PREFIX}{name.upper()}", "")
+
+    assert getattr(load_settings(), name) is None
+
+
 def test_an_unreadable_secret_file_is_a_config_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -181,7 +198,7 @@ def test_a_wrong_value_is_named_never_quoted(monkeypatch: pytest.MonkeyPatch) ->
 
 @pytest.mark.parametrize(
     "keyword",
-    ["", "two words", "(x)", 'q"', "$Junk", "Agent-X", "a" + chr(1) + "b", "-x"],
+    ["two words", "(x)", 'q"', "$Junk", "Agent-X", "a" + chr(1) + "b", "-x"],
 )
 def test_a_keyword_is_lower_case_letters_digits_and_dashes(keyword: str) -> None:
     with pytest.raises(errors.ConfigError, match="KEYWORD") as raised:

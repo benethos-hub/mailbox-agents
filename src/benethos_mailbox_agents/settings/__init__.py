@@ -112,9 +112,19 @@ class Settings(BaseSettings):
             return [part.strip() for part in value.split(",") if part.strip()]
         return value
 
-    @field_validator("ca_file", mode="before")
+    @field_validator(
+        "ca_file",
+        "keyword",
+        "sorting_file",
+        "inquiries_patterns_file",
+        "service_token_file",
+        "gateway_key_file",
+        mode="before",
+    )
     @classmethod
     def _empty_is_unset(cls, value: Any) -> Any:
+        """An empty line, as ``.env.example`` holds, is not set: a path
+        would be the folder ``.``, a keyword one that is refused."""
         return None if value == "" else value
 
     @field_validator("ca_file")
