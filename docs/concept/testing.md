@@ -46,5 +46,7 @@ Part of the [concept](../CONCEPT.md).
   `live/common.py` (decided 2026-11-18). A `MAILBOX_AGENTS_` variable
   exported in the shell, of a real deployment say, is not read. A mailbox
   service that is not on this machine, `127.0.0.1`, `localhost` or `::1`,
-  stops the check with exit code 2. The check prints the account and the
+  at the port 38081 of `containers/live`, stops the check with exit code
+  2: a real service on this machine at its default port would pass the
+  host alone (decided 2026-11-20). The check prints the account and the
   service before it reads or writes.

@@ -83,13 +83,31 @@ def test_a_service_on_this_machine_is_taken(
     assert common.live_settings(env_file(tmp_path, url), "x").service_url == url
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://real.example",
+        "https://real.example:38081",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1",
+        "http://localhost:99999",
+    ],
+)
 def test_a_service_elsewhere_stops_the_check(
-    common: ModuleType, tmp_path: Path
+    common: ModuleType, tmp_path: Path, url: str
 ) -> None:
     with pytest.raises(SystemExit) as raised:
-        common.live_settings(env_file(tmp_path, "https://real.example"), "x")
+        common.live_settings(env_file(tmp_path, url), "x")
 
     assert raised.value.code == 2
+
+
+def test_the_live_port_is_the_one_of_the_compose_file(common: ModuleType) -> None:
+    compose = (ROOT / "containers" / "live" / "compose.yaml").read_text("utf-8")
+    setup = (ROOT / "containers" / "live" / "setup.sh").read_text("utf-8")
+
+    assert f'"127.0.0.1:{common.LIVE_PORT}:8080"' in compose
+    assert f"SERVICE_URL=http://127.0.0.1:{common.LIVE_PORT} " in setup
 
 
 async def test_put_back_takes_off_each_keyword_and_moves_back_once(
