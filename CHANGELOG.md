@@ -59,6 +59,9 @@ commit that makes the change. Design decisions live in
 - The error line a command ends with writes a control or direction
   character escaped, as `status` and `report` do. Before, a code the
   mailbox service answered reached the terminal raw.
+- `awaiting_reply` takes its keyword off a message whose item a reply or
+  a new message closed, also when the first write failed: the tick asks
+  again until the keyword is off. Before, it stayed on the message.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

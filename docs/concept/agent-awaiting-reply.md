@@ -44,6 +44,13 @@ does sets it. A keyword the service refused is offered again on the next
 tick. The deadline counts from the date of the sent message, and a
 date on a weekend counts from the Monday after.
 
+An item closed as `replied` or `followed_up` takes the keyword off with
+the step that closes it. When that write fails, the step run again finds
+no open item. So the tick also takes the keyword off every such item that
+still counts it as set, and the item counts it as gone once the keyword
+is off the message (2026-11-20). An item closed as `keyword_removed` or
+`message_gone` is never asked about.
+
 The model is given the recipients, the subject and the text the sender
 wrote, without what it quotes, the last 4000 characters of it. The
 subject is cut at 300 characters, as a reply keeps the one a stranger

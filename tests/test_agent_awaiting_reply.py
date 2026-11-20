@@ -668,3 +668,39 @@ def test_a_long_subject_cannot_blow_up_the_call() -> None:
 
     assert len(render(message)) < MAX_TEXT + MAX_SUBJECT + 200
     assert parts(message)[1:] == ["S" * MAX_SUBJECT, "T" * MAX_TEXT]
+
+
+async def test_a_keyword_whose_removal_failed_is_taken_off_on_the_tick(
+    world: World,
+) -> None:
+    await _due(world)
+    assert world.keywords("s1") == ["agent-awaiting-reply"]
+    world.w.service.write_refusal = (503, "unavailable")
+    world.add(received("r1", date="2026-11-20T10:00:00+00:00"))
+    await world.run()
+    world.w.service.write_refusal = None
+
+    for _ in range(2):
+        world.clock.advance(days=1)
+        await world.run()
+
+    assert (world.item("s1").is_open, world.item("s1").reason) == (False, "replied")
+    assert world.keywords("s1") == []
+    assert not world.item("s1").keyword_set
+
+
+async def test_an_item_closed_as_its_keyword_was_taken_off_asks_nothing(
+    world: World,
+) -> None:
+    await _due(world)
+    world.w.service.messages[(ACCOUNT, "s1")]["keywords"] = []
+    world.w.service.change("message.updated", "s1")
+    await world.run()
+    assert world.item("s1").reason == "keyword_removed"
+    asked = len(world.w.service.requests)
+
+    world.clock.advance(days=1)
+    await world.run()
+
+    patches = [r for r in world.w.service.requests[asked:] if r.method == "PATCH"]
+    assert patches == []

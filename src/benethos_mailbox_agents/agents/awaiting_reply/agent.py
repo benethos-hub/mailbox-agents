@@ -44,6 +44,13 @@ __all__ = ["AwaitingReply"]
 
 EXPECTS, NO_REPLY, INCOMING = "expects_reply", "no_reply", "incoming"
 
+# Why an item closes when a later message of its thread comes: a reply of
+# another sender, or a new message of its own sender.
+REPLIED, FOLLOWED_UP = "replied", "followed_up"
+# The items the tick takes the keyword off while it is still noted as set.
+# One closed as keyword_removed or message_gone is never asked about.
+CLOSED_WITH_KEYWORD = (REPLIED, FOLLOWED_UP)
+
 
 def _sent(message: MailMessage) -> bool:
     return message.in_role("sent")
@@ -162,7 +169,7 @@ class AwaitingReply(Agent):
             owner = _address(sent)
             if sender and sender == owner:
                 continue
-            await context.items.close(item.ref, "replied")
+            await context.items.close(item.ref, REPLIED)
             requests += self._take_off(item)
         return requests
 
@@ -178,7 +185,7 @@ class AwaitingReply(Agent):
         for item, _ in await self._earlier(message, context):
             requests += self._take_off(item)
             if expects:
-                await context.items.close(item.ref, "followed_up")
+                await context.items.close(item.ref, FOLLOWED_UP)
             else:
                 await context.items.restart(item.ref, due)
         if expects and not await self._answered(message, context):
@@ -223,7 +230,10 @@ class AwaitingReply(Agent):
 
     async def tick(self, now: datetime, context: Context) -> list[ActionRequest]:
         """The items past their deadline get the keyword. The runtime notes
-        on the item whether it was set."""
+        on the item whether it was set. An item closed by a reply or a new
+        message whose keyword is still noted as set has it taken off: its
+        removal in the step may have failed, and a step run again finds no
+        open item to take it off from."""
         requests = []
         for item in await context.items.due(now):
             requests.append(
@@ -231,4 +241,6 @@ class AwaitingReply(Agent):
                     Action.ADD_KEYWORD, item.ref, keyword=self.keyword, why="due"
                 )
             )
+        for item in await context.items.marked_closed(CLOSED_WITH_KEYWORD):
+            requests += self._take_off(item)
         return requests

@@ -318,6 +318,10 @@ class Worker:
         the message, recorded in this stage when the stage did not allow it.
         A refused keyword leaves the item due. An item whose message is not
         there any more is closed by the tick as ``message_gone``."""
+        if request.action is Action.REMOVE_KEYWORD:
+            if outcome in (Outcome.DONE, Outcome.PRESENT):
+                self.store.mark_keyword(request.ref, False)
+            return
         if request.action is not Action.ADD_KEYWORD:
             return
         if outcome in (Outcome.DONE, Outcome.PRESENT):

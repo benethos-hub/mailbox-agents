@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime
 
 from ..records import MessageRef, OpenItem
@@ -41,3 +41,6 @@ class StoredItems:
 
     async def close(self, ref: MessageRef, reason: str) -> None:
         self._store.close_item(ref, reason, self._now())
+
+    async def marked_closed(self, reasons: Sequence[str]) -> list[OpenItem]:
+        return self._store.marked_closed_items(reasons)

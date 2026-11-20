@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -560,6 +560,19 @@ class Store:
             "ORDER BY due",
             _text(now),
             stage,
+        )
+        return [_item(row) for row in rows]
+
+    def marked_closed_items(self, reasons: Sequence[str]) -> list[OpenItem]:
+        """Closed items whose keyword is still noted as set, closed for one
+        of ``reasons``."""
+        if not reasons:
+            return []
+        marks = ", ".join("?" for _ in reasons)
+        rows = self._all(
+            _ITEM_SQL + " WHERE closed IS NOT NULL AND keyword_set = 1 "
+            f"AND reason IN ({marks}) ORDER BY closed",
+            *reasons,
         )
         return [_item(row) for row in rows]
 
