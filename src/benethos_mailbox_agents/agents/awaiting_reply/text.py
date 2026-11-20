@@ -18,6 +18,7 @@ from ...records import MailMessage
 
 __all__ = [
     "add_working_days",
+    "address",
     "asks",
     "automatic",
     "own_text",
@@ -117,11 +118,15 @@ def asks(text: str) -> bool:
     return "?" in last or any(phrase in last for phrase in REQUEST_PHRASES)
 
 
+def address(message: MailMessage) -> str:
+    """The sender's address in lower case, empty for a message without one."""
+    return message.sender.email.lower() if message.sender else ""
+
+
 def automatic(message: MailMessage) -> bool:
     """Whether a message looks like an automatic answer, by sender and
     subject."""
-    sender = message.sender.email.lower() if message.sender else ""
-    local = sender.partition("@")[0]
+    local = address(message).partition("@")[0]
     subject = (message.subject or "").strip().lower()
     return any(name in local for name in AUTOMATIC_SENDERS) or subject.startswith(
         AUTOMATIC_SUBJECTS

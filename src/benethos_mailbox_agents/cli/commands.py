@@ -25,8 +25,8 @@ from ..evaluation.run import evaluate as run_evaluation
 from ..logbook import escaped, process, record
 from ..runtime.health import check
 from ..runtime.readiness import MAILBOX_SETTINGS, folder_lines, readiness, start
-from ..settings import DEFAULT_ENV_FILE, Settings
-from ..sources.mailbox import is_tested, line_names
+from ..settings import DEFAULT_ENV_FILE, PREFIX, Settings
+from ..sources.mailbox import is_tested, line_names, shown
 from ..store import STATES, Store, path_for
 from .report import report as make_report
 from .session import mailbox_for, now, session, upstreams
@@ -159,7 +159,7 @@ def _service(settings: Settings) -> str | None:
     if is_tested(found):
         return f"mailbox service {found}: tested ({line_names()})"
     return (
-        f"mailbox service {found[:40]}: not tested, no agent starts "
+        f"mailbox service {shown(found)}: not tested, no agent starts "
         f"(tested: {line_names()})"
     )
 
@@ -179,7 +179,7 @@ def _say(line: str) -> None:
 def status(args: argparse.Namespace, settings: Settings) -> int:
     if settings.keyword is not None:
         _say(
-            "MAILBOX_AGENTS_KEYWORD is set for every agent of these settings: "
+            f"{PREFIX}KEYWORD is set for every agent of these settings: "
             "give each agent its own env file"
         )
     service = _service(settings)

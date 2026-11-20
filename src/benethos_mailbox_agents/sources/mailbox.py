@@ -51,7 +51,7 @@ from ..records import (
     Thread,
 )
 
-__all__ = ["TESTED", "Mailbox", "connect", "is_tested", "line_names"]
+__all__ = ["TESTED", "Mailbox", "connect", "is_tested", "line_names", "shown"]
 
 T = TypeVar("T")
 
@@ -92,6 +92,12 @@ def is_tested(version: str) -> bool:
         return False
     major, minor, patch = (int(part) for part in match.groups())
     return any(_within((major, minor, patch), floor) for floor in TESTED)
+
+
+def shown(version: str) -> str:
+    """``version`` as the service names it, cut for a line of text: a
+    service may answer anything there."""
+    return version[:40]
 
 
 def line_names() -> str:
@@ -221,7 +227,7 @@ class Mailbox:
         found = await self.version()
         if not is_tested(found):
             raise ServiceVersionError(
-                f"the mailbox service runs {found[:40]!r}, and this package "
+                f"the mailbox service runs {shown(found)!r}, and this package "
                 f"is tested against {line_names()}{_RUN_TESTED}"
             )
         return found

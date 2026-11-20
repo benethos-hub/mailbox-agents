@@ -14,7 +14,7 @@ from typing import Protocol
 from ..contract import Agent, discover
 from ..errors import ConfigError, ContractError, MailboxAgentError
 from ..records import FolderRef
-from ..settings import Settings
+from ..settings import PREFIX, Settings
 from .actions import in_another_case
 
 __all__ = [
@@ -72,7 +72,7 @@ def _own_keyword(agent: type[Agent], settings: Settings) -> None:
     for other in discover().values():
         if other.name != agent.name and other.default_keyword == settings.keyword:
             raise ConfigError(
-                f"MAILBOX_AGENTS_KEYWORD is the keyword of {other.name}: "
+                f"{PREFIX}KEYWORD is the keyword of {other.name}: "
                 "give each agent its own env file"
             )
 
