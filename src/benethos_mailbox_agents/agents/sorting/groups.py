@@ -273,7 +273,8 @@ def load_groups(path: Path) -> Groups:
         )
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
+        # A ValueError: a file in another encoding than UTF-8.
         raise ConfigError(
             f"the sorting list {path.name} cannot be read ({type(exc).__name__})"
         ) from None

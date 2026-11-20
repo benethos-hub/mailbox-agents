@@ -300,6 +300,19 @@ def test_a_list_that_cannot_be_read_is_refused(tmp_path: Path) -> None:
         load_groups(tmp_path / "missing.json")
 
 
+def test_a_list_in_another_encoding_than_utf8_is_refused(tmp_path: Path) -> None:
+    path = tmp_path / "sorting.json"
+    entry = {"name": "Bäckerei", "folder": "Bäckerei", "senders": ["*@b.example"]}
+    path.write_text(json.dumps({"groups": [entry]}, ensure_ascii=False), "cp1252")
+
+    with pytest.raises(ConfigError) as raised:
+        load_groups(path)
+
+    assert raised.value.message == (
+        "the sorting list sorting.json cannot be read (UnicodeDecodeError)"
+    )
+
+
 def test_an_address_longer_than_any_mail_allows_matches_nothing() -> None:
     listed = groups(
         {"name": "A", "folder": "A", "senders": ["*a*a*a*b@shop.example"]},

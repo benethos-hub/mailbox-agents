@@ -111,6 +111,9 @@ commit that makes the change. Design decisions live in
   with the mark of UTF-8 is read without it. A secret that is not
   printable ASCII stops the start, naming its setting. Before, it ended
   the command with a traceback when the request was built.
+- A sorting list in another encoding than UTF-8 is refused as one that
+  cannot be read, and `status` names it. Before, it ended `status` and the
+  worker with a traceback.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.
