@@ -266,3 +266,29 @@ async def test_an_answer_with_a_lone_surrogate_is_refused(
         await gateway.ask(system="s", content="mail", schema=Answer)
 
     assert found.value.reason == "schema"
+
+
+async def test_a_body_nested_too_deep_is_refused() -> None:
+    deep = httpx.Response(200, content=b"[" * 20000)
+    async with Gateway(
+        "https://gateway.example.test/v1/",
+        "gateway-key",
+        "classifier",
+        timeout=120.0,
+        transport=httpx.MockTransport(lambda request: deep),
+    ) as opened:
+        with pytest.raises(AnswerRefusedError) as found:
+            await opened.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"
+
+
+async def test_a_content_nested_too_deep_is_refused(
+    fake: FakeGateway, gateway: Gateway
+) -> None:
+    fake.answer("[" * 20000)
+
+    with pytest.raises(AnswerRefusedError) as found:
+        await gateway.ask(system="s", content="mail", schema=Answer)
+
+    assert found.value.reason == "schema"

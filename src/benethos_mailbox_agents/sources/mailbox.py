@@ -125,6 +125,12 @@ async def _call(pending: Awaitable[T]) -> T:
         raise MailboxUnavailableError(
             f"the mailbox service failed ({type(exc).__name__})"
         ) from None
+    except RecursionError:
+        # The client reads JSON nested too deep for the parser, and catches
+        # only a ValueError of it.
+        raise MailboxUnavailableError(
+            "the mailbox service answered JSON nested too deep"
+        ) from None
 
 
 @overload

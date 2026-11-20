@@ -370,3 +370,18 @@ async def test_a_field_of_another_type_is_a_refusal_without_its_value(
     assert found.value.reason == "unexpected_response"
     assert "Geheimer" not in str(found.value)
     assert found.value.__cause__ is None
+
+
+async def test_a_body_nested_too_deep_is_an_upstream_away() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, content=b"[" * 20000, headers={"content-type": "application/json"}
+        )
+
+    async with connect(
+        "https://mailbox.example.test",
+        "token-value",
+        transport=httpx.MockTransport(handle),
+    ) as opened:
+        with pytest.raises(MailboxUnavailableError):
+            await opened.message(REF)

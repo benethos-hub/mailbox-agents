@@ -40,6 +40,9 @@ commit that makes the change. Design decisions live in
 - A message whose subject, text or thread the mailbox service answers as
   another type is refused and tried again. Before, the worker ended with a
   traceback that quoted the value.
+- JSON nested too deep for the parser, from the gateway or the mailbox
+  service, is a refused answer or an upstream away. Before, its
+  `RecursionError` ended the worker.
 
 ## [0.1.0] - 2026-11-19
 

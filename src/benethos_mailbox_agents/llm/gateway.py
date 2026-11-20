@@ -149,7 +149,8 @@ class Gateway:
         _check(response)
         try:
             answer = response.json()
-        except ValueError:
+        except (ValueError, RecursionError):
+            # RecursionError: JSON nested too deep for the parser.
             raise AnswerRefusedError(
                 "the gateway answered no JSON", reason="schema"
             ) from None
@@ -235,7 +236,14 @@ def _value(answer: Any, schema: type[T]) -> T:
         parsed = json.loads(content)
         json.dumps(parsed, ensure_ascii=False).encode("utf-8")
         return schema.model_validate(parsed)
-    except (KeyError, IndexError, TypeError, ValueError, ValidationError):
+    except (
+        KeyError,
+        IndexError,
+        TypeError,
+        ValueError,
+        RecursionError,
+        ValidationError,
+    ):
         raise AnswerRefusedError(
             "the answer does not fit the schema", reason="schema"
         ) from None
