@@ -289,6 +289,9 @@ async def _evaluate(
 ) -> dict[str, Any]:
     agent = start(cls, settings)
     async with upstreams(agent, settings) as (mailbox, gateway):
+        # It reads mail and writes a report that is kept: only from a
+        # service in a tested line, as a pass.
+        await mailbox.ensure_tested()
         with tempfile.TemporaryDirectory() as folder:
             with Store.open(Path(folder) / "evaluation.db") as store:
                 outcomes = await run_evaluation(

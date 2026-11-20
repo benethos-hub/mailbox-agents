@@ -175,8 +175,11 @@ only against the lines they were tested against (decided 2026-11-19).
   refused as well: what it records would be read from a service nobody
   measured. A warning alone would go unread in a process that runs for
   weeks.
+- **`eval`** asks too, before it reads the gold set's mail, and is
+  refused the same way (decided 2026-11-20).
 - **`status`** names the version of the service and whether it is tested,
-  or that it names none, and starts no agent.
+  or that it names none, and starts no agent. `status` and `report` read
+  only for showing and are not refused.
 - **The client is not compared with the service.** Within a line the
   installed client may be older or newer than the service, and the agents
   run: a patch release of the service is taken to change no interface.
