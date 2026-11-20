@@ -304,3 +304,51 @@ async def test_a_ca_of_the_settings_is_what_the_service_is_trusted_by(
         pass
 
     assert given == [context, True]
+
+
+async def test_a_lone_surrogate_from_the_service_becomes_a_replacement(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    odd = chr(0xDCFC)
+    service.folders[ACCOUNT].append(
+        {"id": "odd", "name": f"Ablage{odd}", "role": None, "parent_id": None}
+    )
+    service.add(
+        wire_message(
+            "m1",
+            folder_ids=["odd"],
+            subject=f"Rechnung{odd}",
+            sender_name=f"Name{odd}",
+            text=f"Text{odd}",
+            attachments=[
+                {"filename": f"R{odd}.pdf", "content_type": "application/pdf"}
+            ],
+        )
+    )
+
+    found = await mailbox.message(REF)
+
+    assert found.sender is not None
+    values = [
+        found.subject or "",
+        found.text,
+        found.sender.name or "",
+        found.sender.email,
+        found.attachments[0].filename or "",
+        found.folders[0].name,
+        found.folders[0].path,
+    ]
+    for value in values:
+        value.encode("utf-8")
+    assert found.subject == "Rechnung\ufffd"
+    assert found.folders[0].path == "Ablage\ufffd"
+
+
+async def test_a_string_without_a_surrogate_stays_as_it_is(
+    service: FakeService, mailbox: Mailbox
+) -> None:
+    service.add(wire_message("m1", subject="Grüße \u00e9 \U0001f600", text="Text"))
+
+    found = await mailbox.message(REF)
+
+    assert found.subject == "Grüße \u00e9 \U0001f600"

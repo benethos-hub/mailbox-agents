@@ -34,6 +34,9 @@ commit that makes the change. Design decisions live in
   surrogate is refused and tried again like any other answer outside the
   schema. Before, storing it ended the worker after the paid call, and the
   message ended it again after each restart.
+- A lone surrogate in what the mailbox service answers, in a subject, a
+  text, a name, an address, a file name or a folder, becomes U+FFFD.
+  Before, it ended the worker when the message was sent to the gateway.
 
 ## [0.1.0] - 2026-11-19
 

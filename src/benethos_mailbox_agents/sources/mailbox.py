@@ -18,7 +18,7 @@ from collections.abc import AsyncIterator, Awaitable, Iterable
 from contextlib import asynccontextmanager
 from datetime import date
 from types import TracebackType
-from typing import TypeVar
+from typing import TypeVar, overload
 
 import httpx
 from benethos_mailbox_client import (
@@ -126,12 +126,36 @@ async def _call(pending: Awaitable[T]) -> T:
         ) from None
 
 
+@overload
+def _sound(value: str) -> str: ...
+
+
+@overload
+def _sound(value: None) -> None: ...
+
+
+@overload
+def _sound(value: str | None) -> str | None: ...
+
+
+def _sound(value: str | None) -> str | None:
+    """``value`` with each lone surrogate replaced by U+FFFD. One comes from
+    the JSON escape of half a pair, and it cannot be encoded as UTF-8: a
+    request to the gateway or a write to the state file would raise
+    outside every error of this package."""
+    if value is None:
+        return None
+    return "".join("\ufffd" if 0xD800 <= ord(c) <= 0xDFFF else c for c in value)
+
+
 def _address(found: wire.Address | None) -> Address | None:
-    return Address(email=found.email, name=found.name) if found else None
+    if not found:
+        return None
+    return Address(email=_sound(found.email), name=_sound(found.name))
 
 
 def _addresses(found: Iterable[wire.Address]) -> tuple[Address, ...]:
-    return tuple(Address(email=a.email, name=a.name) for a in found)
+    return tuple(Address(email=_sound(a.email), name=_sound(a.name)) for a in found)
 
 
 class Mailbox:
@@ -308,17 +332,17 @@ class Mailbox:
             ref=ref,
             thread_id=found.thread_id,
             folders=await self._refs(ref.account_id, found.folder_ids),
-            subject=found.subject,
+            subject=_sound(found.subject),
             sender=_address(found.sender),
             to=_addresses(found.to),
             cc=_addresses(found.cc),
             date=found.date,
             received=found.received,
             keywords=tuple(found.keywords),
-            text=found.text_body or "",
+            text=_sound(found.text_body or ""),
             attachments=tuple(
                 Attachment(
-                    filename=a.filename,
+                    filename=_sound(a.filename),
                     content_type=a.content_type,
                     size=a.size,
                     inline=a.inline,
@@ -339,7 +363,7 @@ class Mailbox:
                     ref=MessageRef(account_id=account_id, message_id=item.id),
                     thread_id=item.thread_id,
                     folders=await self._refs(account_id, item.folder_ids),
-                    subject=item.subject,
+                    subject=_sound(item.subject),
                     sender=_address(item.sender),
                     to=_addresses(item.to),
                     date=item.date,
@@ -369,7 +393,7 @@ class Mailbox:
         known = await self.folders(account_id, fresh=True)
         if made.id in known:
             return known[made.id]
-        return FolderRef(id=made.id, name=made.name, role=made.role, path=path)
+        return FolderRef(id=made.id, name=_sound(made.name), role=made.role, path=path)
 
     async def add_keyword(self, ref: MessageRef, keyword: str) -> None:
         await _call(
@@ -398,18 +422,21 @@ def _with_paths(found: list[wire.Folder]) -> dict[str, FolderRef]:
     by_id = {folder.id: folder for folder in found}
 
     def path(folder: wire.Folder) -> str:
-        names = [folder.name]
+        names = [_sound(folder.name)]
         seen = {folder.id}
         parent = by_id.get(folder.parent_id) if folder.parent_id else None
         while parent is not None and parent.id not in seen:
-            names.append(parent.name)
+            names.append(_sound(parent.name))
             seen.add(parent.id)
             parent = by_id.get(parent.parent_id) if parent.parent_id else None
         return "/".join(reversed(names))
 
     return {
         folder.id: FolderRef(
-            id=folder.id, name=folder.name, role=folder.role, path=path(folder)
+            id=folder.id,
+            name=_sound(folder.name),
+            role=folder.role,
+            path=path(folder),
         )
         for folder in found
     }

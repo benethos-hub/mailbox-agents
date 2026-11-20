@@ -925,3 +925,18 @@ async def test_an_update_that_keeps_the_keyword_leaves_it_skipped(
     assert row is not None and row.state == "skipped"
     assert world.fake_gateway.requests == []
     assert mail(world, "filed")["folder_ids"] == ["inv-hosting"]
+
+
+async def test_a_lone_surrogate_in_the_mail_ends_no_worker(world: Wired) -> None:
+    odd = chr(0xDCFC)
+    world.service.add(
+        wire_message(
+            "odd",
+            subject=f"Ihre Rechnung R-90{odd}",
+            text=f"Ihre Rechnung R-90 liegt bei.{odd}",
+        ),
+        change=None,
+    )
+    world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-90"))
+
+    assert await run(world, "odd", agent()) == "done"
