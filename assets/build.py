@@ -24,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import zlib
+from collections.abc import Mapping
 from pathlib import Path
 
 ASSETS = Path(__file__).resolve().parent
@@ -235,15 +236,19 @@ def _capture(
     address: str,
     target: Path,
     size: tuple[int, int],
+    *,
     transparent: bool = False,
     scale: int = 1,
 ) -> None:
     """Render the page at an address as a PNG with a headless browser, of
     ``scale`` pixels for each of its own. A transparent page keeps its
-    alpha channel instead of the browser's white."""
+    alpha channel instead of the browser's white. The browser writes into
+    a folder of its own first: a browser that ends well and writes nothing
+    raises, and the PNG there before stays untouched."""
     width, height = size
     background = ["--default-background-color=00000000"] if transparent else []
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as profile:
+        shot = Path(profile) / "screenshot.png"
         subprocess.run(
             [
                 _browser(),
@@ -254,42 +259,44 @@ def _capture(
                 f"--force-device-scale-factor={scale}",
                 f"--user-data-dir={profile}",
                 f"--window-size={width},{height}",
-                f"--screenshot={target}",
+                f"--screenshot={shot}",
                 address,
             ],
             check=True,
             capture_output=True,
             timeout=120,
         )
+        if not shot.is_file() or shot.stat().st_size == 0:
+            raise RuntimeError(f"the browser wrote no screenshot for {target.name}")
+        shutil.move(shot, target)
 
 
 def _screenshot(
-    page: str, name: str, target: Path, size: tuple[int, int], transparent: bool
+    page: str,
+    name: str,
+    target: Path,
+    size: tuple[int, int],
+    *,
+    transparent: bool,
 ) -> None:
     """Render a page given as text, from a file of that name."""
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
         source = Path(folder) / name
         source.write_text(page, "utf-8")
-        _capture(source.as_uri(), target, size, transparent)
+        _capture(source.as_uri(), target, size, transparent=transparent)
 
 
-def stamped(png: bytes, svg: str) -> bytes:
-    """``png`` with a text chunk after its header that names the hash of
-    the SVG it was rendered from, any such chunk before replaced. So a
-    change of the SVG that leaves the pixels as they were, such as its
-    title, still changes the PNG, and the PNG is never older than the SVG,
-    as the brand check of the organisation asks."""
+def stamped(png: bytes, sources: Mapping[str, str]) -> bytes:
+    """``png`` with a text chunk after its header for each source it was
+    rendered from, by name, naming the hash of its text, any such chunk
+    before replaced. So a change of a source that leaves the pixels as
+    they were, such as the title of the SVG, still changes the PNG, and
+    the PNG is never older than its sources, as the brand check of the
+    organisation asks."""
     signature, header_end = b"\x89PNG\r\n\x1a\n", 8 + 4 + 4 + 13 + 4
     if not png.startswith(signature) or png[12:16] != b"IHDR":
         raise ValueError("not a PNG file")
-    digest = hashlib.sha256(svg.encode("utf-8")).hexdigest()
-    data = b"Source\0" + f"{ICON_SOURCE.name} sha256:{digest}".encode("ascii")
-    chunk = (
-        struct.pack(">I", len(data))
-        + b"tEXt"
-        + data
-        + struct.pack(">I", zlib.crc32(b"tEXt" + data))
-    )
+    chunks = b"".join(_stamp(name, text) for name, text in sources.items())
     rest, position = png[header_end:], 0
     kept: list[bytes] = []
     while position < len(rest):
@@ -307,24 +314,42 @@ def stamped(png: bytes, svg: str) -> bytes:
             break
     if position != len(rest) or not kept or kept[-1][4:8] != b"IEND":
         raise ValueError("the PNG does not end with its IEND chunk")
-    return png[:header_end] + chunk + b"".join(kept)
+    return png[:header_end] + chunks + b"".join(kept)
+
+
+def _stamp(name: str, text: str) -> bytes:
+    """The text chunk that names the hash of the source ``name``."""
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    data = b"Source\0" + f"{name} sha256:{digest}".encode("ascii")
+    return (
+        struct.pack(">I", len(data))
+        + b"tEXt"
+        + data
+        + struct.pack(">I", zlib.crc32(b"tEXt" + data))
+    )
 
 
 def render_icon() -> None:
     svg = ICON_SOURCE.read_text("utf-8")
-    _screenshot(placed(svg, ICON_SIZE[0]), "icon.svg", ICON, ICON_SIZE, True)
-    ICON.write_bytes(stamped(ICON.read_bytes(), svg))
+    _screenshot(
+        placed(svg, ICON_SIZE[0]), "icon.svg", ICON, ICON_SIZE, transparent=True
+    )
+    ICON.write_bytes(stamped(ICON.read_bytes(), {ICON_SOURCE.name: svg}))
 
 
 def render_social() -> None:
     svg = ICON_SOURCE.read_text("utf-8")
-    _screenshot(social(svg), "social.html", SOCIAL, SOCIAL_SIZE, False)
-    SOCIAL.write_bytes(stamped(SOCIAL.read_bytes(), svg))
+    _screenshot(social(svg), "social.html", SOCIAL, SOCIAL_SIZE, transparent=False)
+    SOCIAL.write_bytes(stamped(SOCIAL.read_bytes(), {ICON_SOURCE.name: svg}))
 
 
 def render_diagram() -> None:
     """The architecture diagram, light and dark. The page stays where it
-    is, as it takes the icon from beside it."""
+    is, as it takes the icon from beside it, and both are its sources."""
+    sources = {
+        DIAGRAM_SOURCE.name: DIAGRAM_SOURCE.read_text("utf-8"),
+        ICON_SOURCE.name: ICON_SOURCE.read_text("utf-8"),
+    }
     for target, fragment in DIAGRAMS.items():
         _capture(
             DIAGRAM_SOURCE.as_uri() + fragment,
@@ -332,6 +357,7 @@ def render_diagram() -> None:
             DIAGRAM_SIZE,
             scale=DIAGRAM_SCALE,
         )
+        target.write_bytes(stamped(target.read_bytes(), sources))
 
 
 def main(arguments: list[str]) -> int:
