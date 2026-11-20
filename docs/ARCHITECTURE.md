@@ -33,7 +33,7 @@ trigger          selection        decision                  effect
 ---------------------------------------------------------------------------
 change feed  ->  code: is    ->   1. baseline (rules)   ->  shadow
 tick (clock)     this mine?       2. model, one call,       keyword
-                                     schema, no tools       folder
+                                     schema, no tools       full
                                   3. check in code:
                                      schema, evidence
 
