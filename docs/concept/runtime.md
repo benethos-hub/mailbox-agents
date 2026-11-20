@@ -19,8 +19,8 @@ version: one outside the tested lines ends the worker
 4. On the tick, ask the agent what is due and run the effects.
 5. Store the cursor and the time of the pass, then sleep `POLL_SECONDS`.
 
-A mailbox service or gateway that is away while the feed is read stops the
-pass before the cursor moves. A mailbox service that is away while
+A mailbox service that is away while the feed is read stops the pass
+before the cursor moves. A mailbox service that is away while
 pending messages run leaves them `pending`. A gateway that is away holds
 up only the messages that ask a model: each stays `pending` with no
 attempt counted, the gateway is not asked again in that pass, and the

@@ -4,9 +4,10 @@ A pass reads the feed from the stored cursor, records each message the
 agent selects for a decision as ``pending``, hands each event routed to
 ``observe`` to the agent at once, runs the steps of the pending messages
 that are due, asks the agent on the tick what is due, and stores the
-cursor last. A crash repeats work and skips no mail. A mailbox service or
-gateway that is away leaves every message where it is, and the next pass
-waits twice as long, up to the ceiling. A service outside the tested
+cursor last. A crash repeats work and skips no mail. A mailbox service that
+is away leaves every message where it is, a gateway that is away only
+those that ask a model, and the next pass waits twice as long, up to the
+ceiling. A service outside the tested
 lines ends the loop. See docs/concept/runtime.md.
 """
 
