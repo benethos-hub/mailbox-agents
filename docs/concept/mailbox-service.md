@@ -39,7 +39,11 @@ What the agents rely on:
   the provider reports it, for IMAP with CONDSTORE. `awaiting_reply` depends
   on this ([awaiting reply](agent-awaiting-reply.md)).
 - Keywords are not available on every provider **(to verify per account
-  before an agent is switched to the keyword stage)**.
+  before an agent is switched to the keyword stage)**. At Stalwart over
+  IMAP they are: measured 2026-11-17 against 0.7.5, a keyword set and
+  taken off again, and 2026-11-20 against 0.8.0, where `live/sorting.py`
+  and `live/invoices.py` set an agent's keyword, find it on the message
+  and take it off when they put the mail back.
 
 Folders and moves, measured 2026-11-18 against 0.7.5 with IMAP at
 Stalwart, on the test account:
