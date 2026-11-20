@@ -17,6 +17,8 @@ from urllib.parse import unquote
 
 import httpx
 
+from benethos_mailbox_agents.sources.mailbox import TESTED
+
 ACCOUNT = "acc1"
 
 # Invented messages, shared by the tests of the agents and the evaluation.
@@ -114,7 +116,9 @@ class FakeService:
         self.down = False
         # What /health names, and how often it was asked. A version of None
         # leaves the key out, and a status refuses /health with it.
-        self.version: str | None = "0.8.0"
+        # The lowest release of the newest tested line, so the suite
+        # follows a change of the lines.
+        self.version: str | None = ".".join(map(str, TESTED[-1]))
         self.health_status: int | None = None
         self.health_asked = 0
         # Status and code every request is refused with while set.

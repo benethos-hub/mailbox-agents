@@ -103,6 +103,10 @@ async def test_a_service_in_a_tested_line_is_answered_with_its_version(
     assert is_tested(world.service.version)
 
 
+def test_the_fake_service_runs_the_newest_tested_line() -> None:
+    assert FakeService().version == ".".join(map(str, TESTED[-1]))
+
+
 async def test_a_service_outside_the_lines_is_refused_by_name(world: Wired) -> None:
     world.service.version = "0.99.0"
 
