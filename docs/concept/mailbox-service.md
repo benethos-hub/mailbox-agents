@@ -39,7 +39,11 @@ What the agents rely on:
   the provider reports it, for IMAP with CONDSTORE. `awaiting_reply` depends
   on this ([awaiting reply](agent-awaiting-reply.md)).
 - Keywords are not available on every provider **(to verify per account
-  before an agent is switched to the keyword stage)**.
+  before an agent is switched to the keyword stage)**. At Stalwart over
+  IMAP they are: measured 2026-11-17 against 0.7.5, a keyword set and
+  taken off again, and 2026-11-20 against 0.8.0, where `live/sorting.py`
+  and `live/invoices.py` set an agent's keyword, find it on the message
+  and take it off when they put the mail back.
 
 Folders and moves, measured 2026-11-18 against 0.7.5 with IMAP at
 Stalwart, on the test account:
@@ -124,6 +128,12 @@ Rights. Each agent has a user of its own in the service:
 | `awaiting_reply` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
 | `inquiries` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
 | `sorting` | `mail.read`, `mail.write` | `drafts`, send, `mail.delete` |
+| `counting` | `mail.read` | `mail.write`, `drafts`, send, `mail.delete` |
+
+`counting` changes nothing, so `mail.read` is all it needs. Measured
+2026-11-20 against 0.8.0 on the test account: `status`, `backfill`, `run`
+and `report` of `counting` under a user with `mail.read` alone, and no
+call refused.
 
 `mail.write` also allows moving a message to the trash and creating a
 folder. The service cannot refuse those to an agent that may move mail, so

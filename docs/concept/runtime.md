@@ -20,9 +20,13 @@ version: one outside the tested lines ends the worker
 5. Store the cursor and the time of the pass, then sleep `POLL_SECONDS`.
 
 A mailbox service or gateway that is away while the feed is read stops the
-pass before the cursor moves. One that is away while pending messages run
-leaves them `pending`, the cursor moves, and the next pass waits twice as
-long as the last, up to `BACKOFF_CEILING_SECONDS`. A state file that
+pass before the cursor moves. A mailbox service that is away while
+pending messages run leaves them `pending`. A gateway that is away holds
+up only the messages that ask a model: each stays `pending` with no
+attempt counted, the gateway is not asked again in that pass, and the
+messages that need no model run on. Either way the cursor moves, and the
+next pass waits twice as long as the last, up to
+`BACKOFF_CEILING_SECONDS`. A state file that
 cannot be read or written, one that is no SQLite file or a full disk,
 ends the worker with a `StateFileError` and exit code 1: no pass goes on
 without it (2026-11-19). A mailbox service outside the tested lines ends

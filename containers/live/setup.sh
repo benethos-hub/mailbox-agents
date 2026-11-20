@@ -5,7 +5,8 @@
 # agents with mail.read and mail.write on it, its token, invented mail,
 # and the model gateway in front of Claude and of a local model.
 #
-# Needs Docker with compose, openssl and python3. Run from the repository:
+# Needs Docker with compose, openssl, curl and python3, as README.md says:
+# curl fetches the file of a local model. Run from the repository:
 #   sh containers/live/setup.sh
 #
 # Claude is used when its API key is in containers/live/secrets/anthropic_api_key
