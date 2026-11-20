@@ -10,6 +10,7 @@ from ...records import MailMessage
 
 __all__ = [
     "FIELDS",
+    "MAX_ADDRESS",
     "MAX_ANSWER_TOTAL",
     "MAX_NAME",
     "MAX_SUBJECT",

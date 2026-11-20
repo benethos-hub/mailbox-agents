@@ -15,6 +15,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict
 from ...records import Attachment, MailMessage
 
 __all__ = [
+    "MAX_ADDRESS",
     "MAX_ANSWER_TEXT",
     "MAX_FILES",
     "MAX_FILES_TEXT",
