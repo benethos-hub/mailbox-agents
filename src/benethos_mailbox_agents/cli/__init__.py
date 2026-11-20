@@ -23,7 +23,7 @@ from ..errors import (
     MailboxAgentError,
     ServiceVersionError,
 )
-from ..settings import DEFAULT_ENV_FILE, load_settings
+from ..settings import DEFAULT_ENV_FILE, PREFIX, load_settings
 from . import commands
 
 __all__ = ["PROG", "build_parser", "main"]
@@ -63,7 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _agent(found)
     found.add_argument(
-        "--days", type=int, default=None, help="MAILBOX_AGENTS_BACKFILL_DAYS if unset"
+        "--days", type=int, default=None, help=f"{PREFIX}BACKFILL_DAYS if unset"
     )
     found.set_defaults(handler=commands.backfill)
 
