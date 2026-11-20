@@ -110,8 +110,8 @@ changed until the evaluation was run again.
 `--env-file` names the settings file for every command. An error to
 correct ends with exit code 2, a mailbox service outside the tested lines
 among them, an upstream that is away or an unreadable state file with 1. `status` and `paths` start no agent and change
-nothing. `status` names a state file it cannot read and goes on with the
-next agent.
+nothing. `status` names a state file it cannot read, or one of a newer
+schema, and goes on with the next agent. `health` answers 1 for both.
 
 ## Report
 

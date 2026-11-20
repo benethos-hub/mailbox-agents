@@ -87,6 +87,10 @@ commit that makes the change. Design decisions live in
 - A worker whose upstream stays away for weeks keeps waiting the ceiling
   between tries. Before, the wait after about a thousand tries was too
   large to compute and ended the worker.
+- `status` names a state file of a newer schema as unreadable and lists
+  the other agents, and `health` answers 1 for it, writing its reason as
+  for any other state file it cannot read. Before, `status` stopped at it
+  and both ended with exit code 2.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

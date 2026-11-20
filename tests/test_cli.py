@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sqlite3
 import stat
 import sys
 from importlib.metadata import version
@@ -129,9 +130,34 @@ def test_a_broken_state_file_is_named_and_the_others_still_listed(
     assert "last progress: 20" in out
 
     assert main(["health", "--agent", "awaiting_reply"]) == 1
-    err = capsys.readouterr().err
-    assert "awaiting_reply.db" in err
-    assert "Traceback" not in err
+    captured = capsys.readouterr()
+    assert captured.out.startswith("awaiting_reply: unhealthy, the state file")
+    assert "Traceback" not in captured.err
+
+
+def test_a_state_file_of_a_newer_schema_is_named_and_unhealthy(
+    service: FakeService,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    configure(monkeypatch)
+    assert main(["run", "--agent", "counting"]) == 0
+    capsys.readouterr()
+    with sqlite3.connect(Path("data", "counting.db")) as db:
+        db.execute("PRAGMA user_version = 99")
+    db.close()
+
+    assert main(["status"]) == 0
+    out = capsys.readouterr().out
+    assert "state file unreadable: the state file is at schema version 99" in out
+    starts = [line.split(" ")[0] for line in out.splitlines()]
+    for name in ("awaiting_reply", "counting", "inquiries", "invoices", "sorting"):
+        assert name in starts
+
+    assert main(["health", "--agent", "counting"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out.startswith("counting: unhealthy, the state file is at")
+    assert captured.err == ""
 
 
 def test_backfill_takes_recent_messages_up(
