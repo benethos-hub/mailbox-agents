@@ -236,6 +236,7 @@ def _capture(
     address: str,
     target: Path,
     size: tuple[int, int],
+    *,
     transparent: bool = False,
     scale: int = 1,
 ) -> None:
@@ -271,13 +272,18 @@ def _capture(
 
 
 def _screenshot(
-    page: str, name: str, target: Path, size: tuple[int, int], transparent: bool
+    page: str,
+    name: str,
+    target: Path,
+    size: tuple[int, int],
+    *,
+    transparent: bool,
 ) -> None:
     """Render a page given as text, from a file of that name."""
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
         source = Path(folder) / name
         source.write_text(page, "utf-8")
-        _capture(source.as_uri(), target, size, transparent)
+        _capture(source.as_uri(), target, size, transparent=transparent)
 
 
 def stamped(png: bytes, sources: Mapping[str, str]) -> bytes:
@@ -325,13 +331,15 @@ def _stamp(name: str, text: str) -> bytes:
 
 def render_icon() -> None:
     svg = ICON_SOURCE.read_text("utf-8")
-    _screenshot(placed(svg, ICON_SIZE[0]), "icon.svg", ICON, ICON_SIZE, True)
+    _screenshot(
+        placed(svg, ICON_SIZE[0]), "icon.svg", ICON, ICON_SIZE, transparent=True
+    )
     ICON.write_bytes(stamped(ICON.read_bytes(), {ICON_SOURCE.name: svg}))
 
 
 def render_social() -> None:
     svg = ICON_SOURCE.read_text("utf-8")
-    _screenshot(social(svg), "social.html", SOCIAL, SOCIAL_SIZE, False)
+    _screenshot(social(svg), "social.html", SOCIAL, SOCIAL_SIZE, transparent=False)
     SOCIAL.write_bytes(stamped(SOCIAL.read_bytes(), {ICON_SOURCE.name: svg}))
 
 

@@ -148,3 +148,23 @@ def test_the_diagram_names_every_agent(build: ModuleType) -> None:
     assert listed is not None
     names = re.findall(r"<li><code>(\w+)</code></li>", listed.group(1))
     assert sorted(names) == sorted(discover())
+
+
+def _css_size(page: str) -> tuple[int, int]:
+    found = re.search(r"html, body \{[^}]*width: (\d+)px; height: (\d+)px", page)
+    assert found is not None
+    return int(found.group(1)), int(found.group(2))
+
+
+def test_each_png_has_the_size_its_page_is_drawn_at(build: ModuleType) -> None:
+    sizes = {
+        build.ICON: (build.ICON_SIZE, 1),
+        build.SOCIAL: (build.SOCIAL_SIZE, 1),
+        **{png: (build.DIAGRAM_SIZE, build.DIAGRAM_SCALE) for png in build.DIAGRAMS},
+    }
+
+    for png, ((width, height), scale) in sizes.items():
+        header = png.read_bytes()[16:24]
+        assert struct.unpack(">II", header) == (width * scale, height * scale), png.name
+    assert _css_size(build._STYLE) == build.SOCIAL_SIZE
+    assert _css_size(build.DIAGRAM_SOURCE.read_text("utf-8")) == build.DIAGRAM_SIZE
