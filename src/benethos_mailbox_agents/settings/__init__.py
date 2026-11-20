@@ -147,24 +147,33 @@ class Settings(BaseSettings):
     def _secrets_from_files(self) -> Settings:
         """Read a secret named by its ``_FILE`` setting, and register both
         secrets so no error text carries them. An empty value counts as not
-        set, as the empty line ``.env.example`` holds."""
+        set, as the empty line ``.env.example`` holds. A file may start
+        with the mark of UTF-8 an editor puts there. A secret is printable
+        ASCII, as a header of HTTP carries it: any other is refused by the
+        name of its setting, never with its value."""
         for name in ("service_token", "gateway_key"):
+            setting = f"{PREFIX}{name.upper()}"
             given: SecretStr | None = getattr(self, name)
             if given is not None and not given.get_secret_value():
                 object.__setattr__(self, name, None)
             path: Path | None = getattr(self, f"{name}_file")
             if getattr(self, name) is None and path is not None:
+                setting += "_FILE"
                 try:
-                    text = path.read_text(encoding="utf-8").strip()
-                except OSError as exc:
+                    text = path.read_text(encoding="utf-8-sig").strip()
+                except (OSError, ValueError) as exc:
                     raise ValueError(
-                        f"{PREFIX}{name.upper()}_FILE cannot be read "
-                        f"({type(exc).__name__})"
+                        f"{setting} cannot be read ({type(exc).__name__})"
                     ) from None
                 object.__setattr__(self, name, SecretStr(text) if text else None)
             secret: SecretStr | None = getattr(self, name)
             if secret is not None:
-                register_secret(secret.get_secret_value())
+                value = secret.get_secret_value()
+                if not (value.isascii() and value.isprintable()):
+                    raise ValueError(
+                        f"{setting} holds a character that is not printable ASCII"
+                    )
+                register_secret(value)
         return self
 
     def missing(self, names: tuple[str, ...]) -> list[str]:

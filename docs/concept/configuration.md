@@ -29,7 +29,10 @@ may be given as a file with the suffix `_FILE`.
 | `LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING` or `ERROR`, `INFO` when unset |
 
 `SERVICE_TOKEN_FILE` and `GATEWAY_KEY_FILE` name the file a secret is read
-from. A secret given directly wins over its file.
+from. A secret given directly wins over its file. The file is read as
+UTF-8, a mark of UTF-8 at its start left out. A secret is printable ASCII,
+as a header of HTTP carries it, and any other stops the start, naming the
+setting and never the value.
 
 Settings of one agent, such as `INVOICES_FOLDERS`, `INVOICES_SUBFOLDER`,
 `REPLY_DAYS`, `INQUIRIES_PATTERNS_FILE` and `SORTING_FILE`, are named in

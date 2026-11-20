@@ -117,6 +117,53 @@ def test_an_unreadable_secret_file_is_a_config_error(
         load_settings()
 
 
+def test_a_secret_file_with_the_mark_of_utf8_is_read_without_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    secret = tmp_path / "token"
+    secret.write_text("﻿service-token-value\r\n", encoding="utf-8")
+    monkeypatch.setenv("MAILBOX_AGENTS_SERVICE_TOKEN_FILE", str(secret))
+
+    assert load_settings().secret("service_token") == "service-token-value"
+
+
+@pytest.mark.parametrize("value", ["tokén-value", "token\x07value"])
+@pytest.mark.parametrize("from_file", [False, True])
+def test_a_secret_that_is_not_printable_ascii_is_refused_by_name(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, value: str, from_file: bool
+) -> None:
+    if from_file:
+        secret = tmp_path / "key"
+        secret.write_text(value, encoding="utf-8")
+        monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY_FILE", str(secret))
+    else:
+        monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY", value)
+
+    with pytest.raises(errors.ConfigError) as raised:
+        load_settings()
+
+    named = "GATEWAY_KEY_FILE" if from_file else "GATEWAY_KEY holds"
+    assert named in raised.value.message
+    assert "not printable ASCII" in raised.value.message
+    assert "value" not in raised.value.message
+
+
+def test_a_secret_file_that_is_no_utf8_is_refused_by_name(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    secret = tmp_path / "key"
+    secret.write_bytes(b"key-\xe9-value")
+    monkeypatch.setenv("MAILBOX_AGENTS_GATEWAY_KEY_FILE", str(secret))
+
+    with pytest.raises(errors.ConfigError) as raised:
+        load_settings()
+
+    assert "GATEWAY_KEY_FILE cannot be read (UnicodeDecodeError)" in (
+        raised.value.message
+    )
+    assert "value" not in raised.value.message
+
+
 def test_a_missing_secret_is_named() -> None:
     with pytest.raises(errors.ConfigError, match="MAILBOX_AGENTS_SERVICE_TOKEN"):
         load_settings().secret("service_token")

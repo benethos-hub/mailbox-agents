@@ -107,6 +107,10 @@ commit that makes the change. Design decisions live in
 - A metrics port another process holds ends `worker` with exit code 2 in
   one line naming `MAILBOX_AGENTS_METRICS_PORT`. Before, it ended with a
   traceback.
+- A file of the service token or the gateway key that an editor started
+  with the mark of UTF-8 is read without it. A secret that is not
+  printable ASCII stops the start, naming its setting. Before, it ended
+  the command with a traceback when the request was built.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.
