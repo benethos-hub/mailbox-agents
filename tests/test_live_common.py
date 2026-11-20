@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -136,3 +137,57 @@ async def test_put_back_takes_off_each_keyword_and_moves_back_once(
     assert service.messages[(ACCOUNT, "m1")]["folder_ids"] == ["inbox"]
     assert service.messages[(ACCOUNT, "m1")]["keywords"] == []
     assert service.messages[(ACCOUNT, "m2")]["keywords"] == ["mine"]
+
+
+class _CutOffError(Exception):
+    """A put back that failed half way, as an upstream away would end it."""
+
+
+@contextmanager
+def _live_script(name: str) -> Iterator[ModuleType]:
+    """The script ``live/<name>.py``, with its folder on the path while it
+    is loaded, as it imports common from beside it. Afterwards the path
+    and the modules are as they were."""
+    folder = ROOT / "live"
+    modules = set(sys.modules)
+    sys.path.insert(0, str(folder))
+    try:
+        with load_script(folder / f"{name}.py", f"live_{name}") as module:
+            yield module
+    finally:
+        sys.path.remove(str(folder))
+        for key in set(sys.modules) - modules:
+            file = getattr(sys.modules[key], "__file__", None)
+            if file and Path(file).is_relative_to(folder):
+                del sys.modules[key]
+
+
+@pytest.mark.parametrize(
+    ("script", "step"),
+    [("sorting", "put_back"), ("invoices", "put_back_between")],
+)
+async def test_a_put_back_cut_off_is_done_again_on_the_way_out(
+    monkeypatch: pytest.MonkeyPatch, script: str, step: str
+) -> None:
+    async def cut_off(*args: object) -> object:
+        raise _CutOffError
+
+    async def done(*args: object) -> object:
+        return 0 if step == "put_back" else "back"
+
+    async def same(mailbox: object, before: object) -> object:
+        return before
+
+    with _live_script(script) as module:
+        live = SimpleNamespace(
+            mailbox=None, before={}, keyword="agent-sorted", put_back_done=False
+        )
+        monkeypatch.setattr(module, step, cut_off)
+        with pytest.raises(_CutOffError):
+            await module.put_back_check(live)
+        assert live.put_back_done is False
+
+        monkeypatch.setattr(module, step, done)
+        monkeypatch.setattr(module, "snapshot", same, raising=False)
+        await module.put_back_check(live)
+        assert live.put_back_done is True

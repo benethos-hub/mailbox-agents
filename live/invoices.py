@@ -110,7 +110,9 @@ class Live:
     gateway: Gateway
     folder: Path
     before: Snapshot = field(default_factory=dict)
-    putting_back: bool = False
+    # Set once the mail is back, not before: a put back cut off half way
+    # is done again on the way out.
+    put_back_done: bool = False
 
     @property
     def keyword(self) -> str:
@@ -326,8 +328,9 @@ async def marked_before(live: Live) -> str:
 
 
 async def put_back_check(live: Live) -> str:
-    live.putting_back = True
-    return await put_back_between(live)
+    said = await put_back_between(live)
+    live.put_back_done = True
+    return said
 
 
 CHECKS: list[tuple[str, Callable[[Live], Awaitable[str]]]] = [
@@ -351,7 +354,7 @@ async def run(settings: Settings) -> int:
             failed = await run_checks(live, CHECKS, stop=True)
         finally:
             # A check that failed or a run cut short leaves no mail moved.
-            if not live.putting_back:
+            if not live.put_back_done:
                 moved = await live.restore()
                 if moved:
                     print(f"         {moved} messages back in the inbox")

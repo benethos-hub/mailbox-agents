@@ -55,7 +55,9 @@ class Live:
     before: Snapshot = field(default_factory=dict)
     folders_before: set[str] = field(default_factory=set)
     moved: list[ActionRow] = field(default_factory=list)
-    putting_back: bool = False
+    # Set once the mail is back, not before: a put back cut off half way
+    # is done again on the way out.
+    put_back_done: bool = False
 
     @property
     def account(self) -> str:
@@ -133,8 +135,8 @@ async def full(live: Live) -> str:
 
 
 async def put_back_check(live: Live) -> str:
-    live.putting_back = True
     moved = await put_back(live.mailbox, live.before, live.keyword)
+    live.put_back_done = True
     after = await snapshot(live.mailbox, live.before)
     if after != live.before:
         changed = sum(after.get(ref) != was for ref, was in live.before.items())
@@ -157,7 +159,7 @@ async def run(settings: Settings) -> int:
             failed = await run_checks(live, CHECKS, stop=True)
         finally:
             # A check that failed or a run cut short leaves no mail moved.
-            if not live.putting_back:
+            if not live.put_back_done:
                 moved = await put_back(live.mailbox, live.before, live.keyword)
                 if moved:
                     print(f"         {moved} messages back in the inbox")
