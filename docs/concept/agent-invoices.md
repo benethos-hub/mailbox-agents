@@ -278,6 +278,24 @@ field. The settings of version 3, `MAILBOX_AGENTS_INVOICES_FOLDER` and
 `MAILBOX_AGENTS_INVOICES_SUPPLIERS_FILE`, went with the supplier list. A
 `.env` that still names them starts, as an unknown setting is ignored.
 
+## Measured, version 5
+
+On the 12 invented messages of the test account, 2026-11-20, the reports
+`2026-11-20-v5-v4-*` in `reports/invoices/`. The prompt is `v4` as in
+version 4. The twelfth message, a receipt that carries its invoice, came
+after the measurement of version 4. Numbers on invented mail say that the
+agent works as built, not how well it sorts real mail.
+
+| Model | Right | Invoices found | Near miss invented | Tokens in per message |
+|---|---|---|---|---|
+| `mail-classifier` (Claude Haiku 5.5) | 12 of 12 | 4 of 4 | 1 | 1082 |
+| `mail-classifier-gpu` (local) | 12 of 12 | 4 of 4 | 2 | 496 |
+| `mail-classifier-cpu` (local) | 12 of 12 | 4 of 4 | 2 | 496 |
+| the rules alone | 11 of 12 | 4 of 4, and one more | | |
+
+The other models of the gateway are in the table of
+[containers/live/README.md](../../containers/live/README.md).
+
 ## Measured, version 4
 
 On the 11 invented messages of the test account, 2026-11-18, the reports
