@@ -124,9 +124,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         logbook.configure(settings.log_level)
         code: int = args.handler(args, settings)
     except (ConfigError, ContractError, ServiceVersionError) as exc:
-        print(f"{PROG}: {exc.message}", file=sys.stderr)
+        print(f"{PROG}: {logbook.escaped(exc.message)}", file=sys.stderr)
         return 2
     except MailboxAgentError as exc:
-        print(f"{PROG}: {exc.message}", file=sys.stderr)
+        print(f"{PROG}: {logbook.escaped(exc.message)}", file=sys.stderr)
         return 1
     return code

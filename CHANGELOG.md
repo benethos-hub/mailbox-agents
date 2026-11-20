@@ -50,6 +50,9 @@ commit that makes the change. Design decisions live in
 - `invoices` and `inquiries` cut the sender's address at 320 characters
   for the model, as they cut the name. `sorting` matches no rule against
   a longer address, where a pattern of several `*` held up the worker.
+- The error line a command ends with writes a control or direction
+  character escaped, as `status` and `report` do. Before, a code the
+  mailbox service answered reached the terminal raw.
 
 ## [0.1.0] - 2026-11-19
 

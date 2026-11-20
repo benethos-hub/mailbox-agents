@@ -30,7 +30,8 @@ setting that cannot be read. Its message may hold more than a log line
 may say of the error: a status and a code of an upstream, a name of a
 setting, the text of the mailbox client about its configuration. It
 holds nothing of a mail, and the service token and the gateway key are
-redacted from it as from every error text. A log line names the same
+redacted from it as from every error text. A control or direction
+character in it is written as its escape, as in a log line. A log line names the same
 error by its class and code only.
 
 ## 2. Levels
