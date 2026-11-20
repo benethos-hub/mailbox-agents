@@ -609,3 +609,25 @@ async def test_a_refused_keyword_does_not_stop_a_move(world: Wired) -> None:
     await executor(world)([other, MOVE])
 
     assert world.service.writes() == [(PATH, {"folder_ids": ["inv-hosting"]})]
+
+
+async def test_a_message_moved_once_is_kept_where_its_target_is_missing(
+    world: Wired, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The owner moved it to a folder below which the agent's target is
+    missing: that is the owner's choice as well, not a refusal."""
+    caplog.set_level("INFO")
+    run = executor(world)
+    assert await run([MOVE]) == [Outcome.DONE]
+    world.service.messages[(ACCOUNT, "m1")]["folder_ids"] = ["inbox"]
+    missing = ActionRequest(Action.MOVE_TO_FOLDER, REF, folder="Invoices/Missing")
+
+    for _ in range(3):
+        assert await run([missing]) == [Outcome.SKIPPED]
+
+    names = [r.name.rsplit(".", 1)[-1] for r in caplog.records if ".actions." in r.name]
+    assert names == ["done", "kept", "kept", "kept"]
+    failures = run.metrics.registry.get_sample_value(
+        "mailbox_agents_step_failures_total", {"kind": "action_refused"}
+    )
+    assert not failures

@@ -66,6 +66,10 @@ commit that makes the change. Design decisions live in
 - `awaiting_reply` takes its keyword off a message whose item a reply or
   a new message closed, also when the first write failed: the tick asks
   again until the keyword is off. Before, it stayed on the message.
+- A message an agent moved once and its owner moved on stays where it
+  is, logged as `actions.kept`, also where the agent's target folder is
+  missing there. Before, each update logged a refused move and counted a
+  failure.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

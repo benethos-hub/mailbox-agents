@@ -356,20 +356,23 @@ class Executor:
         if request.action is Action.MOVE_TO_FOLDER:
             path = request.folder or ""  # never empty, _admissible checked it
             folder = await self._mailbox.folder_at(account, path)
+            before = [f.id for f in message.folders]
+            # Moved once already and not in the target: the owner's choice
+            # stands, also where the target is missing.
+            if self._moved_before(request.ref) and (
+                folder is None or before != [folder.id]
+            ):
+                raise _OwnersChoiceError
             if folder is None and (account, path) in self._recorded_folders:
                 # Its folder was recorded only, by the stage or held: so is
                 # the move, which has no target to send.
-                before = [f.id for f in message.folders]
                 return Plan(path, {"folders": before}, "", record_only=True)
             if folder is None:
                 raise ActionRefusedError("the target folder does not exist")
             if await self._forbidden(account, folder):
                 raise ActionRefusedError("no agent moves a message there")
-            before = [f.id for f in message.folders]
             if before == [folder.id]:
                 return None
-            if self._moved_before(request.ref):
-                raise _OwnersChoiceError
             return Plan(folder.path, {"folders": before}, folder.id)
         if request.action is Action.CREATE_FOLDER:
             return await self._plan_folder(account, request.folder)
