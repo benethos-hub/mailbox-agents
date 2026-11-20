@@ -91,6 +91,10 @@ commit that makes the change. Design decisions live in
   the other agents, and `health` answers 1 for it, writing its reason as
   for any other state file it cannot read. Before, `status` stopped at it
   and both ended with exit code 2.
+- A mailbox service that names no version at `/health`, or refuses it,
+  ends `worker`, `run` and `backfill` with exit code 2 as one outside the
+  tested lines, and `status` says it names none. Before, each pass failed
+  as a refusal while the worker looked healthy.
 - A lone surrogate in a line of the log, of `status` or of `report` is
   written as its escape. Before, writing it to a terminal raised an
   error.

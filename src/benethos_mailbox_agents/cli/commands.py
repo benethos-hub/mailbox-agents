@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Any
 
 from ..contract import Agent, discover, load
-from ..errors import ConfigError, MailboxAgentError, StateFileError
+from ..errors import (
+    ConfigError,
+    MailboxAgentError,
+    ServiceVersionError,
+    StateFileError,
+)
 from ..evaluation.gold import GoldItem, load_gold
 from ..evaluation.report import build, render, write
 from ..evaluation.run import evaluate as run_evaluation
@@ -144,6 +149,11 @@ def _service(settings: Settings) -> str | None:
         return None
     try:
         found = asyncio.run(_version(settings))
+    except ServiceVersionError:
+        return (
+            "mailbox service names no version: not tested, no agent starts "
+            f"(tested: {line_names()})"
+        )
     except MailboxAgentError as exc:
         return f"mailbox service not asked: {exc.message}"
     if is_tested(found):

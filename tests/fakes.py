@@ -112,8 +112,10 @@ class FakeService:
         self.feed: list[dict[str, Any]] = []
         self.expired: set[str] = set()
         self.down = False
-        # What /health names, and how often it was asked.
-        self.version = "0.8.0"
+        # What /health names, and how often it was asked. A version of None
+        # leaves the key out, and a status refuses /health with it.
+        self.version: str | None = "0.8.0"
+        self.health_status: int | None = None
         self.health_asked = 0
         # Status and code every request is refused with while set.
         self.refusal: tuple[int, str] | None = None
@@ -179,6 +181,10 @@ class FakeService:
             self.health_asked += 1
             if self.down:
                 return _error(503, "unavailable")
+            if self.health_status is not None:
+                return _error(self.health_status, "not_found")
+            if self.version is None:
+                return httpx.Response(200, json={"status": "ok"})
             return httpx.Response(200, json={"status": "ok", "version": self.version})
         self.requests.append(request)
         if self.down:

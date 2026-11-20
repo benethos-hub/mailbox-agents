@@ -506,7 +506,7 @@ def test_the_error_line_writes_a_control_character_escaped(
     code = "".join(map(chr, (0x1B, 0x5D, 0x30, 0x3B, 0x6F, 0x07, 0x1B))) + "[2J"
 
     def refuse(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/health":
+        if request.url.path != "/health":
             return httpx.Response(
                 403, json={"error": {"code": code, "message": "refused"}}
             )

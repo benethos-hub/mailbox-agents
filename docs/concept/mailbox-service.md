@@ -161,7 +161,8 @@ only against the lines they were tested against (decided 2026-11-19).
   of the release. Tests hold all five equal.
 - **The check.** The worker asks the service for its version before every
   pass and every backfill. A service outside the lines, or one that names
-  no version, ends the command with a `ServiceVersionError` and exit code
+  no version or refuses `/health`, ends the command with a
+  `ServiceVersionError` and exit code
   2, before the feed is read: nothing is read, decided or changed. It is
   asked in every pass and not only at the start, since a service can be
   replaced by another release between two passes without one request
@@ -171,7 +172,7 @@ only against the lines they were tested against (decided 2026-11-19).
   measured. A warning alone would go unread in a process that runs for
   weeks.
 - **`status`** names the version of the service and whether it is tested,
-  and starts no agent.
+  or that it names none, and starts no agent.
 - **The client is not compared with the service.** Within a line the
   installed client may be older or newer than the service, and the agents
   run: a patch release of the service is taken to change no interface.

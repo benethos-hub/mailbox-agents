@@ -69,6 +69,9 @@ TESTED: tuple[tuple[int, int, int], ...] = ((0, 8, 0),)
 
 _VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 
+# How each refusal of a service outside the lines ends.
+_RUN_TESTED = ": run a release of the agents that is tested against that service"
+
 
 def _within(found: tuple[int, int, int], floor: tuple[int, int, int]) -> bool:
     """Whether ``found`` is in the line of ``floor`` and not below it."""
@@ -197,8 +200,16 @@ class Mailbox:
 
     async def version(self) -> str:
         """The version the service names at ``/health``, which it answers
-        without a right and counts against no limit."""
-        found = await _call(self._client.health())
+        without a right and counts against no limit. Raises
+        :class:`ServiceVersionError` when it names none, or refuses: a
+        service that does not answer as a tested one is outside the lines."""
+        try:
+            found = await _call(self._client.health())
+        except MailboxRefusedError:
+            raise ServiceVersionError(
+                "the mailbox service names no version at /health, and this "
+                f"package is tested against {line_names()}{_RUN_TESTED}"
+            ) from None
         return found.version
 
     async def ensure_tested(self) -> str:
@@ -208,8 +219,7 @@ class Mailbox:
         if not is_tested(found):
             raise ServiceVersionError(
                 f"the mailbox service runs {found[:40]!r}, and this package "
-                f"is tested against {line_names()}: run a release of the "
-                "agents that is tested against that service"
+                f"is tested against {line_names()}{_RUN_TESTED}"
             )
         return found
 
