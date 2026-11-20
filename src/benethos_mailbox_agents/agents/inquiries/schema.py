@@ -46,6 +46,10 @@ MAX_TEXT = 8000
 # to the evidence check.
 MAX_SUBJECT = 300
 MAX_NAME = 300
+# The sender's address is cut here: 64 characters before the @, 255
+# after it, as much as the mail standards allow. A longer one is no
+# address a server delivers, and only blows up the call.
+MAX_ADDRESS = 320
 
 # The longest quote or value an answer may hold. A longer one is refused as
 # not fitting the schema, so an answer cannot copy the mail into the state
@@ -121,7 +125,8 @@ def _named(message: MailMessage) -> str:
     if sender is None:
         return ""
     name = (sender.name or "")[:MAX_NAME]
-    return f"{name} <{sender.email}>" if name else sender.email
+    email = sender.email[:MAX_ADDRESS]
+    return f"{name} <{email}>" if name else email
 
 
 def _subject(message: MailMessage) -> str:

@@ -47,6 +47,9 @@ commit that makes the change. Design decisions live in
   Before, storing the step ended the worker after the paid call.
 - A body of the gateway that cannot be decoded, such as one that says
   gzip and is none, is a refused answer. Before, it ended the worker.
+- `invoices` and `inquiries` cut the sender's address at 320 characters
+  for the model, as they cut the name. `sorting` matches no rule against
+  a longer address, where a pattern of several `*` held up the worker.
 
 ## [0.1.0] - 2026-11-19
 

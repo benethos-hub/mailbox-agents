@@ -13,6 +13,7 @@ from benethos_mailbox_agents.agents.inquiries.agent import Inquiries
 from benethos_mailbox_agents.agents.inquiries.patterns import DATE, RATE, load_patterns
 from benethos_mailbox_agents.agents.inquiries.schema import (
     FIELDS,
+    MAX_ADDRESS,
     MAX_NAME,
     MAX_SUBJECT,
     MAX_TEXT,
@@ -326,3 +327,19 @@ def test_a_stranger_cannot_blow_up_the_call() -> None:
         "T" * MAX_TEXT,
     ]
     assert all(part in rendered for part in parts(message))
+
+
+def test_a_long_address_is_cut_for_the_model_and_the_check() -> None:
+    address = "a" * 100_000 + "@agency.example"
+    message = MailMessage(
+        ref=MessageRef(account_id=ACCOUNT, message_id="m1"),
+        sender=Address(email=address, name=None),
+        subject="Anfrage",
+        text="Text",
+    )
+
+    rendered = render(message)
+
+    assert len(rendered) < MAX_ADDRESS + 200
+    assert parts(message)[0] == address[:MAX_ADDRESS]
+    assert parts(message)[0] in rendered

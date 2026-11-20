@@ -12,6 +12,7 @@ import pytest
 from benethos_mailbox_agents.agents.invoices.agent import Invoices
 from benethos_mailbox_agents.agents.invoices.baseline import NEAR_MISS_WORDS
 from benethos_mailbox_agents.agents.invoices.schema import (
+    MAX_ADDRESS,
     MAX_FILES,
     MAX_FILES_TEXT,
     MAX_NAME,
@@ -940,3 +941,20 @@ async def test_a_lone_surrogate_in_the_mail_ends_no_worker(world: Wired) -> None
     world.fake_gateway.answer(answer("invoice", "Ihre Rechnung R-90"))
 
     assert await run(world, "odd", agent()) == "done"
+
+
+def test_a_long_address_is_cut_for_the_model_and_the_check() -> None:
+    address = "a" * 100_000 + "@hosting.example"
+    message = MailMessage(
+        ref=MessageRef(account_id=ACCOUNT, message_id="m1"),
+        sender=Address(email=address, name="Billing"),
+        subject="Rechnung",
+        text="Text",
+    )
+
+    rendered = render(message)
+
+    assert len(rendered) < MAX_ADDRESS + 200
+    name = parts(message)[0]
+    assert name == f"Billing <{address[:MAX_ADDRESS]}>"
+    assert name in rendered

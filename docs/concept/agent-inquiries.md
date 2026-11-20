@@ -34,8 +34,9 @@ right, wrong, missing, invented or rightly empty.
 
 The model is given the sender, the subject and the first 8000 characters
 of the text. The sender's name and the subject, which a stranger chooses,
-are cut at 300 characters each (2026-11-19). The evidence check looks a
-quote up in the same cut text.
+are cut at 300 characters each (2026-11-19), the sender's address at 320
+(2026-11-20), as much as the mail standards allow. The evidence check
+looks a quote up in the same cut text.
 
 Recognising an inquiry seen before, and anything that writes a reply, come
 later ([roadmap](../ROADMAP.md)).

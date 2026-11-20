@@ -99,6 +99,9 @@ sender. Each is named by its group, and a rule by its place too.
 | domain | `cloudhost.example` | refused, see below |
 
 - Case is ignored.
+- An address longer than 320 characters, more than the mail standards
+  allow, matches no rule (2026-11-20). A pattern of several `*` would
+  take time in the square of its length or more.
 - The most specific rule wins: an address before a pattern before a
   pattern for subdomains.
 - Two groups whose rules of the same kind both match leave the sender

@@ -178,8 +178,9 @@ The model is given the sender, the subject, the names and types of the
 attachments and the first 6000 characters of the text. A stranger chooses
 all of them, so each is cut (2026-11-19): the sender's name and the
 subject at 300 characters, the attachments to the first 20 whose line
-stays within 1000 characters. The evidence check looks a quote up in the
-same cut text.
+stays within 1000 characters. The sender's address is cut at 320
+characters (2026-11-20), as much as the mail standards allow. The
+evidence check looks a quote up in the same cut text.
 
 Recognising an electronic invoice by its embedded data needs the attachment
 read and is not part of this version.

@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from benethos_mailbox_agents.agents.sorting.groups import Groups, Kind, load_groups
+from benethos_mailbox_agents.agents.sorting.groups import (
+    MAX_ADDRESS,
+    Groups,
+    Kind,
+    load_groups,
+)
 from benethos_mailbox_agents.errors import ConfigError
 
 
@@ -292,3 +298,15 @@ def test_a_list_of_another_format_is_refused(tmp_path: Path) -> None:
 def test_a_list_that_cannot_be_read_is_refused(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="cannot be read"):
         load_groups(tmp_path / "missing.json")
+
+
+def test_an_address_longer_than_any_mail_allows_matches_nothing() -> None:
+    listed = groups(
+        {"name": "A", "folder": "A", "senders": ["*a*a*a*b@shop.example"]},
+    )
+    address = "a" * 100_000 + "@shop.example"
+
+    started = time.monotonic()
+    assert listed.match(address) is None
+    assert time.monotonic() - started < 0.5
+    assert listed.match("a" * (MAX_ADDRESS - 20) + "b@shop.example") is not None
