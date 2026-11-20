@@ -1,8 +1,11 @@
-"""The stamp assets/build.py writes into the PNG files: the hash of the SVG,
-so a change of the SVG always changes them, as the brand check asks."""
+"""What assets/build.py writes into the PNG files: the hash of each source,
+so a change of the SVG or the diagram's page always changes them, as the
+brand check asks, and a screenshot only when the browser wrote one."""
 
 from __future__ import annotations
 
+import hashlib
+import re
 import struct
 import subprocess
 import zlib
@@ -12,6 +15,7 @@ from types import ModuleType
 
 import pytest
 
+from benethos_mailbox_agents.contract import discover
 from helpers import ROOT, load_script
 
 BUILD = ROOT / "assets" / "build.py"
@@ -51,7 +55,7 @@ def _texts(png: bytes) -> list[bytes]:
 
 
 def test_the_stamp_names_the_hash_of_the_svg(build: ModuleType) -> None:
-    stamped = build.stamped(PNG, "<svg/>")
+    stamped = build.stamped(PNG, {"icon.svg": "<svg/>"})
 
     (text,) = _texts(stamped)
     assert text.startswith(b"Source\0icon.svg sha256:")
@@ -59,12 +63,12 @@ def test_the_stamp_names_the_hash_of_the_svg(build: ModuleType) -> None:
 
 
 def test_another_svg_gives_another_png_and_one_stamp_only(build: ModuleType) -> None:
-    first = build.stamped(PNG, "<svg><title>a</title></svg>")
-    second = build.stamped(first, "<svg><title>b</title></svg>")
+    first = build.stamped(PNG, {"icon.svg": "<svg><title>a</title></svg>"})
+    second = build.stamped(first, {"icon.svg": "<svg><title>b</title></svg>"})
 
     assert first != second
     assert len(_texts(second)) == 1
-    assert build.stamped(second, "<svg><title>b</title></svg>") == second
+    assert build.stamped(second, {"icon.svg": "<svg><title>b</title></svg>"}) == second
 
 
 @pytest.mark.parametrize(
@@ -76,7 +80,7 @@ def test_a_png_cut_short_or_with_bytes_after_its_end_is_refused(
     build: ModuleType, png: bytes
 ) -> None:
     with pytest.raises(ValueError, match="PNG"):
-        build.stamped(png, "<svg/>")
+        build.stamped(png, {"icon.svg": "<svg/>"})
 
 
 def test_a_browser_that_writes_no_screenshot_leaves_the_png_as_it_was(
@@ -100,4 +104,47 @@ def test_a_browser_that_writes_no_screenshot_leaves_the_png_as_it_was(
 
 def test_a_file_that_is_no_png_is_refused(build: ModuleType) -> None:
     with pytest.raises(ValueError):
-        build.stamped(b"GIF89a", "<svg/>")
+        build.stamped(b"GIF89a", {"icon.svg": "<svg/>"})
+
+
+def test_each_source_gets_a_stamp_of_its_own_in_order(build: ModuleType) -> None:
+    sources = {"page.html": "<html></html>", "icon.svg": "<svg/>"}
+
+    found = _texts(build.stamped(build.stamped(PNG, {"x": "y"}), sources))
+
+    assert [text.split(b" ")[0] for text in found] == [
+        b"Source\0page.html",
+        b"Source\0icon.svg",
+    ]
+
+
+def _expected(*sources: Path) -> list[bytes]:
+    return [
+        b"Source\0"
+        + f"{source.name} sha256:".encode()
+        + hashlib.sha256(source.read_text("utf-8").encode("utf-8")).hexdigest().encode()
+        for source in sources
+    ]
+
+
+def test_each_versioned_png_carries_the_stamp_of_its_sources(
+    build: ModuleType,
+) -> None:
+    icon, page = build.ICON_SOURCE, build.DIAGRAM_SOURCE
+    expected = {
+        build.ICON: _expected(icon),
+        build.SOCIAL: _expected(icon),
+        **{target: _expected(page, icon) for target in build.DIAGRAMS},
+    }
+
+    for png, stamps in expected.items():
+        assert _texts(png.read_bytes()) == stamps, png.name
+
+
+def test_the_diagram_names_every_agent(build: ModuleType) -> None:
+    page = build.DIAGRAM_SOURCE.read_text("utf-8")
+    listed = re.search(r'<ul class="agents">(.*?)</ul>', page, flags=re.DOTALL)
+
+    assert listed is not None
+    names = re.findall(r"<li><code>(\w+)</code></li>", listed.group(1))
+    assert sorted(names) == sorted(discover())
