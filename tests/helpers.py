@@ -56,6 +56,9 @@ def load_script(path: Path, name: str) -> Iterator[ModuleType]:
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
+    # Registered before it runs, as an import does: a dataclass of the
+    # script looks its module up there before Python 3.15.
+    sys.modules[name] = module
     try:
         spec.loader.exec_module(module)
         yield module

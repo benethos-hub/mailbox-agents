@@ -70,6 +70,10 @@ __all__ = [
 
 # The hosts of a mailbox service on this machine, as containers/live has it.
 LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
+# The port containers/live/compose.yaml publishes its mailbox service on. A
+# service on this machine at another port, such as the default 8080, may be
+# a real one: the check refuses it.
+LIVE_PORT = 38081
 
 # The days of mail a check reads, as the invented mail of mail.py spans.
 DAYS = 30
@@ -87,8 +91,9 @@ class Skip(Exception):  # noqa: N818 - a reason to skip, not an error
 def live_settings(path: Path, script: str) -> Settings:
     """The settings in the file at ``path``, every ``MAILBOX_AGENTS_``
     variable of the environment aside. Exits when the file is missing or
-    names no account, and with code 2 when the mailbox service is not on
-    this machine. ``script`` names the check in what it says."""
+    names no account, and with code 2 when the mailbox service is not the
+    one of containers/live, on this machine at :data:`LIVE_PORT`.
+    ``script`` names the check in what it says."""
     if not path.is_file():
         sys.exit(f"{script}: no settings at {path}, run containers/live/setup.sh")
     aside = {
@@ -100,10 +105,16 @@ def live_settings(path: Path, script: str) -> Settings:
         found = load_settings(path)
     finally:
         os.environ.update(aside)
-    if urlsplit(found.service_url or "").hostname not in LOOPBACK:
+    url = urlsplit(found.service_url or "")
+    try:
+        port = url.port
+    except ValueError:
+        port = None
+    if url.hostname not in LOOPBACK or port != LIVE_PORT:
         print(
-            f"{script}: the mailbox service is not on this machine, a live check "
-            "runs against the test account of containers/live only",
+            f"{script}: the mailbox service is not the one of containers/live, "
+            f"on this machine at port {LIVE_PORT}: a live check runs against "
+            "the test account of containers/live only",
             file=sys.stderr,
         )
         raise SystemExit(2)
