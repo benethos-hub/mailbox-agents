@@ -19,6 +19,9 @@ commit that makes the change. Design decisions live in
 
 ### Changed
 
+- The image ships certifi 2026.11.20, the newest bundle of root
+  certificates. An install from PyPI takes it as before, within its own
+  range.
 - The live setup of `containers/live` runs LiteLLM 1.110.2 and Postgres
   19. Run `containers/live/setup.sh` again after the update: the database
   of the gateway starts empty, and the agents' key with it.
