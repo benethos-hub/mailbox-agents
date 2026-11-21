@@ -11,8 +11,17 @@ commit that makes the change. Design decisions live in
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-21
+
+Works against the mailbox service 0.8 from 0.8.0 and 0.9 from 0.9.0, with
+`benethos-mailbox-client` 0.9.
+
 ### Added
 
+- The agents work against the mailbox service 0.9 from 0.9.0 as well as
+  0.8 from 0.8.0, and the package installs `benethos-mailbox-client` 0.9.
+  So the agents can be updated first and the service after them. Release
+  0.1.0 refuses a service 0.9.
 - The README shows the architecture as a diagram, light and dark: the
   mailbox service, the four steps of a message in an agent, and the model
   gateway. `assets/build.py --diagram` renders it from its page.
@@ -22,9 +31,10 @@ commit that makes the change. Design decisions live in
 - The image ships certifi 2026.11.20, the newest bundle of root
   certificates. An install from PyPI takes it as before, within its own
   range.
-- The live setup of `containers/live` runs LiteLLM 1.110.2 and Postgres
-  19. Run `containers/live/setup.sh` again after the update: the database
-  of the gateway starts empty, and the agents' key with it.
+- The live setup of `containers/live` runs the mailbox service 0.9.0,
+  LiteLLM 1.110.2, Postgres 19 and llama.cpp b12602. Run
+  `containers/live/setup.sh` again after the update: the database of the
+  gateway starts empty, and the agents' key with it.
 - The package page on PyPI links the repository, the README, the issues
   and the changelog. The package states its licence as the expression
   `MIT` with its licence file, and its description, keywords and
@@ -300,5 +310,6 @@ Each sets a keyword of its own, of the form `agent-<word>`.
 - The concept: `docs/CONCEPT.md` as its overview, and in `docs/concept/`
   one file per topic and one per agent.
 
-[Unreleased]: https://github.com/benethos-hub/mailbox-agents/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/mailbox-agents/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/benethos-hub/mailbox-agents/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/benethos-hub/mailbox-agents/releases/tag/v0.1.0

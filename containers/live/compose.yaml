@@ -28,7 +28,7 @@ services:
       - stalwart-data:/var/lib/stalwart
 
   mailbox-service:
-    image: ghcr.io/benethos-hub/benethos-mailbox-service:0.8.0@sha256:1f15092c2f779924ac5b74ab7b02faf574e4096a1e6d53a52b01bd3c95553084
+    image: ghcr.io/benethos-hub/benethos-mailbox-service:0.9.0@sha256:62a514b40378bc60a8f22bc9098040fab2f0cf75e78578508a5ab3d6dba7aaf4
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -115,7 +115,7 @@ services:
   # Toolkit and its CDI spec on the host (README.md).
   llama-gpu:
     profiles: ["gpu"]
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b12464@sha256:ae96e52f8b2106ea82bad786ee2d08bb9b0a8c93403df9c27ae1bf065a118089
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda-b12602@sha256:26f89ebd3bf17a5ecf6caee62bdabfa55abea3058150879f6f07b1fc786baa2d
     restart: unless-stopped
     command: &llama-command
       - --models-preset
@@ -143,7 +143,7 @@ services:
   # On the CPU, with the profile cpu: what a server without a card would do.
   llama-cpu:
     profiles: ["cpu"]
-    image: ghcr.io/ggml-org/llama.cpp:server-b12464@sha256:5b43086e3ba7ea5794d72904654f6cd41224a9b1c6ac0398f4940ee380d30f23
+    image: ghcr.io/ggml-org/llama.cpp:server-b12602@sha256:ae28f5c2046de51dfd00c9116a36fe44b5e8703ef730d0aea69082781eecb1f7
     restart: unless-stopped
     command: *llama-command
     networks:

@@ -133,9 +133,9 @@ uv lock --check
   outside `TESTED` in `sources/mailbox.py`. A new line of the service is a
   change of its own, with its changelog read, the live checks run and what
   changed measured again: docs/concept/mailbox-service.md has the steps.
-  Tests hold the pin of the client, the image of the live setup,
-  `README.md` and the top row of `docs/COMPATIBILITY.md` to the newest
-  line.
+  Tests hold the pin of the client and the image of the live setup to the
+  newest line, and `README.md` and the top row of `docs/COMPATIBILITY.md`
+  to all the lines.
 - A live check is a manual run, never a gate: `containers/live/README.md`
   says how to start the mail server of its own, and `live/smoke.py` checks
   the package against it, read-only.

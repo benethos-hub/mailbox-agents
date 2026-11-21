@@ -14,6 +14,7 @@ pin of `benethos-mailbox-client` follows the newest line of each release.
 
 | Mailbox Agents | Mailbox service | `benethos-mailbox-client` |
 |---|---|---|
+| 0.2.0 | 0.8 from 0.8.0 and 0.9 from 0.9.0 | `~=0.9.0` |
 | 0.1.0 | 0.8 from 0.8.0 | `~=0.8.0` |
 
 The newest release stands on top. A release that holds two lines, so

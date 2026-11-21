@@ -41,9 +41,10 @@ What the agents rely on:
 - Keywords are not available on every provider **(to verify per account
   before an agent is switched to the keyword stage)**. At Stalwart over
   IMAP they are: measured 2026-11-17 against 0.7.5, a keyword set and
-  taken off again, and 2026-11-20 against 0.8.0, where `live/sorting.py`
-  and `live/invoices.py` set an agent's keyword, find it on the message
-  and take it off when they put the mail back.
+  taken off again, and 2026-11-20 against 0.8.0 and 2026-11-21 against
+  0.9.0, where `live/sorting.py` and `live/invoices.py` set an agent's
+  keyword, find it on the message and take it off when they put the mail
+  back.
 
 Folders and moves, measured 2026-11-18 against 0.7.5 with IMAP at
 Stalwart, on the test account:
@@ -69,7 +70,7 @@ Stalwart, on the test account:
   came back in the inbox under a new id. The service fixed this in 0.8.0
   for a move made while it syncs the account, and in the run of
   2026-11-19 against 0.8.0 no message of either put-back came back under
-  another id. An agent that relies on its state file would meet such a
+  another id, nor in the runs of 2026-11-21 against 0.8.0 and 0.9.0. An agent that relies on its state file would meet such a
   message as a new one: `invoices` skips it when it carries the agent's
   keyword, and asks about it when it does not.
 - `create_folder` makes a folder at the top without a parent, and below
@@ -139,7 +140,21 @@ call refused.
 folder. The service cannot refuse those to an agent that may move mail, so
 the runtime does ([safety](safety.md)). Narrowing a grant to chosen folders is
 possible in the service. Whether a move between two granted folders works
-under such a grant is **(to verify)**.
+under such a grant is **(to verify)**. Since 0.9.0, by its changelog, the
+service refuses such a grant a change that replaces the folders of a
+message lying in a folder outside the grant, `403`, and a move of an agent
+replaces the folders **(to verify)**.
+
+A move into the drafts folder is refused by the service since 0.9.0,
+`400 bad_request`, and the message stays where it was: measured
+2026-11-21 against 0.9.0 with IMAP at Stalwart, one message of the inbox
+of the test account. The runtime refuses only the trash, junk and spam as
+a target by itself, so an agent moves a message into drafts only where
+its settings name that folder: a target of the sorting list, or
+`MAILBOX_AGENTS_INVOICES_INBOX_FOLDER`. In the stage `full` such a move
+meets the `400` and is logged as refused and not recorded, as any refused
+action. In `shadow` and `keyword` it is recorded and the service is not
+asked.
 
 ## The version of the service
 
@@ -196,6 +211,10 @@ What follows from it: while the service is at 0.x, each of its minor
 releases needs a release of the agents before the two work together. So
 that the agents can be updated first and the service after them, a
 release of the agents may hold two lines for a time, the old and the new.
+Release 0.2.0 holds 0.8 and 0.9: on 2026-11-21 the live checks ran with
+the client 0.9.0 against the service 0.8.0 and against 0.9.0, and the
+code of the client is the same in both releases. Release 0.1.0 refuses a
+service 0.9.0, measured the same day.
 
 A new line is a change of its own, in this order:
 
