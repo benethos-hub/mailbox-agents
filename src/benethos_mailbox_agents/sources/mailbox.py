@@ -65,7 +65,7 @@ _PAGE = 200
 # in pyproject.toml and the line of the image of containers/live, which
 # tests/test_service_version.py holds equal. A line is added by a change of
 # its own, see docs/concept/mailbox-service.md.
-TESTED: tuple[tuple[int, int, int], ...] = ((0, 8, 0),)
+TESTED: tuple[tuple[int, int, int], ...] = ((0, 8, 0), (0, 9, 0))
 
 # A release: three numbers and at most a local part after a "+". A
 # pre-release such as 0.8.0rc1 or 0.8.1.dev3 is none, also of a later

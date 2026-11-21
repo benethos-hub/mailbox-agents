@@ -28,7 +28,7 @@ services:
       - stalwart-data:/var/lib/stalwart
 
   mailbox-service:
-    image: ghcr.io/benethos-hub/benethos-mailbox-service:0.8.0@sha256:1f15092c2f779924ac5b74ab7b02faf574e4096a1e6d53a52b01bd3c95553084
+    image: ghcr.io/benethos-hub/benethos-mailbox-service:0.9.0@sha256:62a514b40378bc60a8f22bc9098040fab2f0cf75e78578508a5ab3d6dba7aaf4
     restart: unless-stopped
     read_only: true
     tmpfs:

@@ -17,7 +17,7 @@ Part of the [concept](../CONCEPT.md).
   image, each behind a profile of its own name, `restart: unless-stopped`,
   its health check `health --agent <name>`. The image is named by
   `MAILBOX_AGENTS_VERSION`, best as the version with the digest of the
-  release, `0.1.0@sha256:<digest>`: a tag on ghcr.io can be moved, a
+  release, `0.2.0@sha256:<digest>`: a tag on ghcr.io can be moved, a
   digest cannot (2026-11-19). The live setup pins every image so.
 - **Health:** `health --agent <name>` exits 0 while the loop's last sign
   of progress, written to the state file after each message and at the end
