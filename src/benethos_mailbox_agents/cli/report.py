@@ -129,8 +129,10 @@ def _actions(rows: list[ActionRow]) -> tuple[tuple[Action, bool], ...]:
     return tuple((Action(a.action), a.executed) for a in rows if a.action in known)
 
 
-def summary(agent: Agent, entries: list[Entry]) -> list[str]:
-    """What the agent has to say about the messages shown."""
+def summary(agent: Agent, entries: list[Entry], total: int | None = None) -> list[str]:
+    """What the agent has to say about the messages shown. When ``total``,
+    the messages there are in all, is more than were shown, a line before
+    it says so: its counts cover the shown messages only."""
     shown = [
         Shown(
             sender=entry.message.sender.email
@@ -142,7 +144,14 @@ def summary(agent: Agent, entries: list[Entry]) -> list[str]:
         for entry in entries
         if entry.decision is not None
     ]
-    return [escaped(line) for line in agent.summarize(shown)]
+    lines = agent.summarize(shown)
+    if lines and total is not None and total > len(entries):
+        lines = [
+            f"(the lines below count the {len(entries)} newest of {total} "
+            f"messages, --limit {total} counts all)",
+            *lines,
+        ]
+    return [escaped(line) for line in lines]
 
 
 async def report(
@@ -150,9 +159,11 @@ async def report(
 ) -> list[str]:
     """The report of ``agent``, read beside the running agent."""
     with Store.open(path_for(settings.data_dir, agent.name), read_only=True) as store:
+        counts = store.counts()
+        total = counts.get(state, 0) if state else sum(counts.values())
         if offline:
             entries = await collect(store, None, limit=limit, state=state)
         else:
             async with mailbox_for(settings) as mailbox:
                 entries = await collect(store, mailbox, limit=limit, state=state)
-    return render(entries) + summary(agent, entries)
+    return render(entries) + summary(agent, entries, total)
