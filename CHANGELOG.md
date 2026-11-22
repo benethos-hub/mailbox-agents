@@ -11,6 +11,14 @@ commit that makes the change. Design decisions live in
 
 ## [Unreleased]
 
+### Changed
+
+- `report` says when the summary at its end counts only part of the
+  messages: a line before it names how many of how many it counts and
+  the `--limit` that counts all. Before, the 50 newest looked like every
+  message, and an invoice outside them was missing from the senders
+  without a word.
+
 ## [0.2.0] - 2026-11-21
 
 Works against the mailbox service 0.8 from 0.8.0 and 0.9 from 0.9.0, with

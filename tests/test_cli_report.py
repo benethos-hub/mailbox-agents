@@ -91,6 +91,47 @@ def test_the_summary_sees_known_actions_and_leaves_out_others() -> None:
     assert [item.actions for item in seen] == [((Action.MOVE_TO_FOLDER, True),)]
 
 
+class Talking:
+    def __init__(self, said: list[str]) -> None:
+        self.said = said
+
+    def summarize(self, shown: list[Shown]) -> list[str]:
+        return self.said
+
+
+def _entry() -> Entry:
+    return Entry(
+        row=MessageRow(REF, "done", 0, NOW, NOW, NOW),
+        message=None,
+        decision=Decision(label="invoice", source="model"),
+        model="m",
+        baseline=None,
+    )
+
+
+def test_the_summary_says_when_it_counts_only_the_shown_messages() -> None:
+    entries = [_entry(), _entry()]
+
+    lines = summary(Talking(["by sender:"]), entries, 307)  # type: ignore[arg-type]
+
+    assert lines == [
+        "(the lines below count the 2 newest of 307 messages, --limit 307 counts all)",
+        "by sender:",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("said", "total"),
+    [(["by sender:"], 2), (["by sender:"], None), ([], 307)],
+)
+def test_the_summary_adds_no_note_when_it_sees_all_or_says_nothing(
+    said: list[str], total: int | None
+) -> None:
+    entries = [_entry(), _entry()]
+
+    assert summary(Talking(said), entries, total) == said  # type: ignore[arg-type]
+
+
 def test_render_a_refused_decision_and_a_message_gone() -> None:
     entry = Entry(
         row=MessageRow(REF, "decided", 0, NOW, NOW, NOW),

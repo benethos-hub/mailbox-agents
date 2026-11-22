@@ -134,7 +134,10 @@ have been. It ends with what the agent has to say about the messages shown: for
 `invoices`, the senders of invoices it marked and did not move, with how
 many each sent, as candidates for a group of `sorting`. For `sorting`, per group
 how many messages were moved, recorded, held or not moved, the senders in
-no group that wrote most often, and the senders two groups name alike. It opens the state file
+no group that wrote most often, and the senders two groups name alike.
+These counts cover the messages shown. When the state file holds more,
+in `--state` if named, a line before them says how many of how many they
+count and which `--limit` counts all (2026-11-22). It opens the state file
 read-only, so it runs beside the agent.
 `--offline` reads the state file alone, without subject and sender. What
 it prints goes to stdout for the person who asked and never to the log.
