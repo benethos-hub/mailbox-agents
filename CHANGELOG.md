@@ -11,7 +11,15 @@ commit that makes the change. Design decisions live in
 
 ## [Unreleased]
 
+Not released from this repository. The project moved into the
+[mailbox repository](https://github.com/benethos-hub/mailbox) as the
+package `packages/mailbox-agents`, released with the mailbox service from
+0.11.0 on, and this repository is archived (2026-11-23). Its changelog
+goes on there.
+
 ### Changed
+
+- The README says where the project moved to.
 
 - `report` says when the summary at its end counts only part of the
   messages: a line before it names how many of how many it counts and
