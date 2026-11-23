@@ -1,5 +1,15 @@
 # <img src="https://raw.githubusercontent.com/benethos-hub/mailbox-agents/main/assets/brand/icon.svg" alt="" height="36" align="absmiddle"> Mailbox Agents
 
+> [!IMPORTANT]
+> **This project has moved.** Mailbox Agents now lives in the mailbox
+> repository as the package
+> [`packages/mailbox-agents`](https://github.com/benethos-hub/mailbox/tree/main/packages/mailbox-agents),
+> released together with the mailbox service under one version from 0.11.0
+> on. The package `benethos-mailbox-agents` on PyPI and the image
+> `ghcr.io/benethos-hub/benethos-mailbox-agents` keep their names. This
+> repository is archived and kept as the history of the releases 0.1.0 and
+> 0.2.0.
+
 [![CI](https://github.com/benethos-hub/mailbox-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/benethos-hub/mailbox-agents/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/benethos-hub/mailbox-agents/badges/coverage.json&logo=githubactions&logoColor=white)](https://github.com/benethos-hub/mailbox-agents/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/benethos-hub/mailbox-agents?logo=opensourceinitiative&logoColor=white)](https://github.com/benethos-hub/mailbox-agents/blob/main/LICENSE)
